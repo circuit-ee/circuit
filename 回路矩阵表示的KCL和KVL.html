@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电路图与回路矩阵交互演示 - 方程动画版</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            font-weight: 600;
+        }
+        
+        .instructions {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .instructions strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 30px;
+            line-height: 1.8;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .circuit-section, .matrix-section, .equation-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .circuit-section {
+            flex: 1.2;
+        }
+        
+        .matrix-section {
+            flex: 1;
+        }
+        
+        .equation-section {
+            flex: 1;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        #circuit-svg {
+            width: 100%;
+            height: 450px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            display: block;
+        }
+        
+        .node {
+            fill: #3498db;
+            stroke: #2980b9;
+            stroke-width: 3;
+            transition: all 0.3s ease;
+        }
+        
+        .branch {
+            stroke-width: 4;
+            fill: none;
+            marker-end: url(#arrowhead);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .branch:hover {
+            stroke-width: 5;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+        
+        .tree-branch {
+            stroke: #2ecc71; /* 树支统一绿色 */
+        }
+        
+        .link-branch {
+            stroke-width: 4;
+        }
+        
+        .node-label, .branch-label, .loop-label {
+            font-size: 14px;
+            font-weight: bold;
+            text-anchor: middle;
+            fill: #2c3e50;
+            pointer-events: none;
+            user-select: none;
+        }
+        
+        .loop-label {
+            fill: #e74c3c;
+            cursor: pointer;
+            pointer-events: all;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .loop-label:hover {
+            fill: #c0392b;
+            text-decoration: underline;
+        }
+        
+        /* 连支编号样式 */
+        .link-number {
+            fill: white;
+            font-size: 13px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .matrix-table th, .matrix-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .matrix-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .matrix-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .equation-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+        
+        .equation-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .current-vector {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .voltage-vector {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .reset-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .reset-button {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+        
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+        
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border-radius: 3px;
+            border: 2px solid #ddd;
+        }
+        
+        /* 绕行标志样式 */
+        .loop-path {
+            fill: none;
+            stroke-width: 3;
+            stroke-dasharray: 8, 4;
+            animation: dash 1s linear infinite;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loop-path.active {
+            opacity: 0.9;
+        }
+        
+        .loop-path.loop-1 {
+            stroke: #9b59b6;
+        }
+        
+        .loop-path.loop-2 {
+            stroke: #e67e22;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -12;
+            }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .animation-controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .animation-button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .animation-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">电路图与回路矩阵交互演示 - KCL & KVL 方程动画版</h1>
+        
+        <div class="instructions">
+            <strong>📌 操作说明：</strong>
+            <ul>
+                <li>✅ 点击<strong>连支</strong>：高亮矩阵对应列，显示支路电流与回路电流关系</li>
+                <li>✅ 点击<strong>树支</strong>：高亮矩阵对应列，显示支路电流与回路电流关系</li>
+                <li>✅ 点击<strong>回路标签</strong>：显示绕行标志 + 高亮矩阵整行 + 显示KVL方程</li>
+                <li>✅ 使用<strong>动画控制</strong>按钮，逐步展示KVL/KCL方程推导过程</li>
+                <li>✅ 点击<strong>重置按钮</strong>清除所有高亮和方程</li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="circuit-section">
+                <h2 class="section-title">电路有向图（修正编号）</h2>
+                <svg id="circuit-svg" viewBox="0 0 400 400">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+                        </marker>
+                        
+                        <!-- 绕行箭头标记定义 -->
+                        <marker id="loop-arrow-1" markerWidth="12" markerHeight="8" 
+                                refX="11" refY="4" orient="auto">
+                            <polygon points="0 0, 12 4, 0 8" fill="#9b59b6" />
+                        </marker>
+                        <marker id="loop-arrow-2" markerWidth="12" markerHeight="8" 
+                                refX="11" refY="4" orient="auto">
+                            <polygon points="0 0, 12 4, 0 8" fill="#e67e22" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- 背景点击层 -->
+                    <rect width="100%" height="100%" fill="transparent" onclick="resetHighlight()"/>
+                    
+                    <!-- 支路 -->
+                    <g id="branches">
+                        <!-- 连支 -->
+                        <line class="branch link-branch" id="branch-0" x1="100" y1="300" x2="100" y2="100" 
+                              stroke="#9b59b6" data-id="0" data-type="link"/>
+                        <line class="branch link-branch" id="branch-1" x1="100" y1="100" x2="300" y2="300" 
+                              stroke="#e67e22" data-id="1" data-type="link"/>
+                        
+                        <!-- 树支 -->
+                        <line class="branch tree-branch" id="branch-2" x1="100" y1="100" x2="300" y2="100" 
+                              data-id="2" data-type="tree"/>
+                        <line class="branch tree-branch" id="branch-3" x1="300" y1="100" x2="300" y2="300" 
+                              data-id="3" data-type="tree"/>
+                        <line class="branch tree-branch" id="branch-4" x1="300" y1="300" x2="100" y2="300" 
+                              data-id="4" data-type="tree"/>
+                    </g>
+                    
+                    <!-- 节点 -->
+                    <g id="nodes">
+                        <circle class="node" cx="100" cy="100" r="20"/>
+                        <circle class="node" cx="300" cy="100" r="20"/>
+                        <circle class="node" cx="300" cy="300" r="20"/>
+                        <circle class="node" cx="100" cy="300" r="20"/>
+                    </g>
+                    
+                    <!-- 标签 -->
+                    <g id="labels">
+                        <text class="node-label" x="100" y="70">①</text>
+                        <text class="node-label" x="300" y="70">②</text>
+                        <text class="node-label" x="300" y="350">③</text>
+                        <text class="node-label" x="100" y="350">④</text>
+                        
+                        <!-- 连支编号（在支路上） -->
+                        <text class="link-number" x="70" y="180">1</text>
+                        <text class="link-number" x="180" y="180">2</text>
+                        
+                        <!-- 支路标签 -->
+                        <text class="branch-label" x="70" y="200">b₁</text>
+                        <text class="branch-label" x="210" y="210">b₂</text>
+                        <text class="branch-label" x="200" y="90">b₃</text>
+                        <text class="branch-label" x="320" y="200">b₄</text>
+                        <text class="branch-label" x="200" y="320">b₅</text>
+                        
+                        <!-- 可点击的回路标签 -->
+                        <text class="loop-label" x="50" y="50" data-loop-id="0">回路1</text>
+                        <text class="loop-label" x="250" y="380" data-loop-id="1">回路2</text>
+                        
+                        <!-- 图例说明 -->
+                        <text class="node-label" x="30" y="30" style="fill: #2ecc71; font-size: 12px;">树支</text>
+                        <text class="node-label" x="30" y="50" style="fill: #e74c3c; font-size: 12px;">连支</text>
+                    </g>
+                    
+                    <!-- 绕行路径（虚线动画） -->
+                    <g id="loop-paths">
+                        <!-- 回路1绕行路径：与连支b₁方向一致（逆时针） -->
+                        <path class="loop-path loop-1" id="path-1" 
+                              d="M 80 80 L 80 320 L 320 320 L 320 80 Z" 
+                              marker-end="url(#loop-arrow-1)"/>
+                        
+                        <!-- 回路2绕行路径：与连支b₂方向一致（顺时针） -->
+                        <path class="loop-path loop-2" id="path-2" 
+                              d="M 80 80 L 320 320 L 320 120 L 120 120" 
+                              marker-end="url(#loop-arrow-2)"/>
+                    </g>
+                </svg>
+                
+                <div class="animation-controls">
+                    <button class="animation-button" onclick="startKVLoopAnimation()">▶️ KVL动画</button>
+                    <button class="animation-button" onclick="startKCLAnimation()">▶️ KCL动画</button>
+                    <button class="animation-button" onclick="pauseAnimation()">⏸️ 暂停</button>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #2ecc71;"></span>
+                        <span>树支 (b₃,b₄,b₅)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #9b59b6;"></span>
+                        <span>连支b₁ → 回路1</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #e67e22;"></span>
+                        <span>连支b₂ → 回路2</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="matrix-section">
+                <h2 class="section-title">基本回路矩阵 B<sub>f</sub> [连支|树支]</h2>
+                <div id="matrix-container"></div>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    <strong>注：</strong>前2列对应连支b₁,b₂，构成单位子块
+                </p>
+            </div>
+            
+            <div class="equation-section">
+                <h2 class="section-title">方程展示</h2>
+                <div class="equation-box" id="equation-display">
+                    <div class="equation-title">点击回路或支路查看方程</div>
+                    <div id="equation-content"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="reset-section">
+            <button class="reset-button" onclick="resetHighlight()">🔄 重置选择</button>
+        </div>
+    </div>
+    
+    <script>
+        // 回路矩阵数据 (2个回路，5条支路) - 已修正！
+        // 列顺序：b₁ b₂ b₃ b₄ b₅（前2列是连支，后3列是树支）
+        // b₃列 = [1, -1]ᵀ, b₅列 = [1, 0]ᵀ
+        const loopMatrix = [
+            // 回路1：连支b₁ + 树支b₃ + b₄ + b₅
+            [ 1,  0,  1,  1,  1 ],
+            // 回路2：连支b₂ - 树支b₃ - b₄
+            [ 0,  1, -1, -1,  0 ]
+        ];
+        
+        // 颜色配置（严格对应：b₁紫色，b₂橙色，b₃,b₄,b₅绿色）
+        const branchColors = {
+            0: '#9b59b6',  // b₁ 连支1
+            1: '#e67e22',  // b₂ 连支2
+            2: '#2ecc71',  // b₃ 树支
+            3: '#2ecc71',  // b₄ 树支
+            4: '#2ecc71'   // b₅ 树支
+        };
+        
+        const loopColors = {
+            0: '#9b59b6',  // 回路1 同连支b₁
+            1: '#e67e22'   // 回路2 同连支b₂
+        };
+        
+        let selectedLoop = null;
+        let selectedBranch = null;
+        let animationRunning = false;
+        let animationStep = 0;
+        
+        // 初始化矩阵
+        function initializeMatrix() {
+            const container = document.getElementById('matrix-container');
+            const table = document.createElement('table');
+            table.className = 'matrix-table';
+            
+            // 创建表头（列顺序：b₁ b₂ b₃ b₄ b₅）
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>回路\\支路</th>';
+            
+            const columnLabels = ['b₁', 'b₂', 'b₃', 'b₄', 'b₅'];
+            for (let j = 0; j < loopMatrix[0].length; j++) {
+                const th = document.createElement('th');
+                th.id = `col-header-${j}`;
+                th.textContent = columnLabels[j];
+                // 严格按颜色配置设置列标题背景
+                th.style.background = branchColors[j];
+                headerRow.appendChild(th);
+            }
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // 创建表体
+            const tbody = document.createElement('tbody');
+            for (let i = 0; i < loopMatrix.length; i++) {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                th.id = `row-header-${i}`;
+                th.textContent = `l${i + 1}`;
+                th.style.background = loopColors[i];
+                row.appendChild(th);
+                
+                for (let j = 0; j < loopMatrix[i].length; j++) {
+                    const td = document.createElement('td');
+                    td.className = 'matrix-cell';
+                    td.id = `cell-${i}-${j}`;
+                    td.textContent = loopMatrix[i][j];
+                    row.appendChild(td);
+                }
+                tbody.appendChild(row);
+            }
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+        
+        // 显示KVL方程
+        function displayKVLEquation(loopId) {
+            const equationContent = document.getElementById('equation-content');
+            let equation = `<div class="equation-title">回路 ${loopId + 1} 的KVL方程：</div>`;
+            
+            let terms = [];
+            for (let j = 0; j < loopMatrix[loopId].length; j++) {
+                if (loopMatrix[loopId][j] === 1) {
+                    terms.push(`+ v<sub>${j + 1}</sub>`);
+                } else if (loopMatrix[loopId][j] === -1) {
+                    terms.push(`- v<sub>${j + 1}</sub>`);
+                }
+            }
+            
+            equation += `<div>${terms.join(' ')} = 0</div>`;
+            equation += `<div style="margin-top: 20px; padding: 10px; background: #ecf0f1; border-radius: 5px;">`;
+            equation += `矩阵形式：B<sub>回路${loopId + 1}</sub> × V = 0<br>`;
+            equation += `其中 V = [v₁, v₂, v₃, v₄, v₅]ᵀ 是支路电压列向量`;
+            equation += `</div>`;
+            
+            equationContent.innerHTML = equation;
+        }
+        
+        // 显示支路电流方程
+        function displayBranchCurrentEquation(branchId) {
+            const equationContent = document.getElementById('equation-content');
+            let equation = `<div class="equation-title">支路 ${branchId + 1} 的电流方程：</div>`;
+            
+            let terms = [];
+            for (let i = 0; i < loopMatrix.length; i++) {
+                if (loopMatrix[i][branchId] === 1) {
+                    terms.push(`+ i<sub>l${i + 1}</sub>`);
+                } else if (loopMatrix[i][branchId] === -1) {
+                    terms.push(`- i<sub>l${i + 1}</sub>`);
+                }
+            }
+            
+            if (terms.length === 0) {
+                equation += `<div>i<sub>${branchId + 1}</sub> = 0</div>`;
+            } else {
+                equation += `<div>i<sub>${branchId + 1}</sub> = ${terms.join(' ')}</div>`;
+            }
+            
+            equation += `<div style="margin-top: 20px; padding: 10px; background: #ecf0f1; border-radius: 5px;">`;
+            equation += `矩阵形式：I = Bᵀ × I<sub>l</sub><br>`;
+            equation += `其中 I = [i₁, i₂, i₃, i₄, i₅]ᵀ 是支路电流列向量<br>`;
+            equation += `　　　I<sub>l</sub> = [i<sub>l1</sub>, i<sub>l2</sub>]ᵀ 是回路电流列向量`;
+            equation += `</div>`;
+            
+            equationContent.innerHTML = equation;
+        }
+        
+        // 高亮支路
+        function highlightBranch(branchId) {
+            resetHighlight();
+            selectedBranch = branchId;
+            
+            // 高亮支路（加粗+阴影）
+            const branch = document.getElementById(`branch-${branchId}`);
+            branch.style.strokeWidth = '7';
+            branch.style.filter = 'drop-shadow(0 0 12px currentColor)';
+            
+            // 高亮矩阵列标题
+            const colHeader = document.getElementById(`col-header-${branchId}`);
+            colHeader.style.boxShadow = '0 0 15px rgba(0,0,0,0.5)';
+            colHeader.style.transform = 'scale(1.1)';
+            colHeader.style.color = 'white';
+            
+            // 高亮矩阵整列（背景色）
+            for (let i = 0; i < loopMatrix.length; i++) {
+                const cell = document.getElementById(`cell-${i}-${branchId}`);
+                cell.style.backgroundColor = branchColors[branchId];
+                cell.style.color = 'white';
+                cell.style.fontWeight = 'bold';
+                cell.style.transform = 'scale(1.1)';
+                cell.style.boxShadow = '0 3px 8px rgba(0,0,0,0.2)';
+            }
+            
+            // 显示支路电流方程
+            displayBranchCurrentEquation(branchId);
+        }
+        
+        // 高亮回路
+        function highlightLoop(loopId) {
+            resetHighlight();
+            selectedLoop = loopId;
+            
+            // 高亮回路行标题
+            const rowHeader = document.getElementById(`row-header-${loopId}`);
+            rowHeader.style.boxShadow = '0 0 15px rgba(0,0,0,0.5)';
+            rowHeader.style.transform = 'scale(1.1)';
+            rowHeader.style.color = 'white';
+            
+            // 显示绕行标志
+            const loopPath = document.getElementById(`path-${loopId + 1}`);
+            loopPath.classList.add('active');
+            
+            // 高亮对应的连支
+            const linkBranchId = loopId; // 回路0对应b₁，回路1对应b₂
+            const linkBranch = document.getElementById(`branch-${linkBranchId}`);
+            linkBranch.style.strokeWidth = '7';
+            linkBranch.style.filter = 'drop-shadow(0 0 12px currentColor)';
+            
+            // 高亮该回路包含的所有支路
+            for (let j = 0; j < loopMatrix[loopId].length; j++) {
+                if (loopMatrix[loopId][j] !== 0) {
+                    const branchInLoop = document.getElementById(`branch-${j}`);
+                    branchInLoop.style.strokeWidth = '6';
+                    branchInLoop.style.filter = 'drop-shadow(0 0 8px currentColor)';
+                }
+            }
+            
+            // 高亮矩阵整行（包括0元素）
+            for (let j = 0; j < loopMatrix[loopId].length; j++) {
+                const cell = document.getElementById(`cell-${loopId}-${j}`);
+                cell.style.backgroundColor = loopColors[loopId];
+                cell.style.color = 'white';
+                cell.style.fontWeight = 'bold';
+                cell.style.transform = 'scale(1.1)';
+                cell.style.boxShadow = '0 3px 8px rgba(0,0,0,0.2)';
+            }
+            
+            // 高亮对应连支的列标题
+            const colHeader = document.getElementById(`col-header-${linkBranchId}`);
+            colHeader.style.boxShadow = '0 0 15px rgba(0,0,0,0.5)';
+            colHeader.style.transform = 'scale(1.1)';
+            colHeader.style.color = 'white';
+            
+            // 显示KVL方程
+            displayKVLEquation(loopId);
+        }
+        
+        // KVL动画
+        function startKVLoopAnimation() {
+            if (animationRunning) return;
+            animationRunning = true;
+            animationStep = 0;
+            
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = '0%';
+            
+            let step = 0;
+            const totalSteps = 2;
+            
+            const interval = setInterval(() => {
+                if (step >= totalSteps) {
+                    clearInterval(interval);
+                    animationRunning = false;
+                    progressFill.style.width = '100%';
+                    
+                    // 显示完整的KVL矩阵方程
+                    const equationContent = document.getElementById('equation-content');
+                    let equation = `<div class="equation-title">完整KVL方程组：</div>`;
+                    equation += `<div style="font-size: 16px; line-height: 2;">`;
+                    equation += `B × V = 0<br><br>`;
+                    equation += `[<span class="voltage-vector">1</span>  <span class="voltage-vector">0</span>  <span class="voltage-vector">1</span>  <span class="voltage-vector">1</span>  <span class="voltage-vector">1</span>] [v₁]   [0]<br>`;
+                    equation += `[<span class="voltage-vector">0</span>  <span class="voltage-vector">1</span> <span class="voltage-vector">-1</span> <span class="voltage-vector">-1</span>  <span class="voltage-vector">0</span>] [v₂] = [0]<br>`;
+                    equation += `                [v₃]   [0]<br>`;
+                    equation += `                [v₄]   [0]<br>`;
+                    equation += `                [v₅]   [0]<br><br>`;
+                    equation += `其中：<span class="voltage-vector">V = [v₁, v₂, v₃, v₄, v₅]ᵀ</span> 是支路电压列向量`;
+                    equation += `</div>`;
+                    equationContent.innerHTML = equation;
+                    return;
+                }
+                
+                highlightLoop(step);
+                progressFill.style.width = `${(step + 1) / totalSteps * 100}%`;
+                step++;
+            }, 2000);
+        }
+        
+        // KCL动画
+        function startKCLAnimation() {
+            if (animationRunning) return;
+            animationRunning = true;
+            animationStep = 0;
+            
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = '0%';
+            
+            let step = 0;
+            const totalSteps = 5;
+            
+            const interval = setInterval(() => {
+                if (step >= totalSteps) {
+                    clearInterval(interval);
+                    animationRunning = false;
+                    progressFill.style.width = '100%';
+                    
+                    // 显示完整的KCL矩阵方程
+                    const equationContent = document.getElementById('equation-content');
+                    let equation = `<div class="equation-title">完整KCL方程组：</div>`;
+                    equation += `<div style="font-size: 16px; line-height: 2;">`;
+                    equation += `I = Bᵀ × I<sub>l</sub><br><br>`;
+                    equation += `[i₁]   [<span class="current-vector">1</span>  <span class="current-vector">0</span>] [i<sub>l1</sub>]<br>`;
+                    equation += `[i₂]   [<span class="current-vector">0</span>  <span class="current-vector">1</span>] [i<sub>l2</sub>]<br>`;
+                    equation += `[i₃] = [<span class="current-vector">1</span> <span class="current-vector">-1</span>]<br>`;
+                    equation += `[i₄]   [<span class="current-vector">1</span> <span class="current-vector">-1</span>]<br>`;
+                    equation += `[i₅]   [<span class="current-vector">1</span>  <span class="current-vector">0</span>]<br><br>`;
+                    equation += `其中：<span class="current-vector">I = [i₁, i₂, i₃, i₄, i₅]ᵀ</span> 是支路电流列向量<br>`;
+                    equation += `　　　<span class="current-vector">I<sub>l</sub> = [i<sub>l1</sub>, i<sub>l2</sub>]ᵀ</span> 是回路电流列向量`;
+                    equation += `</div>`;
+                    equationContent.innerHTML = equation;
+                    return;
+                }
+                
+                highlightBranch(step);
+                progressFill.style.width = `${(step + 1) / totalSteps * 100}%`;
+                step++;
+            }, 2000);
+        }
+        
+        // 暂停动画
+        function pauseAnimation() {
+            animationRunning = false;
+        }
+        
+        // 重置所有高亮
+        function resetHighlight() {
+            selectedLoop = null;
+            selectedBranch = null;
+            animationRunning = false;
+            animationStep = 0;
+            
+            // 重置支路
+            document.querySelectorAll('.branch').forEach(branch => {
+                branch.style.strokeWidth = '4';
+                branch.style.filter = 'none';
+            });
+            
+            // 重置矩阵单元格
+            document.querySelectorAll('.matrix-cell').forEach(cell => {
+                cell.style.backgroundColor = '';
+                cell.style.color = '';
+                cell.style.fontWeight = '';
+                cell.style.transform = '';
+                cell.style.boxShadow = '';
+            });
+            
+            // 重置行列标题
+            document.querySelectorAll('.matrix-table th').forEach(th => {
+                th.style.boxShadow = '';
+                th.style.transform = '';
+                th.style.color = 'white';
+            });
+            
+            // 隐藏绕行标志
+            document.querySelectorAll('.loop-path').forEach(path => {
+                path.classList.remove('active');
+            });
+            
+            // 重置进度条
+            document.getElementById('progress-fill').style.width = '0%';
+            
+            // 重置方程显示
+            const equationContent = document.getElementById('equation-content');
+            equationContent.innerHTML = '';
+            document.querySelector('.equation-title').textContent = '点击回路或支路查看方程';
+        }
+        
+        // 事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMatrix();
+            
+            // 支路点击事件
+            document.querySelectorAll('.branch').forEach(branch => {
+                branch.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (animationRunning) return;
+                    const branchId = parseInt(this.getAttribute('data-id'));
+                    highlightBranch(branchId);
+                });
+            });
+            
+            // 回路标签点击事件
+            document.querySelectorAll('.loop-label').forEach(label => {
+                label.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (animationRunning) return;
+                    const loopId = parseInt(this.getAttribute('data-loop-id'));
+                    highlightLoop(loopId);
+                });
+            });
+            
+            // 连支编号点击事件
+            document.querySelectorAll('.link-number').forEach(number => {
+                number.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (animationRunning) return;
+                    const branchId = this.textContent === '1' ? 0 : 1;
+                    highlightBranch(branchId);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

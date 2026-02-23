@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电路时域分析法与相量法动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            min-height: 100vh;
+            padding: 20px;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(2, 132, 199, 0.15);
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0284c7, #0ea5e9);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 3px solid #0369a1;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+
+        .header p {
+            font-size: 1.4em;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+            font-weight: 600;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #cbd5e1;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.2);
+        }
+
+        .section-title {
+            font-size: 2.2em;
+            color: #0369a1;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #0284c7;
+            font-weight: 800;
+        }
+
+        .animation-container {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 320px;
+            border: 2px solid #e2e8f0;
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            display: block;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .formula {
+            background: #e0f2fe;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            border: 2px solid #0284c7;
+            color: #1e40af;
+            font-size: 1.3em;
+            font-weight: 700;
+            box-shadow: inset 0 0 8px rgba(2, 132, 199, 0.1);
+        }
+
+        .features {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .features li {
+            padding: 15px;
+            margin: 10px 0;
+            background: #e2e8f0;
+            border-radius: 8px;
+            border-left: 5px solid #0284c7;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px 15px;
+            background: #e0f2fe;
+            border-radius: 10px;
+            min-width: 140px;
+            border: 2px solid #0284c7;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: #1e40af;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            color: #475569;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .comparison {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+            padding: 40px 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 2px solid #0284c7;
+        }
+
+        .comparison h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.4em;
+            color: #1e40af;
+            font-weight: 800;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-top: 25px;
+        }
+
+        .comparison-item {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .control-panel {
+            background: #f1f5f9;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            min-width: 120px;
+        }
+
+        .btn-primary { background: linear-gradient(135deg, #0284c7, #0ea5e9); color: white; }
+        .btn-secondary { background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; }
+
+        .tooltip {
+            position: fixed;
+            background: #ffffff;
+            color: #1e293b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            border: 2px solid #0284c7;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+            max-width: 250px;
+            line-height: 1.5;
+        }
+
+        .tooltip.show { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 电路时域分析法 vs 相量法</h1>
+            <p>深入理解两种电路分析方法的原理、关系与区别</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 时域分析部分 -->
+            <div class="section">
+                <h2 class="section-title">⏱️ 时域分析法</h2>
+                
+                <div class="animation-container">
+                    <canvas id="timeDomainCanvas" width="400" height="250"></canvas>
+                </div>
+
+                <div class="formula">
+                    <strong>正弦电压表达式：</strong><br>
+                    u(t) = Uₘ sin(ωt + φ)
+                </div>
+
+                <div class="formula">
+                    <strong>微分方程：</strong><br>
+                    L(di/dt) + Ri + (1/C)∫i dt = u(t)
+                </div>
+
+                <ul class="features">
+                    <li><strong>特点：</strong>直接在时间域分析电路</li>
+                    <li><strong>优点：</strong>直观、物理意义明确</li>
+                    <li><strong>缺点：</strong>微分方程求解复杂</li>
+                    <li><strong>适用：</strong>瞬态分析、非线性电路</li>
+                </ul>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="timeFreq">50</span>
+                        <div class="stat-label">频率 (Hz)</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="timeAmp">1.0</span>
+                        <div class="stat-label">幅值 (V)</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="timePhase">0</span>
+                        <div class="stat-label">相位 (°)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相量法部分 -->
+            <div class="section">
+                <h2 class="section-title">🎯 相量法</h2>
+                
+                <div class="animation-container">
+                    <canvas id="phasorCanvas" width="400" height="250"></canvas>
+                </div>
+
+                <div class="formula">
+                    <strong>相量表示：</strong><br>
+                    Ẏ = Uₘ∠φ = Uₘe^(jφ)
+                </div>
+
+                <div class="formula">
+                    <strong>欧姆定律（相量形式）：</strong><br>
+                    Ẏ = Zİ
+                </div>
+
+                <ul class="features">
+                    <li><strong>特点：</strong>将正弦量转换为复数</li>
+                    <li><strong>优点：</strong>简化计算，代数运算</li>
+                    <li><strong>缺点：</strong>仅适用于稳态分析</li>
+                    <li><strong>适用：</strong>正弦稳态电路分析</li>
+                </ul>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="phasorFreq">50</span>
+                        <div class="stat-label">频率 (Hz)</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="phasorMag">1.0</span>
+                        <div class="stat-label">模值 (V)</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="phasorAngle">0</span>
+                        <div class="stat-label">角度 (°)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对比部分 -->
+            <div class="comparison">
+                <h2>🔄 两种方法的关系与转换</h2>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h3>📊 数学基础</h3>
+                        <p>时域法使用微积分，相量法使用复数运算，两者通过欧拉公式 e^(jωt) = cos(ωt) + jsin(ωt) 建立联系</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h3>⚡ 计算复杂度</h3>
+                        <p>时域法需解微分方程，计算复杂；相量法转换为代数方程，大大简化计算过程</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h3>🎯 适用范围</h3>
+                        <p>时域法适用于任何电路；相量法仅适用于线性电路的正弦稳态分析</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h3>🔍 物理意义</h3>
+                        <p>时域法直观显示波形；相量法抽象但便于分析幅度和相位关系</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h3>📈 分析重点</h3>
+                        <p>时域法关注瞬态响应；相量法关注稳态响应和频率特性</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h3>🔄 转换关系</h3>
+                        <p>u(t) = Re{Ẏe^(jωt)}，瞬时值等于相量旋转后在实轴上的投影</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <h3>🎮 动画控制面板</h3>
+            <div class="controls">
+                <button class="btn-primary" onclick="startAnimation()">▶️ 播放</button>
+                <button class="btn-secondary" onclick="pauseAnimation()">⏸️ 暂停</button>
+                <button class="btn-danger" onclick="resetAnimation()">⏹️ 重置</button>
+                <button class="btn-primary" onclick="changeFrequency()">🔄 改变频率</button>
+                <button class="btn-secondary" onclick="changePhase()">🔄 改变相位</button>
+            </div>
+        </div>
+
+        <!-- 实时波形对比 -->
+        <div class="section" style="margin: 20px;">
+            <h2 class="section-title">📊 实时波形对比</h2>
+            <div class="animation-container">
+                <canvas id="comparisonCanvas" width="800" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // 全局变量
+        let animationId;
+        let isAnimating = false;
+        let time = 0;
+        let frequency = 50;
+        let amplitude = 1.0;
+        let phase = 0;
+
+        // 获取画布上下文
+        const timeCanvas = document.getElementById('timeDomainCanvas');
+        const timeCtx = timeCanvas.getContext('2d');
+        
+        const phasorCanvas = document.getElementById('phasorCanvas');
+        const phasorCtx = phasorCanvas.getContext('2d');
+        
+        const comparisonCanvas = document.getElementById('comparisonCanvas');
+        const comparisonCtx = comparisonCanvas.getContext('2d');
+
+        // 获取工具提示元素
+        const tooltip = document.getElementById('tooltip');
+
+        // 时域动画绘制函数
+        function drawTimeDomain() {
+            const width = timeCanvas.width;
+            const height = timeCanvas.height;
+            
+            // 清空画布
+            timeCtx.clearRect(0, 0, width, height);
+            
+            // 绘制背景网格
+            timeCtx.strokeStyle = '#e2e8f0';
+            timeCtx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = (i / 10) * width;
+                const y = (i / 10) * height;
+                timeCtx.beginPath();
+                timeCtx.moveTo(x, 0);
+                timeCtx.lineTo(x, height);
+                timeCtx.stroke();
+                timeCtx.beginPath();
+                timeCtx.moveTo(0, y);
+                timeCtx.lineTo(width, y);
+                timeCtx.stroke();
+            }
+            
+            // 绘制坐标轴
+            timeCtx.strokeStyle = '#1e40af';
+            timeCtx.lineWidth = 3;
+            timeCtx.beginPath();
+            timeCtx.moveTo(40, height / 2);
+            timeCtx.lineTo(width - 20, height / 2);
+            timeCtx.moveTo(40, 20);
+            timeCtx.lineTo(40, height - 20);
+            timeCtx.stroke();
+            
+            // 绘制轴标签
+            timeCtx.fillStyle = '#1e293b';
+            timeCtx.font = 'bold 14px Microsoft YaHei';
+            timeCtx.fillText('t', width - 15, height / 2 + 20);
+            timeCtx.fillText('u(t)', 25, 20);
+            
+            // 绘制正弦波
+            timeCtx.strokeStyle = '#0284c7';
+            timeCtx.lineWidth = 4;
+            timeCtx.beginPath();
+            
+            const omega = 2 * Math.PI * frequency;
+            const points = [];
+            
+            for (let x = 0; x < width - 60; x++) {
+                const t = (x / (width - 60)) * 0.04;
+                const y = height / 2 - amplitude * 80 * Math.sin(omega * t + phase * Math.PI / 180);
+                
+                if (x === 0) {
+                    timeCtx.moveTo(x + 40, y);
+                } else {
+                    timeCtx.lineTo(x + 40, y);
+                }
+                
+                points.push({x: x + 40, y: y, t: t, value: Math.sin(omega * t + phase * Math.PI / 180)});
+            }
+            
+            timeCtx.stroke();
+            
+            // 绘制当前时间点
+            const currentX = 40 + (time % (width - 60));
+            const currentY = height / 2 - amplitude * 80 * Math.sin(omega * time + phase * Math.PI / 180);
+            
+            timeCtx.fillStyle = '#dc2626';
+            timeCtx.beginPath();
+            timeCtx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+            timeCtx.fill();
+            
+            // 绘制当前值
+            timeCtx.fillStyle = '#1e293b';
+            timeCtx.font = 'bold 16px Microsoft YaHei';
+            const currentValue = Math.sin(omega * time + phase * Math.PI / 180).toFixed(3);
+            timeCtx.fillText(`当前值: ${currentValue}`, width - 140, 35);
+            
+            // 鼠标交互
+            timeCanvas.onmousemove = function(e) {
+                const rect = timeCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                let closestPoint = null;
+                let minDistance = Infinity;
+                
+                for (const point of points) {
+                    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                    if (distance < minDistance && distance < 25) {
+                        minDistance = distance;
+                        closestPoint = point;
+                    }
+                }
+                
+                if (closestPoint) {
+                    timeCanvas.style.cursor = 'pointer';
+                    tooltip.innerHTML = `时间: ${(closestPoint.t * 1000).toFixed(1)}ms, 幅值: ${(closestPoint.value * amplitude).toFixed(3)}V`;
+                    tooltip.style.left = e.clientX + 10 + 'px';
+                    tooltip.style.top = e.clientY - 30 + 'px';
+                    tooltip.classList.add('show');
+                } else {
+                    timeCanvas.style.cursor = 'default';
+                    tooltip.classList.remove('show');
+                }
+            };
+            
+            timeCanvas.onmouseleave = function() {
+                tooltip.classList.remove('show');
+            };
+        }
+
+        // 相量动画绘制函数
+        function drawPhasor() {
+            const width = phasorCanvas.width;
+            const height = phasorCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // 清空画布
+            phasorCtx.clearRect(0, 0, width, height);
+            
+            // 绘制背景网格
+            phasorCtx.strokeStyle = '#e2e8f0';
+            phasorCtx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = (i / 10) * width;
+                const y = (i / 10) * height;
+                phasorCtx.beginPath();
+                phasorCtx.moveTo(x, 0);
+                phasorCtx.lineTo(x, height);
+                phasorCtx.stroke();
+                phasorCtx.beginPath();
+                phasorCtx.moveTo(0, y);
+                phasorCtx.lineTo(width, y);
+                phasorCtx.stroke();
+            }
+            
+            // 绘制坐标轴
+            phasorCtx.strokeStyle = '#1e40af';
+            phasorCtx.lineWidth = 3;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, 20);
+            phasorCtx.lineTo(centerX, height - 20);
+            phasorCtx.moveTo(20, centerY);
+            phasorCtx.lineTo(width - 20, centerY);
+            phasorCtx.stroke();
+            
+            // 绘制轴标签
+            phasorCtx.fillStyle = '#1e293b';
+            phasorCtx.font = 'bold 14px Microsoft YaHei';
+            phasorCtx.fillText('Im', width - 15, centerY - 5);
+            phasorCtx.fillText('Re', centerX + 5, 20);
+            
+            // 绘制相量圆
+            phasorCtx.strokeStyle = '#94a3b8';
+            phasorCtx.lineWidth = 2;
+            phasorCtx.beginPath();
+            phasorCtx.arc(centerX, centerY, 100, 0, 2 * Math.PI);
+            phasorCtx.stroke();
+            
+            // 计算相量角度
+            const omega = 2 * Math.PI * frequency;
+            const angle = omega * time + phase * Math.PI / 180;
+            
+            // 绘制相量
+            const phasorLength = amplitude * 100;
+            const endX = centerX + phasorLength * Math.cos(angle);
+            const endY = centerY - phasorLength * Math.sin(angle);
+            
+            phasorCtx.strokeStyle = '#dc2626';
+            phasorCtx.lineWidth = 4;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, centerY);
+            phasorCtx.lineTo(endX, endY);
+            phasorCtx.stroke();
+            
+            // 绘制相量端点
+            phasorCtx.fillStyle = '#dc2626';
+            phasorCtx.beginPath();
+            phasorCtx.arc(endX, endY, 8, 0, 2 * Math.PI);
+            phasorCtx.fill();
+            
+            // 绘制箭头
+            const arrowLength = 15;
+            const arrowAngle = Math.PI / 6;
+            
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(endX, endY);
+            phasorCtx.lineTo(
+                endX - arrowLength * Math.cos(angle - arrowAngle),
+                endY + arrowLength * Math.sin(angle - arrowAngle)
+            );
+            phasorCtx.moveTo(endX, endY);
+            phasorCtx.lineTo(
+                endX - arrowLength * Math.cos(angle + arrowAngle),
+                endY + arrowLength * Math.sin(angle + arrowAngle)
+            );
+            phasorCtx.stroke();
+            
+            // 绘制投影线
+            phasorCtx.strokeStyle = '#94a3b8';
+            phasorCtx.lineWidth = 1;
+            phasorCtx.setLineDash([5, 5]);
+            
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(endX, endY);
+            phasorCtx.lineTo(endX, centerY);
+            phasorCtx.stroke();
+            
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(endX, endY);
+            phasorCtx.lineTo(centerX, endY);
+            phasorCtx.stroke();
+            
+            phasorCtx.setLineDash([]);
+            
+            // 绘制角度标记
+            phasorCtx.strokeStyle = '#dc2626';
+            phasorCtx.lineWidth = 2;
+            phasorCtx.beginPath();
+            phasorCtx.arc(centerX, centerY, 40, -angle, 0);
+            phasorCtx.stroke();
+            
+            // 添加文字标签
+            phasorCtx.fillStyle = '#1e293b';
+            phasorCtx.font = 'bold 16px Microsoft YaHei';
+            phasorCtx.fillText(`模值: ${amplitude.toFixed(2)}V`, 20, height - 50);
+            phasorCtx.fillText(`角度: ${(angle * 180 / Math.PI % 360).toFixed(1)}°`, 20, height - 30);
+            
+            phasorCtx.fillStyle = '#1e40af';
+            phasorCtx.font = 'bold 16px Microsoft YaHei';
+            phasorCtx.fillText(`Ẏ = ${amplitude.toFixed(2)}∠${(phase).toFixed(1)}°`, width - 150, height - 30);
+            
+            // 鼠标交互
+            phasorCanvas.onmousemove = function(e) {
+                const rect = phasorCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const distance = Math.sqrt((x - endX) ** 2 + (y - endY) ** 2);
+                
+                if (distance < 25) {
+                    phasorCanvas.style.cursor = 'pointer';
+                    tooltip.innerHTML = `实部: ${(amplitude * Math.cos(angle)).toFixed(3)}V, 虚部: ${(amplitude * Math.sin(angle)).toFixed(3)}V`;
+                    tooltip.style.left = e.clientX + 10 + 'px';
+                    tooltip.style.top = e.clientY - 30 + 'px';
+                    tooltip.classList.add('show');
+                } else {
+                    phasorCanvas.style.cursor = 'default';
+                    tooltip.classList.remove('show');
+                }
+            };
+            
+            phasorCanvas.onmouseleave = function() {
+                tooltip.classList.remove('show');
+            };
+        }
+
+        // 对比图绘制函数
+        function drawComparison() {
+            const width = comparisonCanvas.width;
+            const height = comparisonCanvas.height;
+            
+            // 清空画布
+            comparisonCtx.clearRect(0, 0, width, height);
+            
+            // 绘制背景
+            comparisonCtx.fillStyle = '#f8fafc';
+            comparisonCtx.fillRect(0, 0, width, height);
+            
+            // 绘制网格
+            comparisonCtx.strokeStyle = '#e2e8f0';
+            comparisonCtx.lineWidth = 1;
+            for (let i = 0; i <= 20; i++) {
+                const x = (i / 20) * width;
+                const y = (i / 20) * height;
+                comparisonCtx.beginPath();
+                comparisonCtx.moveTo(x, 0);
+                comparisonCtx.lineTo(x, height);
+                comparisonCtx.stroke();
+                comparisonCtx.beginPath();
+                comparisonCtx.moveTo(0, y);
+                comparisonCtx.lineTo(width, y);
+                comparisonCtx.stroke();
+            }
+            
+            // 绘制坐标轴
+            comparisonCtx.strokeStyle = '#1e40af';
+            comparisonCtx.lineWidth = 3;
+            comparisonCtx.beginPath();
+            comparisonCtx.moveTo(40, height / 2);
+            comparisonCtx.lineTo(width - 20, height / 2);
+            comparisonCtx.moveTo(40, 20);
+            comparisonCtx.lineTo(40, height - 20);
+            comparisonCtx.stroke();
+            
+            // 绘制标签
+            comparisonCtx.fillStyle = '#1e293b';
+            comparisonCtx.font = 'bold 14px Microsoft YaHei';
+            comparisonCtx.fillText('时间 (ms)', width - 100, height / 2 + 25);
+            comparisonCtx.fillText('幅值', 15, 30);
+            comparisonCtx.fillText('时域波形', width / 4, 45);
+            comparisonCtx.fillText('相量投影', 3 * width / 4, 45);
+            
+            const omega = 2 * Math.PI * frequency;
+            const points1 = [];
+            const points2 = [];
+            
+            // 绘制时域波形
+            comparisonCtx.strokeStyle = '#0284c7';
+            comparisonCtx.lineWidth = 4;
+            comparisonCtx.beginPath();
+            
+            for (let x = 0; x < width / 2 - 60; x++) {
+                const t = (x / (width / 2 - 60)) * 0.08;
+                const y = height / 4 - amplitude * 80 * Math.sin(omega * t + phase * Math.PI / 180);
+                
+                if (x === 0) {
+                    comparisonCtx.moveTo(x + 40, y);
+                } else {
+                    comparisonCtx.lineTo(x + 40, y);
+                }
+                
+                points1.push({x: x + 40, y: y, t: t, value: Math.sin(omega * t + phase * Math.PI / 180)});
+            }
+            
+            comparisonCtx.stroke();
+            
+            // 绘制相量投影
+            comparisonCtx.strokeStyle = '#dc2626';
+            comparisonCtx.lineWidth = 4;
+            comparisonCtx.beginPath();
+            
+            for (let x = 0; x < width / 2 - 60; x++) {
+                const t = (x / (width / 2 - 60)) * 0.08;
+                const angle = omega * t + phase * Math.PI / 180;
+                const y = 3 * height / 4 - amplitude * 80 * Math.cos(angle);
+                
+                if (x === 0) {
+                    comparisonCtx.moveTo(x + width / 2 + 20, y);
+                } else {
+                    comparisonCtx.lineTo(x + width / 2 + 20, y);
+                }
+                
+                points2.push({x: x + width / 2 + 20, y: y, t: t, value: Math.cos(omega * t + phase * Math.PI / 180)});
+            }
+            
+            comparisonCtx.stroke();
+            
+            // 绘制当前时间标记
+            const currentX1 = 40 + (time % (width / 2 - 60));
+            const currentY1 = height / 4 - amplitude * 80 * Math.sin(omega * time + phase * Math.PI / 180);
+            
+            comparisonCtx.fillStyle = '#0284c7';
+            comparisonCtx.beginPath();
+            comparisonCtx.arc(currentX1, currentY1, 8, 0, 2 * Math.PI);
+            comparisonCtx.fill();
+            
+            const currentX2 = width / 2 + 20 + (time % (width / 2 - 60));
+            const currentY2 = 3 * height / 4 - amplitude * 80 * Math.cos(omega * time + phase * Math.PI / 180);
+            
+            comparisonCtx.fillStyle = '#dc2626';
+            comparisonCtx.beginPath();
+            comparisonCtx.arc(currentX2, currentY2, 8, 0, 2 * Math.PI);
+            comparisonCtx.fill();
+            
+            // 鼠标交互
+            comparisonCanvas.onmousemove = function(e) {
+                const rect = comparisonCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                let closestPoint = null;
+                let minDistance = Infinity;
+                let chartType = '';
+                
+                for (const point of points1) {
+                    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                    if (distance < minDistance && distance < 25) {
+                        minDistance = distance;
+                        closestPoint = point;
+                        chartType = '时域波形';
+                    }
+                }
+                
+                for (const point of points2) {
+                    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                    if (distance < minDistance && distance < 25) {
+                        minDistance = distance;
+                        closestPoint = point;
+                        chartType = '相量投影';
+                    }
+                }
+                
+                if (closestPoint) {
+                    comparisonCanvas.style.cursor = 'pointer';
+                    tooltip.innerHTML = `${chartType}<br>时间: ${(closestPoint.t * 1000).toFixed(1)}ms, 幅值: ${(closestPoint.value * amplitude).toFixed(3)}V`;
+                    tooltip.style.left = e.clientX + 10 + 'px';
+                    tooltip.style.top = e.clientY - 30 + 'px';
+                    tooltip.classList.add('show');
+                } else {
+                    comparisonCanvas.style.cursor = 'default';
+                    tooltip.classList.remove('show');
+                }
+            };
+            
+            comparisonCanvas.onmouseleave = function() {
+                tooltip.classList.remove('show');
+            };
+        }
+
+        // 动画循环
+        function animate() {
+            if (!isAnimating) return;
+            
+            time += 0.001;
+            if (time > 0.04) time = 0;
+            
+            // 更新统计信息
+            document.getElementById('timeFreq').textContent = frequency;
+            document.getElementById('timeAmp').textContent = amplitude.toFixed(1);
+            document.getElementById('timePhase').textContent = phase;
+            
+            document.getElementById('phasorFreq').textContent = frequency;
+            document.getElementById('phasorMag').textContent = amplitude.toFixed(1);
+            document.getElementById('phasorAngle').textContent = (phase + (2 * Math.PI * frequency * time * 180 / Math.PI) % 360).toFixed(0);
+            
+            drawTimeDomain();
+            drawPhasor();
+            drawComparison();
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // 控制函数
+        function startAnimation() {
+            if (!isAnimating) {
+                isAnimating = true;
+                animate();
+            }
+        }
+
+        function pauseAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resetAnimation() {
+            pauseAnimation();
+            time = 0;
+            drawTimeDomain();
+            drawPhasor();
+            drawComparison();
+        }
+
+        function changeFrequency() {
+            frequency = frequency === 50 ? 100 : frequency === 100 ? 25 : 50;
+            resetAnimation();
+        }
+
+        function changePhase() {
+            phase = (phase + 45) % 360;
+            resetAnimation();
+        }
+
+        // 初始化
+        drawTimeDomain();
+        drawPhasor();
+        drawComparison();
+
+        // 自动开始动画
+        setTimeout(() => {
+            startAnimation();
+            isAnimating = true;
+        }, 1000);
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    isAnimating ? pauseAnimation() : startAnimation();
+                    break;
+                case 'r':
+                case 'R':
+                    resetAnimation();
+                    break;
+                case 'f':
+                case 'F':
+                    changeFrequency();
+                    break;
+                case 'p':
+                case 'P':
+                    changePhase();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
