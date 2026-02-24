@@ -1,22 +1,169 @@
-<div class="links">
-  <!-- 👇 请根据你实际的文件名修改 href 和文字 -->
-  
-  <a href="quiz.html" class="link-item">
-    ✅ 电路基础测验
-    <span class="desc">10道选择题，即时反馈答案</span>
-  </a>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>电路与信号分析教学平台</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 2.4rem;
+      color: #2c3e50;
+      margin-bottom: 16px;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      color: #7f8c8d;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 30px;
+    }
+    .link-item {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #2980b9;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+      border-left: 4px solid #3498db;
+    }
+    .link-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      color: #c0392b;
+      border-left-color: #e74c3c;
+    }
+    .desc {
+      font-size: 0.95rem;
+      color: #555;
+      margin-top: 8px;
+      display: block;
+    }
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      padding: 20px;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      .link-item { padding: 16px; font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ 电路与信号分析教学平台</h1>
+      <p class="subtitle">点击下方链接，进入交互式学习模块。支持手机与电脑访问。</p>
+    </header>
 
-  <a href="simulation.html" class="link-item">
-    🔬 电路模拟实验
-    <span class="desc">拖拽元件，搭建并测试电路</span>
-  </a>
+    <div class="links">
+      <!-- 三元一次线性方程组叠加原理 -->
+      <a href="三元一次线性方程组叠加原理.html" class="link-item">
+        🔢 叠加原理演示
+        <span class="desc">理解线性电路的叠加定理</span>
+      </a>
 
-  <!-- 可以继续添加更多页面 -->
-  <!--
-  <a href="your-file.html" class="link-item">
-    🎮 自定义活动名称
-    <span class="desc">简要说明这个页面的作用</span>
-  </a>
-  -->
+      <!-- 傅里叶级数动画 -->
+      <a href="傅里叶级数动画.html" class="link-item">
+        🌀 傅里叶级数动画
+        <span class="desc">直观展示周期信号分解过程</span>
+      </a>
 
-</div>
+      <!-- 关联矩阵演示 -->
+      <a href="关联矩阵演示.html" class="link-item">
+        🧮 关联矩阵演示
+        <span class="desc">构建电路图的数学表示</span>
+      </a>
+
+      <!-- 关联矩阵表示的KCL和KVL排版 -->
+      <a href="关联矩阵表示的KCL和KVL排版.html" class="link-item">
+        ⚡ KCL/KVL 矩阵形式
+        <span class="desc">用矩阵表示基尔霍夫定律</span>
+      </a>
+
+      <!-- 回路矩阵表示的KCL和KVL -->
+      <a href="回路矩阵表示的KCL和KVL.html" class="link-item">
+        🔄 回路矩阵分析
+        <span class="desc">基于回路的电路方程建立</span>
+      </a>
+
+      <!-- 基本回路矩阵正确演示 -->
+      <a href="基本回路矩阵正确演示.html" class="link-item">
+        ✅ 正确回路矩阵
+        <span class="desc">验证回路矩阵的构造方法</span>
+      </a>
+
+      <!-- 时域分析法与相量法对比分析 -->
+      <a href="时域分析法与相量法对比分析.html" class="link-item">
+        ⏱️ 时域 vs 相量法
+        <span class="desc">两种分析方法的对比与转换</span>
+      </a>
+
+      <!-- 理想电源与实际电源模型对比 -->
+      <a href="理想电源与实际电源模型对比.html" class="link-item">
+        🔌 电源模型对比
+        <span class="desc">理想 vs 实际电压/电流源</span>
+      </a>
+
+      <!-- 相量与正弦量 -->
+      <a href="相量与正弦量.html" class="link-item">
+        🌐 相量与正弦量
+        <span class="desc">复数表示交流电的基本概念</span>
+      </a>
+
+      <!-- 相量运算与正弦量运算 -->
+      <a href="相量运算与正弦量运算.html" class="link-item">
+        ➕ 相量运算
+        <span class="desc">加减乘除在复平面上的几何意义</span>
+      </a>
+
+      <!-- 网络函数的零点和极点 -->
+      <a href="网络函数的零点和极点.html" class="link-item">
+        📈 零点与极点分析
+        <span class="desc">理解系统频率响应特性</span>
+      </a>
+
+      <!-- 高斯消元回代展示 -->
+      <a href="高斯消元回代展示.html" class="link-item">
+        🔍 高斯消元法
+        <span class="desc">解线性方程组的步骤演示</span>
+      </a>
+    </div>
+
+    <footer>
+      © 2026 教学资源站 | 仅供学习使用，禁止商业用途
+    </footer>
+  </div>
+</body>
+</html>
