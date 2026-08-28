@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电路理论 · 课程网页</title>
+  <style>
+    :root {
+      --bg: #0f1420;
+      --card: #1a2133;
+      --accent: #00d4ff;
+      --text: #e6edf3;
+      --sub: #9aa7b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(160deg, #0f1420, #131c2e);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    header h1 {
+      font-size: 2.2rem;
+      margin: 0 0 10px;
+      background: linear-gradient(90deg, #00d4ff, #7bffcf);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    header p { color: var(--sub); margin: 4px 0; }
+    main {
+      max-width: 960px;
+      margin: 30px auto 80px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .chapter {
+      background: var(--card);
+      border: 1px solid rgba(0,212,255,0.15);
+      border-radius: 14px;
+      padding: 20px;
+      transition: transform .2s, border-color .2s;
+    }
+    .chapter:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    .chapter-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .chapter-head .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #00d4ff, #0099c4);
+      color: #001018;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .chapter-head h2 {
+      font-size: 1.05rem;
+      margin: 0;
+      color: var(--text);
+    }
+    .page-list { list-style: none; padding: 0; margin: 0; }
+    .page-list li { padding: 6px 0; border-top: 1px dashed rgba(255,255,255,0.06); }
+    .page-list a {
+      color: var(--sub);
+      text-decoration: none;
+      font-size: 0.92rem;
+      transition: color .15s;
+    }
+    .page-list a:hover { color: var(--accent); }
+    footer {
+      text-align: center;
+      color: var(--sub);
+      font-size: 0.85rem;
+      padding: 30px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>电路理论</h1>
+    <p>课程交互式网页 · 共 15 章 / 75 个页面</p>
+  </header>
+  <main>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">01</span>
+        <h2>电路模型与电路定律</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 1 电路模型与电路定律/V1 基尔霍夫电压定律 · 3D 水流动态演示.html">基尔霍夫电压定律 · 3D 水流动态演示</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/V3 基尔霍夫电流定律 · 参考方向演示 V3.html">基尔霍夫电流定律 · 3D 水流动态演示</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/受控源特性与工程实例.html">受控源传输特性 - 四端元件正确表示</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/基尔霍夫定律交互性演示.html">基尔霍夫定律交互式动画</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/实际受控源工程仿真.html">工程级CCCS仿真：顺从电压与四区特性</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/忆阻器捏滞曲线.html">忆阻器捏滞曲线演示</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/理想电源与实际电源模型.html">电源特性全景交互演示 - 双面板独立控制</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电位零点.html">电路中的电位与电位零点</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电压与电流示意.html">电压的本质：场与路的视角</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电磁场与电路的统一.html">电磁场理论与电路理论的统一 · 交互式 H5</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电路模型与电路定律工程应用演示.html">电路工程案例交互式教学</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电路理论发展与课程内容.html">电路理论发展历程 · 邱关源《电路》(第6版)章节定位</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/电阻伏安特性曲线.html">四象限伏安特性曲线对比</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/集总电路与分布电路的对比.html">集总电路 vs 分布电路 · 交互式对比</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/非线性独立源与电路非线性关系.html">电路线性与否的决定因素 · 交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 1 电路模型与电路定律/风力发电机建模.html">草原风力发电机单机建模方式</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">02</span>
+        <h2>电路等效</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 2  电路等效/一端口等效伏安特性曲线重合演示.html">一端口网络等效性原理演示</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/元件公差与结果估算.html">元件公差与最坏情况分析（WCA）· 交互式学习</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/实际电路建模引导.html">实际工程电路的建模方法 · 交互式 H5</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/惠斯通电桥与电位分析.html">惠斯通电桥与等位点分析</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/测量得到实际电源模型.html">电源伏安特性曲线测量与建模实验</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/电池组的串并联奥秘.html">动力心脏的连接艺术 · 电池串并联交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/电阻等效工程案例.html">邱关源第2章 · 无源电路等效变换 · 自动化控制案例</a>
+          </li>
+          <li>
+            <a href="chapt 2  电路等效/高斯消元回代展示.html">非齐次方程组高斯消元 + 解对比（高对比版）</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">03</span>
+        <h2>电路分析的一般性方法</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 3 电路分析的一般性方法/回路电流与结点电压表示.html">回路电流法与结点电压法原理演示</a>
+          </li>
+          <li>
+            <a href="chapt 3 电路分析的一般性方法/电路的一般性分析方法与灵敏度设计.html">BMS 高压采样 · 节点电压法与灵敏度设计</a>
+          </li>
+          <li>
+            <a href="chapt 3 电路分析的一般性方法/节点电压方程和回路电流方程的列写规律.html">电路方程列写规律演示 - 三网孔电路</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">04</span>
+        <h2>电路定理</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 4  电路定理/二元一次线性方程组叠加原理.html">线性方程组解的叠加原理</a>
+          </li>
+          <li>
+            <a href="chapt 4  电路定理/戴维宁等效电路测量示意.html">戴维宁等效电路交互式演示</a>
+          </li>
+          <li>
+            <a href="chapt 4  电路定理/电路定理工程应用案例.html">邱关源第4章 · 电路定理 · 自动化工程案例</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">06</span>
+        <h2>储能元件</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 6 储能元件/单个电容电感的响应.html">电容与电感 · 激励-响应及瞬时功率 交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 6 储能元件/电容与超级电容.html">超级电容 vs 普通电容 - 交互式对比</a>
+          </li>
+          <li>
+            <a href="chapt 6 储能元件/电容充电过程.html">电容充放电过程动画演示（可靠版）</a>
+          </li>
+          <li>
+            <a href="chapt 6 储能元件/电感电流建立过程.html">电感电流建立过程动画演示</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">07</span>
+        <h2>一阶动态电路时域响应</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 7 一阶动态电路时域响应/一阶动态电路影响因素分析.html">一阶动态电路暂态响应分析实验室</a>
+          </li>
+          <li>
+            <a href="chapt 7 一阶动态电路时域响应/一阶动态电路阶跃响应和冲激响应.html">一阶 RC 动态电路 · 阶跃响应与冲激响应</a>
+          </li>
+          <li>
+            <a href="chapt 7 一阶动态电路时域响应/一阶常系数微分方程求解.html">一阶常系数微分方程求解动画演示</a>
+          </li>
+          <li>
+            <a href="chapt 7 一阶动态电路时域响应/卷积方程时域与频域对比演示.html">卷积定理交互演示 - 信号处理可视化</a>
+          </li>
+          <li>
+            <a href="chapt 7 一阶动态电路时域响应/正弦激励的一阶动态.html">一阶动态电路 - 初相位对过渡过程的影响</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">08</span>
+        <h2>相量法</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 8 相量法/从时域分析到相量法.html">RC电路：从时域到相量域</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/初相位展示.html">正弦量相位与初相位交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/复数几何形式的运算.html">复数运算动态过程可视化</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/复数的表示形式.html">复数的四种表示形式 - 交互式可视化</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/有效值与瞬时值的关系.html">正弦稳态电路有效值测量原理</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/正弦量三要素展示.html">正弦量三要素交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/相位差.html">正弦量相位差 - 交互式可视化</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/相量与正弦量.html">相量与正弦量关系演示</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/相量法余弦函数版本.html">RLC 相量法余弦同步演示（修正夹角）</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/相量法元件伏安特性.html">RLC 相量法余弦同步演示（修正夹角）</a>
+          </li>
+          <li>
+            <a href="chapt 8 相量法/相量运算与正弦量运算.html">相量运算与正弦量关系演示</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">09</span>
+        <h2>正弦稳态电路的分析</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/RLC串联电路功率能量展示（含电源）.html">RLC串联电路功率与能量分析</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/RLC串联阻抗与电压三角形.html">RLC 串联电路阻抗三角形</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/RLC并联导纳与电流三角形_修改版.html">RLC并联电路 - 导纳三角形与电流三角形交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/分压分流公式意义.html">正弦稳态电路：分压与分流公式的物理本质</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/功率因数提高.html">正弦稳态电路分析 · 3D 交互演示</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/功率波形演示.html">RLC串联电路功率分析</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/相量形式的VCR.html">RLC 相量法余弦同步演示（修正夹角）</a>
+          </li>
+          <li>
+            <a href="chapt 9 正弦稳态电路的分析/第九章工程案例.html">第9章延伸 · 电力系统与特高压工程案例</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">10</span>
+        <h2>含有耦合电感的电路</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 10 含有耦合电感的电路/同名端测量原理演示.html">耦合电感同名端测量 · 交互式示意图演示</a>
+          </li>
+          <li>
+            <a href="chapt 10 含有耦合电感的电路/含有耦合电感的电路工程应用案例.html">邱关源《电路》第10章 · 含有耦合电感的电路 · 工程案例（修正版）</a>
+          </li>
+          <li>
+            <a href="chapt 10 含有耦合电感的电路/耦合电感原副边电压展示.html">耦合电感伏安关系动画</a>
+          </li>
+          <li>
+            <a href="chapt 10 含有耦合电感的电路/耦合电感时域响应.html">耦合电感响应演示 · 邱关源电路</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">11</span>
+        <h2>谐振</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 11 谐振/RLC串联电路功率能量展示（含电源）.html">RLC串联电路功率与能量分析</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">12</span>
+        <h2>三相电路</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 12  三相电路/三相不对称线相电压.html">三相不对称电源：星型(Y)连接线电压与相电压关系</a>
+          </li>
+          <li>
+            <a href="chapt 12  三相电路/三相对称线相电压.html">三相对称电源：星型(Y)与三角形(Δ)连接对比</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">13</span>
+        <h2>非正弦周期激励</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 13 非正弦周期激励/傅里叶级数演示（教育网）.html">傅里叶级数可视化 - 从周期信号到正弦叠加</a>
+          </li>
+          <li>
+            <a href="chapt 13 非正弦周期激励/傅里叶级数简介（教育网）.html">傅里叶级数 - 交互式可视化</a>
+          </li>
+          <li>
+            <a href="chapt 13 非正弦周期激励/频谱实验室（教育网）.html">频谱分解可视化实验室</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">14</span>
+        <h2>运算电路</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 14 运算电路/拉氏变换的直观演示.html">拉普拉斯变换 · 三维交互探索</a>
+          </li>
+          <li>
+            <a href="chapt 14 运算电路/网络函数的零点和极点.html">网络函数的零点与极点动画演示</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">15</span>
+        <h2>电路方程的矩阵形式</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 15 电路方程的矩阵形式/关联矩阵演示.html">电路图与关联矩阵交互演示 - 重置版</a>
+          </li>
+          <li>
+            <a href="chapt 15 电路方程的矩阵形式/关联矩阵表示的KCL和KVL排版.html">电路图与关联矩阵交互演示 - 增强版</a>
+          </li>
+          <li>
+            <a href="chapt 15 电路方程的矩阵形式/回路矩阵表示的KCL和KVL.html">电路图与回路矩阵交互演示 - 方程动画版</a>
+          </li>
+          <li>
+            <a href="chapt 15 电路方程的矩阵形式/基本回路矩阵正确演示.html">电路图与回路矩阵交互演示 - 矩阵修正版</a>
+          </li>
+      </ul>
+    </section>
+    <section class="chapter">
+      <div class="chapter-head">
+        <span class="num">16</span>
+        <h2>二端口网络</h2>
+      </div>
+      <ul class="page-list">
+          <li>
+            <a href="chapt 16 二端口网络/滤波器效果演示.html">滤波器时域响应演示 - 电路分析</a>
+          </li>
+      </ul>
+    </section>
+  </main>
+  <footer>由 index.html 自动生成 · 点击章节即可查看对应网页</footer>
+</body>
+</html>
