@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>耦合电感同名端测量 · 交互式示意图演示</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    background:linear-gradient(160deg,#f4f7fb 0%,#e8eef5 100%);
+    color:#1f2a37;font-size:16px;line-height:1.6;
+  }
+  #app{display:flex;flex-direction:column;height:100vh;}
+  header{
+    padding:14px 22px 10px;text-align:center;flex:0 0 auto;
+    border-bottom:1px solid rgba(0,0,0,.06);
+    background:rgba(255,255,255,.55);backdrop-filter:blur(6px);
+  }
+  header h1{font-size:24px;font-weight:800;letter-spacing:1px;color:#12325c;}
+  header p{font-size:13px;color:#5b6b7b;margin-top:3px;}
+  #main{flex:1 1 auto;display:flex;flex-direction:row;min-height:0;}
+  #stage{flex:1 1 auto;position:relative;min-width:0;}
+  svg{width:100%;height:100%;display:block;}
+  #panel{
+    width:340px;flex:0 0 340px;padding:16px 18px;overflow-y:auto;
+    background:rgba(255,255,255,.7);border-left:1px solid rgba(0,0,0,.06);
+  }
+  .card{background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.06);
+    border-radius:12px;padding:14px 15px;margin-bottom:13px;box-shadow:0 4px 14px rgba(30,60,110,.05);}
+  .card h3{font-size:16px;font-weight:800;color:#12325c;margin-bottom:8px;}
+  .card p{font-size:13.5px;color:#3a4652;}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .seg button{flex:1 1 auto;min-width:84px;padding:8px 6px;font-size:13px;font-weight:700;
+    border:1px solid #c7d3e0;border-radius:8px;background:#fff;color:#33475b;cursor:pointer;transition:.2s;}
+  .seg button:hover{background:#eef4fb;}
+  .seg button.active{background:#2563eb;color:#fff;border-color:#2563eb;}
+  label{display:block;font-size:13px;color:#33475b;margin:10px 0 4px;font-weight:600;}
+  input[type=range]{width:100%;}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn{padding:8px 14px;font-size:13px;font-weight:700;border-radius:8px;border:1px solid #2563eb;
+    background:#2563eb;color:#fff;cursor:pointer;}
+  .btn.ghost{background:#fff;color:#2563eb;}
+  .btn:hover{filter:brightness(1.05);}
+  .readout{font-size:20px;font-weight:800;color:#d97706;text-align:center;margin:8px 0;
+    font-variant-numeric:tabular-nums;}
+  .verdict{font-size:14px;font-weight:700;color:#047857;text-align:center;min-height:1.4em;}
+  .legend{font-size:12px;color:#5b6b7b;background:#f0f5fa;border-radius:8px;padding:8px 10px;margin-top:8px;}
+  .foot{font-size:11px;color:#8a97a3;text-align:center;padding:8px;}
+  @media(max-width:900px){
+    #main{flex-direction:column;}
+    #panel{width:100%;flex:0 0 46%;border-left:none;border-top:1px solid rgba(0,0,0,.06);}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>耦合电感同名端测量原理演示</h1>
+    <p>电感为封装黑箱 · 不依赖内部绕向 · 由外部接线与仪表极性判定同名端（·）</p>
+  </header>
+  <div id="main">
+    <div id="stage">
+      <svg id="svg" viewBox="0 0 860 600" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#2563eb"/>
+          </marker>
+          <marker id="arrowR" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#dc2626"/>
+          </marker>
+          <marker id="arrowG" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#16a34a"/>
+          </marker>
+        </defs>
+
+        <text x="430" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#12325c" id="svgTitle">磁通仪法</text>
+
+        <!-- L1 左 -->
+        <g id="L1">
+          <rect x="240" y="160" width="120" height="220" rx="14" fill="#dbe7fb" stroke="#2563eb" stroke-width="2.5"/>
+          <text x="300" y="200" text-anchor="middle" font-size="26" font-weight="800" fill="#1d4ed8">L₁</text>
+          <text x="300" y="350" text-anchor="middle" font-size="13" fill="#3b5b8a">线圈 1（激励）</text>
+          <circle cx="300" cy="148" r="8" fill="#fff" stroke="#1d4ed8" stroke-width="2.5" id="L1top"/>
+          <circle cx="300" cy="392" r="8" fill="#fff" stroke="#1d4ed8" stroke-width="2.5" id="L1bot"/>
+          <text x="268" y="138" text-anchor="end" font-size="16" font-weight="800" fill="#1d4ed8" id="L1topName">A</text>
+          <text x="330" y="138" text-anchor="start" font-size="12" fill="#5b6b7b">（上端子）</text>
+          <text x="268" y="412" text-anchor="end" font-size="16" font-weight="800" fill="#1d4ed8" id="L1botName">B</text>
+          <text x="330" y="412" text-anchor="start" font-size="12" fill="#5b6b7b">（下端子）</text>
+          <circle cx="322" cy="148" r="5" fill="#dc2626" id="L1dot" opacity="0"/>
+        </g>
+        <!-- L2 右 -->
+        <g id="L2">
+          <rect x="440" y="160" width="120" height="220" rx="14" fill="#fde9d0" stroke="#ea580c" stroke-width="2.5"/>
+          <text x="500" y="200" text-anchor="middle" font-size="26" font-weight="800" fill="#c2410c">L₂</text>
+          <text x="500" y="350" text-anchor="middle" font-size="13" fill="#8a5b3b">线圈 2（感应）</text>
+          <circle cx="500" cy="148" r="8" fill="#fff" stroke="#ea580c" stroke-width="2.5" id="L2top"/>
+          <circle cx="500" cy="392" r="8" fill="#fff" stroke="#ea580c" stroke-width="2.5" id="L2bot"/>
+          <text x="468" y="138" text-anchor="end" font-size="16" font-weight="800" fill="#c2410c" id="L2topName">A'</text>
+          <text x="532" y="138" text-anchor="start" font-size="12" fill="#5b6b7b">（上端子）</text>
+          <text x="468" y="412" text-anchor="end" font-size="16" font-weight="800" fill="#c2410c" id="L2botName">B'</text>
+          <text x="532" y="412" text-anchor="start" font-size="12" fill="#5b6b7b">（下端子）</text>
+          <circle cx="522" cy="148" r="5" fill="#dc2626" id="L2dot" opacity="0"/>
+        </g>
+
+        <!-- 耦合符号（中间） -->
+        <g id="coupling" stroke="#475569" stroke-width="2.5" fill="none">
+          <path d="M375,210 q25,-22 50,0" />
+          <path d="M375,240 q25,-22 50,0" />
+          <path d="M375,270 q25,-22 50,0" />
+          <path d="M375,300 q25,-22 50,0" />
+          <text x="400" y="335" text-anchor="middle" font-size="13" fill="#475569" stroke="none">M 互感</text>
+        </g>
+
+        <g id="wiring"></g>
+        <g id="meter"></g>
+
+        <g id="svgNote" transform="translate(60,470)">
+          <rect width="740" height="98" rx="12" fill="rgba(255,255,255,.88)" stroke="rgba(0,0,0,.08)"/>
+          <text x="20" y="26" font-size="14" font-weight="800" fill="#12325c" id="noteTitle">操作与判定</text>
+          <text x="20" y="50" font-size="13" fill="#33475b" id="noteLine1">选择电流方向后点击「开始测量」，观察仪表指针偏转方向与极性。</text>
+          <text x="20" y="72" font-size="13" fill="#33475b" id="noteLine2">判定：两电流分别从 A、B 流入时偏转同向 → A 与 B 为同名端。</text>
+        </g>
+      </svg>
+    </div>
+
+    <div id="panel">
+      <div class="card">
+        <h3>测量方法</h3>
+        <div class="seg" id="methodSeg">
+          <button data-m="flux" class="active">磁通仪法</button>
+          <button data-m="dc">直流法</button>
+          <button data-m="ac">交流法</button>
+        </div>
+        <div class="legend" id="methodDesc">
+          线圈1通已知方向电流，磁通仪接在线圈2，测其磁通方向；比较两电流分别从不同端子流入时的偏转方向，判定同名端。
+        </div>
+      </div>
+
+      <div class="card" id="ctrlCard">
+        <h3>接线与参数</h3>
+        <label>线圈1电流方向（从所选端子流入）</label>
+        <div class="seg" id="dirSeg">
+          <button data-d="A" class="active">从 A 端流入</button>
+          <button data-d="B">从 B 端流入</button>
+        </div>
+        <label id="acLabel" style="display:none;">串联连接方式（两次测量各一次）</label>
+        <div class="seg" id="acSeg" style="display:none;">
+          <button data-a="forward" class="active">异名端相连（顺串）</button>
+          <button data-a="reverse">同名端相连（反串）</button>
+        </div>
+        <label>电流大小 I₁ <span id="iVal" style="color:#d97706;font-weight:800;">1.0</span> A</label>
+        <input type="range" id="iRange" min="0" max="2" step="0.1" value="1">
+        <label>互感系数 M <span id="mVal" style="color:#d97706;font-weight:800;">0.6</span></label>
+        <input type="range" id="mRange" min="0.1" max="1" step="0.05" value="0.6">
+        <div class="row" style="margin-top:12px;">
+          <button class="btn" id="measureBtn">开始测量</button>
+          <button class="btn ghost" id="resetBtn">重置</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>仪表读数 / 判定</h3>
+        <div class="readout" id="readout">—</div>
+        <div class="verdict" id="verdict">等待测量…</div>
+        <div class="legend" id="polarityNote">极性：指针向 "+" 偏表示线圈2上端（A'）为电势高端。</div>
+      </div>
+
+      <div class="foot">提示：同名端是"电流分别从两端流入时，两线圈产生磁通方向相同"的一对端子（黑箱外部判定）。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S={
+  method:'flux', dir:'A', I:1.0, M:0.6, measured:false, acMode:'forward',
+  dotPair:'A' // A-A' 同名
+};
+
+const $=(s)=>document.querySelector(s);
+const wiring=$('#wiring'), meter=$('#meter');
+const note1=$('#noteLine1'), note2=$('#noteLine2'), noteT=$('#noteTitle');
+const readout=$('#readout'), verdict=$('#verdict');
+
+$('#methodSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  $('#methodSeg .active').classList.remove('active');b.classList.add('active');
+  S.method=b.dataset.m;S.measured=false;
+  $('#svgTitle').textContent={flux:'磁通仪法',dc:'同相端法（直流）',ac:'同相端法（交流）'}[S.method];
+  $('#methodDesc').textContent={
+    flux:'线圈1通已知方向电流，磁通仪接在线圈2两端子之间，测磁通方向；比较两电流分别从A、B流入时的偏转方向，判定同名端。',
+    dc:'线圈1电流接通瞬间，由 e₂=−M·di₁/dt 在线圈2感应电动势，据检流计G偏转极性判定同名端。',
+    ac:'两线圈各一端相连做串联：顺串（异名端相连，磁通相助）与反串（同名端相连，磁通相消）分别测总电压，比较读数判定同名端。'
+  }[S.method];
+  const isAC=S.method==='ac';
+  $('#dirSeg').style.display = isAC ? 'none' : 'flex';
+  $('#acSeg').style.display = isAC ? 'flex' : 'none';
+  $('#acLabel').style.display = isAC ? 'block' : 'none';
+  $('#polarityNote').textContent = isAC
+    ? '交流法：比较两次串联的总电压读数，U大者为顺串（异名端相连）。'
+    : '极性：指针向 "+" 偏表示线圈2上端（A\'）为电势高端（仪表"+"接线端）。';
+  drawScene(); updateVerdict();
+});
+
+$('#dirSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||S.method==='ac')return;
+  $('#dirSeg .active').classList.remove('active');b.classList.add('active');
+  S.dir=b.dataset.d;S.measured=false;drawScene();updateVerdict();
+});
+$('#iRange').addEventListener('input',()=>{S.I=+ $('#iRange').value; $('#iVal').textContent=S.I.toFixed(1);});
+$('#mRange').addEventListener('input',()=>{S.M=+ $('#mRange').value; $('#mVal').textContent=S.M.toFixed(2);});
+$('#measureBtn').addEventListener('click',()=>{S.measured=true;drawScene();updateVerdict();});
+$('#resetBtn').addEventListener('click',()=>{S.measured=false;drawScene();updateVerdict();});
+$('#acSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  $('#acSeg .active').classList.remove('active');b.classList.add('active');
+  S.acMode=b.dataset.a;S.measured=false;drawScene();updateVerdict();
+});
+
+function clear(g){while(g.firstChild)g.removeChild(g.firstChild);}
+function el(tag,attrs){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+function drawScene(){
+  clear(wiring);clear(meter);
+  $('#L1dot').setAttribute('opacity', S.dotPair==='A'?1:0);
+  $('#L2dot').setAttribute('opacity', S.dotPair==='A'?1:0);
+  if(S.method==='flux') drawFlux();
+  else if(S.method==='dc') drawDC();
+  else drawAC();
+}
+
+// 端子坐标：L1(300,148/392)，L2(500,148/392)
+function term(side,pos){return {x:side==='L1'?(pos==='top'?300:300):(pos==='top'?500:500),
+  y:pos==='top'?148:392};}
+
+// ---------- 公共：仪表接线端极性标注辅助 ----------
+// 在每个仪表左侧画上(+)/下(−)两个接线圆点，并标文字 "+" / "−"；
+// 上端子引线连到 "+" 圆点，下端子引线连到 "−" 圆点，从端子到圆点画实线。
+function wireTerminalToMeter(termTop, termBot, mx, poleY, color, labelTop, labelBot){
+  // termTop -> 仪表 "+" 端 (mx-46, poleY-dyTop) ; termBot -> 仪表 "−" 端
+  // dyTop/dyBot 由调用者通过 poleY 与端子 y 对齐确定
+  // 实际上：接线圆点 y 坐标直接等于端子 y，仪表中心 cy=poleY，dy=termY-poleY
+  const yPlus = termTop.y, yMinus = termBot.y;
+  // 端子 -> 接线圆点（实线，明确连接到仪表极性端）
+  wiring.append(el('line',{x1:termTop.x,y1:termTop.y,x2:mx-46,y2:yPlus,stroke:color,strokeWidth:2.6}));
+  wiring.append(el('line',{x1:termBot.x,y1:termBot.y,x2:mx-46,y2:yMinus,stroke:color,strokeWidth:2.6}));
+  // 极性标签（靠近端子侧，标明该端子接到仪表哪一端）
+  wiring.append(el('text',{x:termTop.x+14,y:termTop.y-6,fill:color,fontSize:11,fontWeight:800}));wiring.lastChild.textContent=labelTop;
+  wiring.append(el('text',{x:termBot.x+14,y:termBot.y+14,fill:color,fontSize:11,fontWeight:800}));wiring.lastChild.textContent=labelBot;
+}
+
+// ---------- 磁通仪法 ----------
+function drawFlux(){
+  const inFromTop = S.dir==='A';
+  const tIn=term('L1',inFromTop?'top':'bottom');
+  const tOut=term('L1',inFromTop?'bottom':'top');
+  const px=130, busY=420;
+  // 电源 E
+  const bat=el('g',{});
+  bat.append(el('line',{x1:px-2,y1:busY-22,x2:px-2,y2:busY+22,stroke:'#1d4ed8',strokeWidth:3}));
+  bat.append(el('line',{x1:px+6,y1:busY-14,x2:px+6,y2:busY+14,stroke:'#1d4ed8',strokeWidth:2}));
+  bat.append(el('text',{x:px-26,y:busY+5,fill:'#1d4ed8',fontSize:15,fontWeight:800}));bat.lastChild.textContent='E';
+  wiring.append(bat);
+  // 电源正极 -> 流入端
+  wiring.append(el('line',{x1:px,y1:busY,x2:px,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5}));
+  wiring.append(el('line',{x1:px,y1:tIn.y,x2:tIn.x-60,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5}));
+  wiring.append(el('line',{x1:tIn.x-60,y1:tIn.y,x2:tIn.x,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5,strokeDasharray:'4 3'}));
+  wiring.append(el('line',{x1:px+18,y1:tIn.y,x2:tIn.x-30,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5,
+    markerEnd:'url(#arrow)',opacity:.85}));
+  // 流出端 -> 回流母线 -> 电源
+  wiring.append(el('line',{x1:tOut.x,y1:tOut.y,x2:tOut.x-60,y2:tOut.y,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:tOut.x-60,y1:tOut.y,x2:tOut.x-60,y2:busY,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:tOut.x-60,y1:busY,x2:px+10,y2:busY,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:110,y1:busY,x2:230,y2:busY,stroke:'#64748b',strokeWidth:2.5}));
+  wiring.append(el('text',{x:120,y:busY+16,fill:'#64748b',fontSize:10}));wiring.lastChild.textContent='(公共回流母线)';
+
+  // L2 端子 -> 磁通仪 "+"/"−" 极性端
+  const L2tA=term('L2','top'), L2tB=term('L2','bottom');
+  const mx=620; // 磁通仪中心 x
+  const cy=(L2tA.y+L2tB.y)/2; // 270
+  wireTerminalToMeter(L2tA,L2tB,mx,cy,'#dc2626','A\'→仪+','B\'→仪−');
+  drawFluxMeter(mx,cy, S.measured? fluxDeflection():0);
+
+  noteT.textContent='磁通仪法 · 接线';
+  note1.textContent='线圈1经电源E构成回路，电流从 '+S.dir+'('+ (inFromTop?'上端':'下端') +') 流入；磁通仪"+"端接A\'、"−"端接B\'，跨接在线圈2两端子间。';
+  note2.textContent='判定：电流分别从 A、B 端流入时，若磁通仪偏转方向相同 → 两流入端为同名端。';
+}
+function fluxDeflection(){return (S.dir==='A'?1:-1)*S.I*S.M;}
+
+// ---------- 直流法 ----------
+function drawDC(){
+  const inFromTop=S.dir==='A';
+  const tIn=term('L1',inFromTop?'top':'bottom');
+  const tOut=term('L1',inFromTop?'bottom':'top');
+  const px=130, busY=420;
+  const bat=el('g',{});
+  bat.append(el('line',{x1:px-2,y1:busY-22,x2:px-2,y2:busY+22,stroke:'#1d4ed8',strokeWidth:3}));
+  bat.append(el('line',{x1:px+6,y1:busY-14,x2:px+6,y2:busY+14,stroke:'#1d4ed8',strokeWidth:2}));
+  bat.append(el('text',{x:px-26,y:busY+5,fill:'#1d4ed8',fontSize:15,fontWeight:800}));bat.lastChild.textContent='E';
+  wiring.append(bat);
+  wiring.append(el('line',{x1:px,y1:busY,x2:px,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5}));
+  const swX=px+46;
+  wiring.append(el('line',{x1:px,y1:tIn.y,x2:swX,y2:tIn.y,stroke:'#475569',strokeWidth:2.5}));
+  wiring.append(el('line',{x1:swX,y1:tIn.y,x2:tIn.x-30,y2:tIn.y,stroke:'#475569',strokeWidth:2.5,strokeDasharray:'2 3'}));
+  wiring.append(el('circle',{cx:swX,cy:tIn.y,r:5,fill:'#fff',stroke:'#475569',strokeWidth:2}));
+  wiring.append(el('text',{x:swX,y:tIn.y-12,textAnchor:'middle',fill:'#475569',fontSize:12,fontWeight:800}));wiring.lastChild.textContent='S';
+  wiring.append(el('line',{x1:tIn.x-30,y1:tIn.y,x2:tIn.x,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5,strokeDasharray:'4 3'}));
+  wiring.append(el('line',{x1:px+18,y1:tIn.y,x2:swX-8,y2:tIn.y,stroke:'#2563eb',strokeWidth:2.5,
+    markerEnd:'url(#arrow)',opacity:.85}));
+  wiring.append(el('line',{x1:tOut.x,y1:tOut.y,x2:tOut.x-60,y2:tOut.y,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:tOut.x-60,y1:tOut.y,x2:tOut.x-60,y2:busY,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:tOut.x-60,y1:busY,x2:px+10,y2:busY,stroke:'#94a3b8',strokeWidth:2.2,strokeDasharray:'3 3'}));
+  wiring.append(el('line',{x1:110,y1:busY,x2:230,y2:busY,stroke:'#64748b',strokeWidth:2.5}));
+
+  // L2 端子 -> 检流计 "+"/"−" 极性端
+  const L2tA=term('L2','top'), L2tB=term('L2','bottom');
+  const mx=620; const cy=(L2tA.y+L2tB.y)/2;
+  wireTerminalToMeter(L2tA,L2tB,mx,cy,'#16a34a','A\'→仪+','B\'→仪−');
+  drawGalvanometer(mx,cy, S.measured? dcDeflection():0);
+
+  noteT.textContent='直流法 · 接线';
+  note1.textContent='线圈1经开关S接电源E（电流从 '+S.dir+'('+ (inFromTop?'上端':'下端') +') 流入）；检流计"+"端接A\'、"−"端接B\'，跨接在线圈2两端子间。';
+  note2.textContent='判定：S闭合瞬间，G向"+"偏 → 线圈1电流流入端与线圈2电势高端(A\')为同名端。';
+}
+function dcDeflection(){return S.dir==='A'? S.M : -S.M;}
+
+// ---------- 交流法 ----------
+function drawAC(){
+  const isForward = S.acMode==='forward';
+  const L1tA=term('L1','top'), L1tB=term('L1','bottom');
+  const L2tA=term('L2','top'), L2tB=term('L2','bottom');
+  const joinTop = !isForward; // 同名端相连时连上方
+  let jx1,jy1,jx2,jy2;
+  ({jx1,jy1,jx2,jy2} = joinTop
+    ? {jx1:L1tA.x,jy1:L1tA.y,jx2:L2tA.x,jy2:L2tA.y}
+    : {jx1:L1tB.x,jy1:L1tB.y,jx2:L2tB.x,jy2:L2tB.y});
+  // 串联连接节点（绿色粗线）
+  const jMidX=(jx1+jx2)/2, jMidY=joinTop? Math.min(jy1,jy2)-46 : Math.max(jy1,jy2)+46;
+  wiring.append(el('line',{x1:jx1,y1:jy1,x2:jx1,y2:jMidY,stroke:'#16a34a',strokeWidth:3}));
+  wiring.append(el('line',{x1:jx2,y1:jy2,x2:jx2,y2:jMidY,stroke:'#16a34a',strokeWidth:3}));
+  wiring.append(el('line',{x1:jx1,y1:jMidY,x2:jx2,y2:jMidY,stroke:'#16a34a',strokeWidth:3}));
+  wiring.append(el('circle',{cx:jx1,cy:jMidY,r:5,fill:'#16a34a'}));
+  wiring.append(el('circle',{cx:jx2,cy:jMidY,r:5,fill:'#16a34a'}));
+
+  const freeL1 = joinTop? L1tB : L1tA;
+  const freeL2 = joinTop? L2tB : L2tA;
+  // 两自由端引到上方总线，接交流源
+  const topBusY = 90;
+  wiring.append(el('line',{x1:freeL1.x,y1:freeL1.y,x2:freeL1.x,y2:topBusY,stroke:'#475569',strokeWidth:2.5}));
+  wiring.append(el('line',{x1:freeL2.x,y1:freeL2.y,x2:freeL2.x,y2:topBusY,stroke:'#475569',strokeWidth:2.5}));
+  wiring.append(el('line',{x1:freeL1.x,y1:topBusY,x2:freeL2.x,y2:topBusY,stroke:'#475569',strokeWidth:2.5}));
+  const acX=(freeL1.x+freeL2.x)/2;
+  wiring.append(el('circle',{cx:acX,cy:topBusY-2,r:17,fill:'#fff',stroke:'#475569',strokeWidth:2.2}));
+  wiring.append(el('text',{x:acX,y:topBusY+3,textAnchor:'middle',fill:'#475569',fontSize:15,fontWeight:800}));wiring.lastChild.textContent='~';
+  wiring.append(el('text',{x:acX,y:topBusY-22,textAnchor:'middle',fill:'#475569',fontSize:11,fontWeight:700}));wiring.lastChild.textContent='交流电源';
+
+  // 电压表 V 跨接在两自由端之间，明确 "+"/"−" 极性端。
+  // 表内 "+" 端固定在上（cy-90）、"−" 端固定在下（cy+90），对应表框外左侧两个可见接线圆点。
+  // 引线规则：高端自由端（freeL1，回路电位高）→ 表"+"端；低端自由端（freeL2）→ 表"−"端；
+  // 每段引线 = 从自由端竖直到表对应极性端同高 + 水平接入表左侧接线点，走线清晰不交叉。
+  const vx = 640;
+  const vcy = 270;                   // 表中心固定 y
+  const vDyPlus = -90, vDyMinus = 90; // 表内 "+" 在上、"−" 在下（相对表中心）
+  const yFree1 = freeL1.y, yFree2 = freeL2.y;
+  const yPlusAbs = vcy + vDyPlus;    // 198
+  const yMinusAbs = vcy + vDyMinus;  // 360
+  // 自由端1 -> 表"+"端（上接线点）
+  wiring.append(el('line',{x1:freeL1.x,y1:yFree1,x2:freeL1.x,y2:yPlusAbs,stroke:'#7c3aed',strokeWidth:2.8}));
+  wiring.append(el('line',{x1:freeL1.x,y1:yPlusAbs,x2:vx-46,y2:yPlusAbs,stroke:'#7c3aed',strokeWidth:2.8}));
+  // 自由端2 -> 表"−"端（下接线点）
+  wiring.append(el('line',{x1:freeL2.x,y1:yFree2,x2:freeL2.x,y2:yMinusAbs,stroke:'#7c3aed',strokeWidth:2.8}));
+  wiring.append(el('line',{x1:freeL2.x,y1:yMinusAbs,x2:vx-46,y2:yMinusAbs,stroke:'#7c3aed',strokeWidth:2.8}));
+  // 极性接线标注（靠近自由端，标明该线接仪表哪一端）
+  wiring.append(el('text',{x:freeL1.x+14,y:Math.min(yFree1,yPlusAbs)-8,fill:'#7c3aed',fontSize:11,fontWeight:800}));wiring.lastChild.textContent='→ V +端';
+  wiring.append(el('text',{x:freeL2.x+14,y:Math.max(yFree2,yMinusAbs)+14,fill:'#7c3aed',fontSize:11,fontWeight:800}));wiring.lastChild.textContent='→ V −端';
+  drawVoltmeter(vx,vcy, S.measured? acVoltage(isForward):0, vDyPlus, vDyMinus);
+
+  const tagText = isForward
+    ? '当前：异名端相连（顺串 · 磁通相助 · U较大）'
+    : '当前：同名端相连（反串 · 磁通相消 · U较小）';
+  wiring.append(el('text',{x:430,y:555,textAnchor:'middle',fill:'#047857',fontSize:13,fontWeight:700}));wiring.lastChild.textContent=tagText;
+
+  noteT.textContent='交流法 · 串联比较';
+  note1.textContent='两线圈一端相连串联（绿线为串联节点），交流电源接总回路两端，电压表V"+"端接上自由端、"−"端接下自由端，并联测总电压。';
+  note2.textContent='判定：顺串磁通相助U较大、反串磁通相消U较小；比较两次读数即可判定同名端。';
+}
+function acVoltage(isForward){
+  const U1=2,U2=2,Um=2*S.M;
+  return isForward ? (U1+U2+2*Um) : Math.abs(U1+U2-2*Um);
+}
+
+// ---------- 仪表绘制（带明确 "+" / "−" 极性接线端标注） ----------
+function drawFluxMeter(cx,cy,defl){
+  const g=el('g',{transform:`translate(${cx},${cy})`});
+  // 表盘框
+  g.append(el('rect',{x:-46,y:-60,width:100,height:120,rx:10,fill:'#fff',stroke:'#dc2626',strokeWidth:2}));
+  g.append(el('text',{x:4,y:-44,textAnchor:'middle',fill:'#dc2626',fontSize:12,fontWeight:800}));g.lastChild.textContent='磁通仪';
+  // 极性端标注（文字在表框内左侧接线点旁）
+  g.append(el('text',{x:-42,y:-30,textAnchor:'middle',fill:'#dc2626',fontSize:11,fontWeight:800}));g.lastChild.textContent='+';
+  g.append(el('text',{x:-42,y:34,textAnchor:'middle',fill:'#dc2626',fontSize:11,fontWeight:800}));g.lastChild.textContent='−';
+  // 刻度弧 + 指针
+  g.append(el('path',{d:'M-30,12 A30,30 0 0,1 30,12',fill:'none',stroke:'#94a3b8',strokeWidth:2}));
+  const ang=Math.max(-45,Math.min(45,defl*28));
+  g.append(el('line',{x1:0,y1:12,x2:0,y2:-18,stroke:'#dc2626',strokeWidth:2.5,
+    transform:`rotate(${ang})`,strokeLinecap:'round'}));
+  g.append(el('circle',{cx:0,cy:12,r:3,fill:'#dc2626'}));
+  g.append(el('text',{x:-34,y:26,textAnchor:'middle',fill:'#475569',fontSize:11,fontWeight:700}));g.lastChild.textContent='−';
+  g.append(el('text',{x:34,y:26,textAnchor:'middle',fill:'#475569',fontSize:11,fontWeight:700}));g.lastChild.textContent='+';
+  // 左侧 "+"/"−" 接线圆点：上端(+)，下端(−)；外部引线坐标 = (cx-46, cy±122) 即 L2 端子 y
+  g.append(el('line',{x1:-46,y1:-122,x2:-46,y2:122,stroke:'#fecaca',strokeWidth:6,strokeLinecap:'round'})); // 背板轨
+  g.append(el('circle',{cx:-46,cy:-122,r:6,fill:'#dc2626'})); // + 接线端
+  g.append(el('circle',{cx:-46,cy: 122,r:6,fill:'#7f1d1d'})); // − 接线端
+  meter.append(g);
+}
+
+function drawGalvanometer(cx,cy,defl){
+  const g=el('g',{transform:`translate(${cx},${cy})`});
+  g.append(el('rect',{x:-46,y:-60,width:100,height:120,rx:10,fill:'#fff',stroke:'#16a34a',strokeWidth:2}));
+  g.append(el('text',{x:4,y:-44,textAnchor:'middle',fill:'#16a34a',fontSize:12,fontWeight:800}));g.lastChild.textContent='检流计 G';
+  g.append(el('text',{x:-42,y:-30,textAnchor:'middle',fill:'#16a34a',fontSize:11,fontWeight:800}));g.lastChild.textContent='+';
+  g.append(el('text',{x:-42,y:34,textAnchor:'middle',fill:'#16a34a',fontSize:11,fontWeight:800}));g.lastChild.textContent='−';
+  g.append(el('path',{d:'M-30,12 A30,30 0 0,1 30,12',fill:'none',stroke:'#94a3b8',strokeWidth:2}));
+  const ang=Math.max(-45,Math.min(45,defl*45));
+  g.append(el('line',{x1:0,y1:12,x2:0,y2:-18,stroke:'#16a34a',strokeWidth:2.5,
+    transform:`rotate(${ang})`,strokeLinecap:'round'}));
+  g.append(el('circle',{cx:0,cy:12,r:3,fill:'#16a34a'}));
+  g.append(el('text',{x:-34,y:26,textAnchor:'middle',fill:'#475569',fontSize:11,fontWeight:700}));g.lastChild.textContent='−';
+  g.append(el('text',{x:34,y:26,textAnchor:'middle',fill:'#475569',fontSize:11,fontWeight:700}));g.lastChild.textContent='+';
+  g.append(el('line',{x1:-46,y1:-122,x2:-46,y2:122,stroke:'#bbf7d0',strokeWidth:6,strokeLinecap:'round'}));
+  g.append(el('circle',{cx:-46,cy:-122,r:6,fill:'#16a34a'})); // + 接线端
+  g.append(el('circle',{cx:-46,cy: 122,r:6,fill:'#14532d'})); // − 接线端
+  meter.append(g);
+}
+
+function drawVoltmeter(cx,cy,val,yPlus,yMinus){
+  // yPlus/yMinus 为相对表中心 cy 的偏移（上 + 取负，下 − 取正）
+  const dT=yPlus, dB=yMinus;
+  const g=el('g',{transform:`translate(${cx},${cy})`});
+  // 表盘框
+  g.append(el('rect',{x:-46,y:-60,width:100,height:120,rx:10,fill:'#fff',stroke:'#7c3aed',strokeWidth:2}));
+  g.append(el('text',{x:4,y:-44,textAnchor:'middle',fill:'#7c3aed',fontSize:12,fontWeight:800}));g.lastChild.textContent='电压表 V';
+  const display=val>0?val.toFixed(2)+' V':'—';
+  g.append(el('text',{x:4,y:8,textAnchor:'middle',fill:'#7c3aed',fontSize:17,fontWeight:800,fontVariantNumeric:'tabular-nums'}));g.lastChild.textContent=display;
+  // 极性端文字标签（表框内左侧，靠近对应接线点）
+  g.append(el('text',{x:-42,y:-36,textAnchor:'middle',fill:'#7c3aed',fontSize:13,fontWeight:800}));g.lastChild.textContent='+';
+  g.append(el('text',{x:-42,y:44,textAnchor:'middle',fill:'#7c3aed',fontSize:13,fontWeight:800}));g.lastChild.textContent='−';
+  // 左侧接线柱轨（连接 +/− 两接线端的背板竖轨）
+  g.append(el('line',{x1:-46,y1:dT,x2:-46,y2:dB,stroke:'#ede9fe',strokeWidth:7,strokeLinecap:'round'}));
+  // "+" 接线端（上，紫色圆点）
+  g.append(el('circle',{cx:-46,cy:dT,r:7,fill:'#7c3aed'}));
+  g.append(el('circle',{cx:-46,cy:dT,r:3,fill:'#fff'}));
+  // "−" 接线端（下，深紫圆点）
+  g.append(el('circle',{cx:-46,cy:dB,r:7,fill:'#3b0764'}));
+  g.append(el('circle',{cx:-46,cy:dB,r:3,fill:'#fff'}));
+  // 表外极性说明（紧靠表左侧接线点外侧）
+  g.append(el('text',{x:-60,y:dT+4,textAnchor:'end',fill:'#7c3aed',fontSize:10,fontWeight:800}));g.lastChild.textContent='正端+';
+  g.append(el('text',{x:-60,y:dB+4,textAnchor:'end',fill:'#7c3aed',fontSize:10,fontWeight:800}));g.lastChild.textContent='负端−';
+  meter.append(g);
+}
+
+// ---------- 判定输出 ----------
+function updateVerdict(){
+  if(!S.measured){readout.textContent='—';verdict.textContent='等待测量…';verdict.style.color='#9ca3af';return;}
+  if(S.method==='flux'){
+    const d=fluxDeflection();
+    readout.textContent=(d>=0?'+':'−')+Math.abs(d).toFixed(2)+' (磁通方向)';
+    verdict.textContent=d>0?'指针向"+"偏：A 与 A\' 为同名端 ✓':'指针向"−"偏：A 与 B\'（异名端）';
+    verdict.style.color=d>0?'#047857':'#dc2626';
+  } else if(S.method==='dc'){
+    const d=dcDeflection();
+    readout.textContent=(d>0?'G 向 "+" 偏':'G 向 "−" 偏');
+    verdict.textContent=d>0?'S闭合瞬间G向+偏 → L₁电流流入端与L₂电势高端(A\')为同名端 ✓':'G向−偏 → 流入端与A\'为异名端';
+    verdict.style.color=d>0?'#047857':'#dc2626';
+  } else {
+    const v=acVoltage(S.acMode==='forward');
+    readout.textContent='U = '+v.toFixed(2)+' V';
+    const vOther=acVoltage(S.acMode!=='forward');
+    const msg=v>=vOther?'本次为顺串(磁通相助，U较大) → 相连两端为异名端':'本次为反串(磁通相消，U较小) → 相连两端为同名端';
+    verdict.textContent=msg;verdict.style.color='#047857';
+  }
+}
+
+drawScene();updateVerdict();
+</script>
+</body>
+</html>

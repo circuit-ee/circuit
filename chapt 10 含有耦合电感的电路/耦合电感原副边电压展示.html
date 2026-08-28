@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>耦合电感伏安关系动画</title>
+<style>
+body{font-family:'Microsoft YaHei',Arial,sans-serif;background:linear-gradient(135deg,#2a5298 0%,#1e3c72 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;color:#333;margin:0}
+.container{background:rgba(255,255,255,.95);border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:1100px;width:96%}
+h1{text-align:center;color:#2c3e50;margin-bottom:20px;font-size:2.2em}
+.main-content{display:grid;grid-template-columns:2fr 1fr;gap:25px}
+.canvas-area{background:#f8f9fa;border-radius:15px;padding:20px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
+#canvas{border:2px solid #3498db;border-radius:10px;display:block;margin:0 auto;background:white}
+.info-area{background:#f8f9fa;border-radius:15px;padding:20px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
+.controls{text-align:center;margin-top:15px}
+button{background:#3498db;color:white;border:none;padding:12px 30px;margin:0 8px;border-radius:25px;font-size:1.1em;cursor:pointer;transition:.3s;box-shadow:0 4px 6px rgba(0,0,0,.1)}
+button:hover{background:#2980b9;transform:translateY(-2px)}
+.slider-box{margin:15px 0}
+.slider{width:100%;accent-color:#e74c3c}
+.formula{font-size:1.25em;color:#2c3e50;margin:8px 0}
+.instant{color:#e74c3c;font-size:1.4em;font-weight:bold}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>🔌 耦合电感伏安关系动画（互感演示）</h1>
+
+  <div class="main-content">
+    <!-- 左侧：画布 -->
+    <div class="canvas-area">
+      <h2>📊 原边 & 副边相量图 / 波形</h2>
+      <canvas id="canvas" width="640" height="420"></canvas>
+      <div class="controls">
+        <button id="startBtn">▶️ 开始</button>
+        <button id="pauseBtn">⏸️ 暂停</button>
+        <button id="resetBtn">🔄 重置</button>
+      </div>
+    </div>
+
+    <!-- 右侧：信息 + 滑块 -->
+    <div class="info-area">
+      <h2>📐 实时数据</h2>
+
+      <div class="formula">原边电压：<br>u₁(t) = U₁ sin(ωt)</div>
+      <div class="formula">副边开路电压：<br>u₂(t) = ωM I₁ sin(ωt + 90°)</div>
+
+      <div class="slider-box">
+        <label>互感系数 M：<span id="mVal">10</span> mH</label>
+        <input type="range" class="slider" id="mSlider" min="0" max="20" value="10" step="0.5">
+      </div>
+
+      <div class="instant">u₂ 幅值：<span id="u2Amp">0</span> V</div>
+      <div class="instant">u₂ 瞬时值：<span id="u2Inst">0</span> V</div>
+      <div class="instant">相位差 φ：<span id="phaseDiff">90</span> °</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+let animationId = null;
+let angle = 0;
+let isPaused = true;
+const U1 = 100;          // 原边电压幅值
+const f  = 50;           // 50 Hz
+const omega = 2 * Math.PI * f;
+let   M   = 10e-3;       // 互感初值（滑块单位 mH → H）
+
+/* ---------- 滑块事件 ---------- */
+const mSlider = document.getElementById('mSlider');
+const mVal    = document.getElementById('mVal');
+mSlider.oninput = function () {
+  M = parseFloat(this.value) * 1e-3;
+  mVal.textContent = this.value;
+  document.getElementById('u2Amp').textContent = (omega * M * U1).toFixed(1);
+};
+
+/* ---------- 画图 ---------- */
+function drawAxes() {
+  ctx.save();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+  // 相量坐标
+  ctx.beginPath(); ctx.moveTo(320, 210); ctx.lineTo(320, 30); ctx.moveTo(200, 120); ctx.lineTo(440, 120); ctx.stroke();
+  // 波形坐标
+  ctx.beginPath(); ctx.moveTo(40, 300); ctx.lineTo(600, 300); ctx.moveTo(40, 220); ctx.lineTo(40, 380); ctx.stroke();
+  ctx.restore();
+}
+function drawPhasors(a) {
+  // 原边电压相量（固定）
+  const len1 = 80;
+  const x1 = 320 + len1 * Math.cos(a - Math.PI/2);
+  const y1 = 120 + len1 * Math.sin(a - Math.PI/2);
+  ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(320, 120); ctx.lineTo(x1, y1); ctx.stroke();
+  arrowHead(x1, y1, a - Math.PI/2, '#e74c3c'); 
+  ctx.fillStyle = '#e74c3c'; ctx.font = 'bold 14px Arial'; ctx.fillText('Ú₁', x1+5, y1-5);
+
+  // 副边电压相量（超前90°）
+  const U2 = omega * M * U1;
+  const len2 = (U2 / U1) * len1;
+  const x2 = 320 + len2 * Math.cos(a - Math.PI/2 + Math.PI/2);
+  const y2 = 120 + len2 * Math.sin(a - Math.PI/2 + Math.PI/2);
+  ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(320, 120); ctx.lineTo(x2, y2); ctx.stroke();
+  arrowHead(x2, y2, a - Math.PI/2 + Math.PI/2, '#27ae60');
+  ctx.fillStyle = '#27ae60'; ctx.font = 'bold 14px Arial'; ctx.fillText('Ú₂', x2+5, y2-5);
+}
+function arrowHead(x, y, ang, color) {
+  const al = 12, aa = 0.4;
+  ctx.beginPath(); ctx.moveTo(x, y);
+  ctx.lineTo(x - al * Math.cos(ang - aa), y - al * Math.sin(ang - aa));
+  ctx.lineTo(x - al * Math.cos(ang + aa), y - al * Math.sin(ang + aa));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+function drawWaveforms(a) {
+  const zeroY = 300;
+  // 原边 u1
+  ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < 560; i++) {
+    const t = i / 40;
+    const val = U1 * Math.sin(t + a * Math.PI / 180);
+    ctx.lineTo(40 + i, zeroY - val);
+  }
+  ctx.stroke();
+  // 副边 u2
+  const U2 = omega * M * U1;
+  ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < 560; i++) {
+    const t = i / 40;
+    const val = U2 * Math.sin(t + a * Math.PI / 180 + Math.PI/2);
+    ctx.lineTo(40 + i, zeroY - val);
+  }
+  ctx.stroke();
+  // 瞬时值竖线
+  const x = 40 + (a / 360) * 560;
+  const y1 = zeroY - U1 * Math.sin(a * Math.PI / 180);
+  const y2 = zeroY - U2 * Math.sin(a * Math.PI / 180 + Math.PI/2);
+  ctx.strokeStyle = '#e74c3c'; ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(x, zeroY); ctx.lineTo(x, y1); ctx.stroke();
+  ctx.strokeStyle = '#27ae60';
+  ctx.beginPath(); ctx.moveTo(x, zeroY); ctx.lineTo(x, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  // 更新瞬时值
+  document.getElementById('u2Inst').textContent = (U2 * Math.sin(a * Math.PI / 180 + Math.PI/2)).toFixed(1);
+}
+
+/* ---------- 动画主循环 ---------- */
+function animate() {
+  if (!isPaused) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawAxes();
+    drawPhasors(angle);
+    drawWaveforms(angle);
+
+    angle += 2;
+    if (angle >= 360) angle = 0;
+  }
+  animationId = requestAnimationFrame(animate);
+}
+
+/* ---------- 控制 ---------- */
+function start() { isPaused = false; if (!animationId) animate(); }
+function pause() { isPaused = true; }
+function reset() {
+  isPaused = true; angle = 0;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawAxes(); drawPhasors(0); drawWaveforms(0);
+  document.getElementById('u2Inst').textContent = '0';
+}
+
+/* ---------- 初始化 ---------- */
+window.onload = () => {
+  drawAxes(); drawPhasors(0); drawWaveforms(0);
+  document.getElementById('u2Amp').textContent = (omega * M * U1).toFixed(1);
+  document.getElementById('startBtn').onclick = start;
+  document.getElementById('pauseBtn').onclick = pause;
+  document.getElementById('resetBtn').onclick = reset;
+};
+</script>
+</body>
+</html>

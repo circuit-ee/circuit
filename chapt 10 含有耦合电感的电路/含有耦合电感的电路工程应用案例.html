@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>邱关源《电路》第10章 · 含有耦合电感的电路 · 工程案例（修正版）</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #f8fafc;
+        color: #1e293b;
+        font-size: 22px;
+        line-height: 1.85;
+    }
+    header {
+        background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+        color: #fff;
+        padding: 36px 24px;
+        text-align: center;
+    }
+    header h1 { font-size: 40px; margin: 0; letter-spacing: 2px; }
+    header p { font-size: 21px; opacity: .92; margin-top: 10px; }
+
+    .tabs {
+        display: flex; justify-content: center; gap: 12px;
+        background: #ede9fe; padding: 16px; flex-wrap: wrap;
+        position: sticky; top: 0; z-index: 100;
+    }
+    .tabs button {
+        font-size: 19px; padding: 14px 22px; border: none;
+        border-radius: 12px; cursor: pointer; background: #fff; color: #5b21b6;
+        transition: all .2s;
+    }
+    .tabs button:hover { background: #ddd6fe; }
+    .tabs button.active { background: #5b21b6; color: #fff; }
+
+    .pane {
+        max-width: 1180px; margin: 30px auto;
+        background: #fff; border-radius: 18px; padding: 44px;
+        box-shadow: 0 12px 48px rgba(0,0,0,.08); display: none;
+    }
+    .pane.active { display: block; }
+
+    h2 { font-size: 34px; color: #5b21b6; margin-top: 0; }
+    h3 { font-size: 26px; color: #475569; margin-top: 28px; }
+
+    .bg-card {
+        background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+        border-left: 8px solid #2563eb;
+        padding: 24px 28px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+        font-size: 21px;
+        line-height: 1.9;
+    }
+    .bg-card .bg-icon {
+        display: inline-block; width: 36px; height: 36px;
+        border-radius: 50%; background: #2563eb; color: #fff;
+        text-align: center; line-height: 36px; font-size: 20px;
+        margin-right: 10px; vertical-align: middle;
+    }
+    .bg-card strong { font-size: 24px; color: #1e40af; }
+    .bg-card ul { margin: 10px 0 0 0; padding-left: 24px; }
+    .bg-card li { margin: 6px 0; }
+
+    .eq {
+        background: #f5f3ff; padding: 22px 28px; border-radius: 14px;
+        font-size: 25px; text-align: center; border-left: 6px solid #8b5cf6;
+        margin: 22px 0; font-family: "Cambria Math", "Times New Roman", serif;
+    }
+
+    .ctrl {
+        display: flex; gap: 28px; flex-wrap: wrap; margin: 24px 0; align-items: center;
+    }
+    .ctrl label { font-size: 21px; min-width: 160px; }
+    .ctrl span { font-weight: bold; color: #9a3412; font-size: 22px; }
+    input[type=range] { width: 220px; height: 10px; cursor: pointer; }
+
+    canvas {
+        display: block; margin: 24px auto; background: #fff;
+        border: 2px solid #ddd6fe; border-radius: 14px;
+    }
+
+    .box { padding: 20px 24px; border-radius: 12px; font-size: 21px; margin: 18px 0; }
+    .c { background: #faf5ff; border-left: 6px solid #8b5cf6; }
+    .b { background: #eff6ff; border-left: 6px solid #3b82f6; }
+    .g { background: #ecfdf5; border-left: 6px solid #059669; }
+    .w { background: #fef3c7; border-left: 6px solid #d97706; }
+    .r { background: #fef2f2; border-left: 6px solid #dc2626; }
+    .purple { background: #fdf2f8; border-left: 6px solid #be185d; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 19px; margin: 18px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 13px; text-align: center; }
+    th { background: #f1f5f9; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>第10章 含有耦合电感的电路</h1>
+    <p>互感 · 反射阻抗 · 空心变压器 · 去耦等效 —— 系统级工程案例</p>
+</header>
+
+<div class="tabs">
+    <button class="tabBtn active" onclick="show('theory',this)">📖 基本原理</button>
+    <button class="tabBtn" onclick="show('hvdc',this)">⚡ 特高压换流站</button>
+    <button class="tabBtn" onclick="show('unit',this)">🔥 百万机组轴系</button>
+    <button class="tabBtn" onclick="show('reflect',this)">🧮 反射阻抗交互</button>
+    <button class="tabBtn" onclick="show('dual',this)">🗺 系统级对偶</button>
+</div>
+
+<!-- ============ 基本原理 ============ -->
+<div id="theory" class="pane active">
+    <div class="bg-card">
+        <span class="bg-icon">📖</span><strong>工程背景：为什么研究耦合电感？</strong>
+        <ul>
+            <li><b>电力变压器</b>：特高压变电站主变（1000kV/500kV），高低压绕组磁耦合，k≈0.98</li>
+            <li><b>无线充电</b>：电动汽车 Qi 标准 11kW，原副边松耦合 k≈0.2~0.4</li>
+            <li><b>互感器</b>：电流互感器 CT，把大电流"感应"成小电流供保护测量</li>
+            <li><b>感应加热</b>：电磁炉 20~40kHz，锅底涡流直接发热</li>
+        </ul>
+        所有这些设备的数学内核，都是同一组互感方程。
+    </div>
+
+    <h2>耦合电感：两个线圈"磁牵手"</h2>
+    <p>线圈1电流变化 → 磁通一部分穿过线圈2 → 在线圈2感应电压。反之亦然。</p>
+
+    <div class="eq">
+        u₁ = L₁ di₁/dt + M di₂/dt<br>
+        u₂ = M di₁/dt + L₂ di₂/dt
+    </div>
+
+    <h3>① 互感 M 与耦合系数 k</h3>
+    <div class="eq">k = M / √(L₁ · L₂) &nbsp;&nbsp; 0 ≤ k ≤ 1</div>
+    <p>k 越小 → 磁耦合越松（空心线圈，无线充电）；k 越大 → 耦合越紧（铁芯变压器 k≈0.95+）。</p>
+
+    <h3>② 同名端（·）的意义</h3>
+    <p>同名端标出感应电压的极性方向，是列 KVL 方程时"正负号"的裁判。</p>
+    <p><b>实验测定法（邱关源习题常考）：</b></p>
+    <div class="w box">
+        🔬 <b>同名端实验</b>：把两线圈串联接到直流电源，用万用表测总电感。<br>
+        <b>顺接</b>（异名端相连）：L_顺 = L₁ + L₂ + 2M<br>
+        <b>反接</b>（同名端相连）：L_反 = L₁ + L₂ − 2M<br>
+        → M = (L_顺 − L_反) / 4<br>
+        这就是工程上实际测量耦合系数的方法。
+    </div>
+
+    <canvas id="cTheory" width="800" height="360"></canvas>
+
+    <div class="g box">
+        💡 第10章的本质：把看不见的"磁耦合"，变成电路里看得见的等效阻抗。
+    </div>
+
+    <h3>③ 去耦等效（T型等效）</h3>
+    <p>对互感 M，可等效为三个独立电感：</p>
+    <div class="eq">
+        同名端共端：支路1 = L₁−M &nbsp;&nbsp; 支路2 = L₂−M &nbsp;&nbsp; 公共支路 = M<br>
+        异名端共端：支路1 = L₁+M &nbsp;&nbsp; 支路2 = L₂+M &nbsp;&nbsp; 公共支路 = −M
+    </div>
+    <p><b>公共支路电流</b>：同名端共端时为 i₁−i₂；异名端共端时为 i₁+i₂。</p>
+
+    <canvas id="cTeq" width="800" height="320"></canvas>
+</div>
+
+<!-- ============ 特高压换流站 ============ -->
+<div id="hvdc" class="pane">
+    <div class="bg-card">
+        <span class="bg-icon">⚡</span><strong>工程背景：特高压直流输电换流站</strong>
+        <ul>
+            <li><b>真实工程</b>：向家坝—上海（±800kV, 2071km）、锦屏—苏南（±800kV, 2059km）</li>
+            <li><b>核心设备</b>：换流变压器，网侧绕组接交流 1000kV，阀侧分裂绕组接 ±400kV 直流</li>
+            <li><b>谐波问题</b>：12脉动换流产生 12k±1 次谐波（11th, 13th, 23th, 25th…），必须隔离</li>
+            <li><b>解决方案</b>：利用分裂绕组间的强耦合（k≈0.9），让谐波"被困"在阀侧局部回路</li>
+        </ul>
+        <b>模型说明</b>：下面为<b>双绕组等效简化模型</b>（真实换流变为三绕组：网侧+两阀侧）。
+    </div>
+
+    <h2>特高压换流站：多绕组耦合 + 谐波滤波</h2>
+    <p>±800 kV 直流输电，整流侧换流变压器网侧 1000 kV、阀侧 ±400 kV，分裂绕组强耦合。</p>
+
+    <h3>简化电路模型（双绕组等效）</h3>
+    <canvas id="cHvdcModel" width="860" height="400"></canvas>
+
+    <div class="eq">
+        M = k · √(L_v1 · L_v2) &nbsp;&nbsp; Z_ref(h) = (hωM)² / Z_harm
+    </div>
+
+    <p><b>工程逻辑：</b>12脉动换流产生 12k±1 次谐波。调分裂绕组耦合系数 k → 改 M → 改反射阻抗 → 把特定次谐波"困"在阀侧局部回路，不让它窜入交流电网。</p>
+
+    <div class="ctrl">
+        <label>分裂绕组耦合 k = <span id="hvdcK">0.90</span></label>
+        <input type="range" min="0.60" max="0.98" step="0.01" value="0.90" oninput="updHvdc(this.value)">
+    </div>
+
+    <canvas id="cHvdcPlot" width="800" height="340"></canvas>
+
+    <div id="hvdcRes" class="c box"></div>
+
+    <div class="w box">
+        ⚠️ k 越大 → 谐波隔离越好 → 但短路应力越大。工程折中取 k≈0.85~0.95。<br>
+        这也是换流站占地巨大的原因——大片场地留给耦合滤波电抗器组。<br>
+        <b>注</b>：Z_harm = 1.0 + h×0.8 为<b>示意量级</b>模型，真实值需查换流变短路阻抗参数。
+    </div>
+
+    <h3>平波电抗器（直流侧大互感元件）</h3>
+    <p>串联在直流母线，±800kV 工程典型值 <b>L_dc ≈ 75 mH</b>（如特变电工 PKGKL-800-5000-75）：</p>
+    <div class="eq">ΔI = U_ripple / (ω_dc · L_dc)</div>
+    <p>L_dc 越大 → 纹波越小 → 但动态响应越慢。这是另一个"耦合电感"设计权衡。</p>
+</div>
+
+<!-- ============ 百万机组轴系 ============ -->
+<div id="unit" class="pane">
+    <div class="bg-card">
+        <span class="bg-icon">🔥</span><strong>工程背景：1000MW 超超临界机组轴系</strong>
+        <ul>
+            <li><b>真实工程</b>：华能玉环电厂（1000MW, 26.25MPa/600℃）、泰州电厂二次再热</li>
+            <li><b>轴系结构</b>：高压缸→中压缸→低压缸→发电机→励磁机，5~6 个转子串联</li>
+            <li><b>事故警示</b>：1970年美国 Mohave 电厂，次同步谐振(SSR)导致大轴断裂！</li>
+            <li><b>物理本质</b>：多转子经联轴器耦合，和互感方程<b>完全同构</b>（J↔L, κ↔M）</li>
+        </ul>
+        启机时必须快速"过临界转速"，否则共振振幅失控。
+    </div>
+
+    <h2>1000 MW 超超临界机组：轴系扭转耦合</h2>
+    <p>锅炉→高压缸→中压缸→低压缸→发电机→励磁机，多转子经刚性/柔性联轴器相连。</p>
+
+    <h3>简化力学模型（多自由度扭转）</h3>
+    <canvas id="cUnitModel" width="860" height="340"></canvas>
+
+    <div class="eq">
+        J_i θ̈_i + κ_i(θ_i − θ_{i+1}) + κ_{i-1}(θ_i − θ_{i-1}) = T_i
+    </div>
+
+    <p><b>与互感方程同构：</b>J ↔ L，κ ↔ M，<b>θ ↔ ψ（磁链）</b>，T ↔ u</p>
+
+    <div class="ctrl">
+        <label>联轴器刚度 κ = <span id="unitK">2.0</span> ×10⁶ N·m/rad</label>
+        <input type="range" min="0.5" max="5" step="0.1" value="2.0" oninput="updUnit(this.value)">
+    </div>
+
+    <canvas id="cUnitPlot" width="800" height="340"></canvas>
+
+    <div id="unitRes" class="b box"></div>
+
+    <div class="w box">
+        💡 κ 大 → 转子"抱得紧" → 模态频率高 → 易避开工频<br>
+        κ 小 → 分段自由 → 低频扭振（0.5~2 Hz）→ 次同步谐振风险<br>
+        启机必须"过临界转速"——这正是模态频率的实际意义
+    </div>
+
+    <h3>回热系统热耦合（热网络互感）</h3>
+    <p>各级高压加热器疏水焓 h_i 受相邻级影响：</p>
+    <div class="eq">
+        h_i = a_i · h_{i-1} + M_th · h_{i+1} + Q_i
+    </div>
+    <p>M_th 是疏水换热的"热互感"系数，和电磁互感 M 数学形式完全一样。</p>
+</div>
+
+<!-- ============ 反射阻抗交互 ============ -->
+<div id="reflect" class="pane">
+    <div class="bg-card">
+        <span class="bg-icon">🧮</span><strong>工程背景：反射阻抗的典型应用</strong>
+        <ul>
+            <li><b>无线充电</b>：手机/电动车 Qi 标准，原边线圈通电 → 副边感应 → 反射阻抗让原边"感知"负载</li>
+            <li><b>RFID 电子标签</b>：读卡器线圈和标签线圈松耦合，标签吸收能量靠的就是反射阻抗</li>
+            <li><b>感应加热</b>：电磁炉锅底相当于副边短路的"单匝线圈"，反射回原边的阻抗决定加热功率</li>
+        </ul>
+        <b>核心发现</b>：副边接纯电阻 → 在<b>高Q/高频近似</b>下，反射回原边的也是纯电阻。
+    </div>
+
+    <h2>反射阻抗：负载"穿越"到原边</h2>
+    <p>这是第10章最"反直觉"的结论：副边接个电阻，原边看过去多了一个电阻。</p>
+
+    <h3>简化电路模型（空心变压器）</h3>
+    <canvas id="cReflectModel" width="920" height="420"></canvas>
+
+    <div class="eq">
+        Z_ref = (ωM)² / Z₂₂ &nbsp;&nbsp; Z₂₂ = R₂ + jωL₂ + Z_L
+    </div>
+
+    <p><b>严格公式</b>：Z_ref = (ωM)² / (R₂ + R_L + jωL₂)，是一个<b>复阻抗</b>（既有电阻也有感抗）。<br>
+    <b>高Q/高频近似</b>（ωL₂ ≫ R₂ + R_L 时）：虚部可忽略，Z_ref ≈ (ωM)² / (R₂ + R_L) 才是<b>纯电阻</b>。<br>
+    原网页直接说"纯电阻"不够严谨——条件是副边<b>感抗远大于电阻</b>（无线充电/RFID 通常满足）。</p>
+
+    <div class="ctrl">
+        <label>互感 M = <span id="refM">5.0</span> mH</label>
+        <input type="range" min="1" max="20" step="0.5" value="5.0" oninput="updReflect('m',this.value)">
+        <label>负载 R_L = <span id="refR">10</span> Ω</label>
+        <input type="range" min="1" max="100" step="1" value="10" oninput="updReflect('r',this.value)">
+    </div>
+
+    <canvas id="cReflectPlot" width="800" height="340"></canvas>
+
+    <div id="reflectRes" class="c box"></div>
+
+    <div class="g box">
+        ✅ 工程应用：无线充电 / RFID / 感应加热——都是靠"反射阻抗"把能量从原边传到副边。<br>
+        ✅ 条件回顾：只有 ωL₂ ≫ R₂+R_L（高Q线圈、工作频率足够高）时，反射阻抗才近似纯阻。
+    </div>
+</div>
+
+<!-- ============ 系统级对偶 ============ -->
+<div id="dual" class="pane">
+    <div class="bg-card">
+        <span class="bg-icon">🗺</span><strong>系统级对偶：一套数学，三套物理</strong>
+        <ul>
+            <li><b>电磁耦合</b>：变压器绕组、互感器、感应线圈 → 第10章直接教</li>
+            <li><b>机械耦合</b>：汽轮机多转子轴系、齿轮箱、联轴器 → 大三《汽轮机原理》</li>
+            <li><b>热工耦合</b>：回热器组、换热器网络 → 大三《热力系统分析》</li>
+        </ul>
+        三者数学骨架完全一样，只是变量名换了。
+    </div>
+
+    <h2>系统级对偶：电磁 ≡ 机械 ≡ 热工</h2>
+    <p>第10章的互感语言，是<b>所有多体耦合系统</b>的通用语法。</p>
+
+    <table>
+        <tr>
+            <th>电磁（耦合电感）</th><th>机械（轴系耦合）</th><th>热工（回热耦合）</th>
+        </tr>
+        <tr>
+            <td>电感 L [H]</td><td>转动惯量 J [kg·m²]</td><td>热容 C [J/K]</td>
+        </tr>
+        <tr>
+            <td>互感 M [H]</td><td>耦合刚度 κ [N·m/rad]</td><td>热互感 M_th [W/K]</td>
+        </tr>
+        <tr>
+            <td>磁链 ψ = L·i + M·i'</td><td>角动量 H = J·ω</td><td>焓 h = C·T</td>
+        </tr>
+        <tr>
+            <td>电压 u = L di/dt</td><td>转矩 T = J dω/dt</td><td>热流 Q = C dT/dt</td>
+        </tr>
+        <tr>
+            <td>反射阻抗 (ωM)²/Z</td><td>反射惯量 n²J</td><td>反射热阻 n²R</td>
+        </tr>
+        <tr>
+            <td>变比 n = N₂/N₁</td><td>变比 n = ω_in/ω_out</td><td>级比 n = 焓升比</td>
+        </tr>
+    </table>
+
+    <h3>统一方程骨架</h3>
+    <div class="eq">
+        a · d²x/dt² + b · dx/dt + c · x = f(t) &nbsp;&nbsp; （线性耦合系统通用形式）
+    </div>
+
+    <div class="g box">
+        🎓 大三《电机学》→ 定子转子绕组 = 耦合电感<br>
+        🎓 大三《汽轮机原理》→ 多级转子 = 机械耦合链<br>
+        🎓 大三《热力系统分析》→ 回热器组 = 热网络互感<br>
+        <b>第10章先给你统一骨架，后面只是换"衣服"。</b>
+    </div>
+
+    <h3>工程尺度的耦合强度对比</h3>
+    <table>
+        <tr><th>系统</th><th>耦合系数 k</th><th>典型 M 量级</th><th>后果</th></tr>
+        <tr><td>空心线圈（松）</td><td>0.1 ~ 0.3</td><td>μH ~ mH</td><td>感应弱，需高频</td></tr>
+        <tr><td>换流站分裂绕组</td><td>0.85 ~ 0.95</td><td>10 ~ 40 mH</td><td>强谐波隔离</td></tr>
+        <tr><td>电力变压器</td><td>0.95 ~ 0.99</td><td>0.1 ~ 1 H</td><td>几乎完美耦合</td></tr>
+        <tr><td>刚性联轴器</td><td>≈ 1（机械）</td><td>κ ~ 10⁶ N·m/rad</td><td>同转速，扭振风险</td></tr>
+    </table>
+</div>
+
+<script>
+// ============ 通用工具 ============
+function show(id, btn){
+    document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
+    var el = document.getElementById(id);
+    if(el) el.classList.add('active');
+    document.querySelectorAll('.tabBtn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn && btn.classList){
+        btn.classList.add('active');
+    } else {
+        var buttons = document.querySelectorAll('.tabBtn');
+        for(var i=0;i<buttons.length;i++){
+            var b = buttons[i];
+            var oc = b.getAttribute('onclick') || '';
+            if(oc.indexOf("'"+id+"'") >= 0){
+                b.classList.add('active'); break;
+            }
+        }
+    }
+    if(id==='hvdc') drawHvdc();
+    if(id==='unit') drawUnit();
+    if(id==='reflect') drawReflect();
+}
+function clearCanvas(id){
+    var c = document.getElementById(id);
+    if(!c) return null;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,c.width,c.height);
+    return ctx;
+}
+function drawDot(ctx,x,y){
+    ctx.beginPath();
+    ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle='#dc2626';
+    ctx.fill();
+}
+
+// ============ 基本原理图 ============
+function drawTheory(){
+    var ctx = clearCanvas('cTheory');
+    if(!ctx) return;
+    // 线圈1（左侧）
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3;
+    for(var i=0;i<5;i++){
+        var yy=120+i*20;
+        ctx.beginPath(); ctx.arc(200, yy, 16, Math.PI, 0); ctx.stroke();
+    }
+    // 线圈2（右侧）
+    ctx.strokeStyle='#db2777';
+    for(var i=0;i<5;i++){
+        var yy=120+i*20;
+        ctx.beginPath(); ctx.arc(420, yy, 16, Math.PI, 0); ctx.stroke();
+    }
+    // 磁通线（耦合）
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    for(var i=0;i<5;i++){
+        var yy=120+i*20;
+        ctx.beginPath(); ctx.moveTo(216,yy); ctx.lineTo(404,yy); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // 同名端
+    drawDot(ctx,184,120); drawDot(ctx,404,120);
+    // 标注
+    ctx.fillStyle='#7c3aed'; ctx.font='20px sans-serif'; ctx.fillText('线圈1',155,105);
+    ctx.fillStyle='#db2777'; ctx.fillText('线圈2',375,105);
+    ctx.fillStyle='#f59e0b'; ctx.fillText('互感磁通 Φ_M',280,90);
+    ctx.fillStyle='#1e293b'; ctx.font='18px sans-serif';
+    ctx.fillText('L₁=10mH',120,250); ctx.fillText('L₂=10mH',420,250);
+    ctx.fillText('M = k√(L₁L₂)',260,270);
+    // 电流方向箭头
+    ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(200,220); ctx.lineTo(200,170); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(195,175); ctx.lineTo(200,165); ctx.lineTo(205,175);
+    ctx.fillStyle='#16a34a'; ctx.fill();
+    ctx.fillStyle='#16a34a'; ctx.fillText('i₁',210,200);
+    ctx.strokeStyle='#dc2626';
+    ctx.beginPath(); ctx.moveTo(420,170); ctx.lineTo(420,220); ctx.stroke();
+    ctx.fillStyle='#dc2626'; ctx.fillText('i₂',430,200);
+    // 同名端实验提示
+    ctx.fillStyle='#5b21b6'; ctx.font='16px sans-serif';
+    ctx.fillText('顺接L=L₁+L₂+2M，反接L=L₁+L₂−2M → M=(L顺−L反)/4',80,310);
+}
+
+// ============ T型去耦等效 ============
+function drawTeq(){
+    var ctx = clearCanvas('cTeq');
+    if(!ctx) return;
+    // 左侧耦合线圈示意
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    ctx.strokeRect(60,80,100,140); ctx.setLineDash([]);
+    ctx.fillStyle='#7c3aed'; ctx.font='17px sans-serif'; ctx.fillText('耦合电感',70,75);
+    ctx.fillText('L₁, L₂, M',75,235);
+
+    // 箭头
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(170,150); ctx.lineTo(280,150); ctx.stroke();
+    ctx.fillStyle='#1e293b'; ctx.fillText('去耦等效',180,140);
+
+    // T型等效电路（同名端共端）
+    var ox=320, oy=150;
+    ctx.strokeStyle='#db2777'; ctx.lineWidth=3;
+    // 上支路 L1-M
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+80,oy-60); ctx.stroke();
+    ctx.fillStyle='#db2777'; ctx.font='16px sans-serif'; ctx.fillText('L₁−M', ox+85, oy-70);
+    // 中支路 M
+    ctx.beginPath(); ctx.moveTo(ox+80,oy-60); ctx.lineTo(ox+160,oy-60); ctx.stroke();
+    ctx.fillStyle='#7c3aed'; ctx.fillText('M（公共）',ox+90,oy-72);
+    // 下支路 L2-M
+    ctx.beginPath(); ctx.moveTo(ox+160,oy-60); ctx.lineTo(ox+240,oy); ctx.stroke();
+    ctx.fillStyle='#db2777'; ctx.fillText('L₂−M',ox+210,oy+15);
+    // 回到起点（虚线）
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+240,oy); ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    // 节点
+    ctx.fillStyle='#0ea5e9';
+    var pts = [[ox,oy],[ox+80,oy-60],[ox+160,oy-60],[ox+240,oy]];
+    pts.forEach(function(p){
+        ctx.beginPath(); ctx.arc(p[0],p[1],6,0,Math.PI*2); ctx.fill();
+    });
+    // 电流方向标注
+    ctx.fillStyle='#16a34a'; ctx.font='15px sans-serif';
+    ctx.fillText('i₁',ox-20,oy-5);
+    ctx.fillText('i₂',ox+250,oy-5);
+    ctx.fillText('i₁−i₂',ox+70,oy-50);
+    ctx.fillStyle='#1e293b';
+    ctx.fillText('同名端共端时公共支路电流 = i₁−i₂',ox-20,oy+50);
+
+    // 分隔
+    ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(600,80); ctx.lineTo(600,240); ctx.stroke();
+
+    // 右侧异名端共端
+    ctx.fillStyle='#5b21b6'; ctx.font='16px sans-serif';
+    ctx.fillText('异名端共端',620,90);
+    var ox2=640, oy2=150;
+    ctx.strokeStyle='#db2777'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(ox2,oy2); ctx.lineTo(ox2+80,oy2-60); ctx.stroke();
+    ctx.fillText('L₁+M',ox2+85,oy2-70);
+    ctx.beginPath(); ctx.moveTo(ox2+80,oy2-60); ctx.lineTo(ox2+160,oy2-60); ctx.stroke();
+    ctx.fillStyle='#7c3aed'; ctx.fillText('−M',ox2+95,oy2-72);
+    ctx.beginPath(); ctx.moveTo(ox2+160,oy2-60); ctx.lineTo(ox2+240,oy2); ctx.stroke();
+    ctx.fillStyle='#db2777'; ctx.fillText('L₂+M',ox2+210,oy2+15);
+    ctx.fillStyle='#dc2626'; ctx.fillText('i₁+i₂',ox2+70,oy2-50);
+    ctx.fillStyle='#1e293b';
+    ctx.fillText('异名端共端时公共支路电流 = i₁+i₂',ox2-20,oy2+50);
+}
+
+// ============ 特高压换流站 ============
+var hvdcK = 0.90;
+function updHvdc(v){
+    hvdcK = +v;
+    var el = document.getElementById('hvdcK');
+    if(el) el.textContent = (+v).toFixed(2);
+    drawHvdc();
+}
+
+function drawHvdcModel(){
+    var ctx = clearCanvas('cHvdcModel');
+    if(!ctx) return;
+    // 交流电网
+    ctx.fillStyle='#1e40af'; ctx.fillRect(40,140,100,80);
+    ctx.fillStyle='#fff'; ctx.font='17px sans-serif'; ctx.fillText('交流电网',52,185);
+    // 网侧绕组
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(140,180); ctx.lineTo(220,180); ctx.stroke();
+    ctx.fillStyle='#7c3aed'; ctx.font='16px sans-serif'; ctx.fillText('网侧 N₁',145,170);
+    // 铁芯（耦合区）
+    ctx.fillStyle='#fbbf24'; ctx.fillRect(220,120,160,120);
+    ctx.fillStyle='#78350f'; ctx.font='17px sans-serif'; ctx.fillText('铁芯',265,180);
+    ctx.fillText('k='+hvdcK.toFixed(2),255,200);
+    // 阀侧绕组1
+    ctx.strokeStyle='#db2777'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(380,150); ctx.lineTo(480,150); ctx.stroke();
+    ctx.fillStyle='#db2777'; ctx.font='16px sans-serif'; ctx.fillText('阀侧1 Lv₁',385,140);
+    // 阀侧绕组2
+    ctx.beginPath(); ctx.moveTo(380,210); ctx.lineTo(480,210); ctx.stroke();
+    ctx.fillText('阀侧2 Lv₂',385,230);
+    // 12脉动换流桥
+    ctx.fillStyle='#dc2626'; ctx.fillRect(480,120,100,140);
+    ctx.fillStyle='#fff'; ctx.font='16px sans-serif'; ctx.fillText('12脉动',492,175);
+    ctx.fillText('换流桥',492,195);
+    // 直流母线
+    ctx.strokeStyle='#ea580c'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(580,190); ctx.lineTo(700,190); ctx.stroke();
+    ctx.fillStyle='#ea580c'; ctx.font='16px sans-serif'; ctx.fillText('直流母线 ±400kV',600,180);
+    // 平波电抗
+    ctx.strokeStyle='#0891b2'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(660,190,20,Math.PI*0.3,Math.PI*0.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(700,190,20,Math.PI*1.3,Math.PI*1.7); ctx.stroke();
+    ctx.fillStyle='#0891b2'; ctx.font='16px sans-serif'; ctx.fillText('Ldc≈75mH',660,225);
+    // 谐波回流路径（虚线，带箭头收尾）
+    ctx.strokeStyle='#16a34a'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(480,150); ctx.lineTo(550,100); ctx.lineTo(700,100); ctx.lineTo(700,170); ctx.stroke();
+    // 箭头收尾到换流桥
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(695,165); ctx.lineTo(700,175); ctx.lineTo(690,178); ctx.fillStyle='#16a34a'; ctx.fill();
+    ctx.fillStyle='#16a34a'; ctx.font='16px sans-serif'; ctx.fillText('谐波被"困"在阀侧回路',555,92);
+    // 参数标注
+    ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif';
+    ctx.fillText('Lv₁=Lv₂=40mH',385,130);
+    ctx.fillText('f=50Hz',600,215);
+    // 三绕组标注
+    ctx.fillStyle='#dc2626'; ctx.font='14px sans-serif';
+    ctx.fillText('（双绕组等效简化模型）',490,250);
+}
+
+function drawHvdc(){
+    drawHvdcModel();
+    var c = document.getElementById('cHvdcPlot');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,800,340);
+    var Lv = 0.04, M = hvdcK * Lv;
+    var w = 2*Math.PI*50;
+    var harms = [12, 24, 36, 48];
+    var cols = ['#7c3aed','#db2777','#0ea5e9','#059669'];
+
+    // 坐标
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(80,280); ctx.lineTo(760,280); ctx.moveTo(80,60); ctx.lineTo(80,300); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='17px sans-serif';
+    ctx.fillText('谐波次数 h →',680,300); ctx.fillText('|Z_ref| (Ω)',45,70);
+
+    harms.forEach(function(h,i){
+        var Zharm = 1.0 + h * 0.8; // 示意量级
+        var Zref = (h*w*M)*(h*w*M) / Zharm;
+        var barH = Math.min(Zref*0.04, 220);
+        ctx.fillStyle = cols[i];
+        ctx.fillRect(120+i*140, 280-barH, 60, barH);
+        ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif';
+        ctx.fillText('h='+h,125+i*140,298);
+        ctx.fillText(Zref.toFixed(0)+'Ω',122+i*140,275-barH);
+    });
+
+    // 进电网残余
+    var Zharm12 = 1.0 + 12*0.8;
+    var Zref12 = (12*w*M)*(12*w*M) / Zharm12;
+    var leak12 = 100 / (1 + Zref12 / 50 );
+    var leak24 = 100 / (1 + (24*w*M)*(24*w*M)/50 );
+    ctx.fillStyle='#dc2626'; ctx.font='19px sans-serif';
+    ctx.fillText('k='+hvdcK.toFixed(2)+' → 12次谐波残余 ≈ '+leak12.toFixed(1)+'%', 100, 50);
+    ctx.fillText('24次谐波残余 ≈ '+leak24.toFixed(2)+'%', 400, 50);
+    ctx.fillStyle='#78350f'; ctx.font='14px sans-serif';
+    ctx.fillText('(Zharm=1.0+h×0.8 为示意量级)',100,72);
+
+    var el = document.getElementById('hvdcRes');
+    if(el){
+        el.innerHTML =
+            'M = k·Lv = '+hvdcK.toFixed(2)+' × 40mH = '+(hvdcK*40).toFixed(1)+' mH<br>'+
+            '12次反射阻抗 = '+Zref12.toFixed(0)+' Ω → 谐波被"反弹"回阀侧<br>'+
+            'k 越大 → 隔离越好 → 但短路应力越大';
+    }
+}
+
+// ============ 百万机组轴系 ============
+var unitK = 2.0e6;
+function updUnit(v){
+    unitK = v*1e6;
+    var el = document.getElementById('unitK');
+    if(el) el.textContent = (+v).toFixed(1);
+    drawUnit();
+}
+
+function drawUnitModel(){
+    var ctx = clearCanvas('cUnitModel');
+    if(!ctx) return;
+    // 锅炉
+    ctx.fillStyle='#dc2626'; ctx.fillRect(40,100,90,140);
+    ctx.fillStyle='#fff'; ctx.font='17px sans-serif'; ctx.fillText('锅炉',60,145);
+    ctx.fillText('蒸汽',60,170);
+    // 箭头 锅炉→高压缸
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(130,170); ctx.lineTo(200,170); ctx.stroke();
+    // 转子序列
+    var rotors = [
+        {x:230, label:'高压缸', color:'#ea580c'},
+        {x:380, label:'中压缸', color:'#d97706'},
+        {x:530, label:'低压缸', color:'#65a30d'},
+        {x:680, label:'发电机', color:'#2563eb'}
+    ];
+    rotors.forEach(function(r,i){
+        ctx.fillStyle=r.color; ctx.beginPath(); ctx.arc(r.x,170,28,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font='14px sans-serif'; ctx.fillText(r.label,r.x-28,160);
+        ctx.strokeStyle='#1e293b'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(r.x,170,18,-0.5,1.5); ctx.stroke();
+        if(i<rotors.length-1){
+            var nx = (r.x+rotors[i+1].x)/2;
+            ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3;
+            ctx.beginPath();
+            for(var s=0;s<4;s++){
+                var sx=nx-15+s*10, sy1=155, sy2=185;
+                ctx.moveTo(sx,sy1); ctx.lineTo(sx+5,sy2);
+            }
+            ctx.stroke();
+            ctx.fillStyle='#7c3aed'; ctx.font='14px sans-serif';
+            ctx.fillText('κ',nx-5,205);
+        }
+    });
+    // 输出
+    ctx.strokeStyle='#059669'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(708,170); ctx.lineTo(780,170); ctx.stroke();
+    ctx.fillStyle='#059669'; ctx.font='16px sans-serif'; ctx.fillText('并网',740,160);
+    // 参数
+    ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif';
+    ctx.fillText('J ≈ 1.2×10⁴ kg·m²（单转子）',230,250);
+    ctx.fillText('κ ≈ 0.5~5×10⁶ N·m/rad',430,250);
+    ctx.fillStyle='#db2777'; ctx.font='16px sans-serif';
+    ctx.fillText('模态1：整机摆',150,300);
+    ctx.fillText('模态2：高中反相',350,300);
+    ctx.fillText('模态3：相邻反相',580,300);
+}
+
+function drawUnit(){
+    drawUnitModel();
+    var c = document.getElementById('cUnitPlot');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,800,340);
+    var J = 1.2e4;
+    var om1 = Math.sqrt(unitK/J);
+    var om2 = Math.sqrt(2*unitK/J);
+    var om3 = Math.sqrt(3.5*unitK/J);
+    var data = [
+        {label:'1阶(整机摆)',freq:om1/(2*Math.PI),col:'#3b82f6'},
+        {label:'2阶(半缸反相)',freq:om2/(2*Math.PI),col:'#f59e0b'},
+        {label:'3阶(相邻反相)',freq:om3/(2*Math.PI),col:'#dc2626'}
+    ];
+    // 坐标
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(80,280); ctx.lineTo(760,280); ctx.moveTo(80,60); ctx.lineTo(80,300); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='17px sans-serif';
+    ctx.fillText('模态 →',680,300); ctx.fillText('频率 (Hz)',40,70);
+
+    data.forEach(function(d,i){
+        var barH = d.freq*30;
+        if(barH > 220) barH = 220;
+        ctx.fillStyle=d.col; ctx.fillRect(150+i*170,280-barH,60,barH);
+        ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif';
+        ctx.fillText(d.label,105+i*170,300);
+        ctx.fillText(d.freq.toFixed(2)+'Hz',108+i*170,275-barH);
+        ctx.fillText((d.freq*60).toFixed(0)+'rpm',108+i*170,292);
+    });
+    // 临界转速警戒线（1500 rpm = 25Hz）→ 钳位到画布内
+    var yWarn = 280 - 25*30;
+    if(yWarn < 60) yWarn = 60;
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(80,yWarn); ctx.lineTo(760,yWarn); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#dc2626'; ctx.font='15px sans-serif';
+    ctx.fillText('1500 rpm 警戒线',600,yWarn-5);
+
+    var el = document.getElementById('unitRes');
+    if(el){
+        el.innerHTML =
+            'κ='+(unitK/1e6).toFixed(1)+'×10⁶ → 1阶='+(om1/2/Math.PI).toFixed(2)+'Hz='+(om1/2/Math.PI*60).toFixed(0)+'rpm<br>'+
+            '启机必须快速穿越这些"临界转速"，否则共振振幅失控';
+    }
+}
+
+// ============ 反射阻抗交互 ============
+var refM = 5e-3, refR = 10;
+function updReflect(kind, v){
+    if(kind==='m'){ refM = v*1e-3; var elM=document.getElementById('refM'); if(elM) elM.textContent = (+v).toFixed(1); }
+    if(kind==='r'){ refR = +v; var elR=document.getElementById('refR'); if(elR) elR.textContent = v; }
+    drawReflect();
+}
+
+function drawReflectModel(){
+    var ctx = clearCanvas('cReflectModel');
+    if(!ctx) return;
+    // canvas 宽 920, 所有绘图必须在 0~920 内
+    // 原边回路
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3;
+    // 电源
+    ctx.beginPath(); ctx.arc(150,200,30,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='#7c3aed'; ctx.font='18px sans-serif'; ctx.fillText('U₁',138,205);
+    // 原边线圈 L1
+    ctx.beginPath(); ctx.moveTo(180,200); ctx.lineTo(280,200); ctx.stroke();
+    ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif'; ctx.fillText('L₁',220,190);
+    // 耦合符号（虚线）
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(280,185); ctx.lineTo(420,185); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#f59e0b'; ctx.font='16px sans-serif'; ctx.fillText('M',340,175);
+    drawDot(ctx,278,200); drawDot(ctx,422,200);
+    // 副边线圈 L2
+    ctx.strokeStyle='#db2777'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(420,200); ctx.lineTo(500,200); ctx.stroke();
+    ctx.fillStyle='#db2777'; ctx.font='16px sans-serif'; ctx.fillText('L₂',440,190);
+    // 负载
+    ctx.fillStyle='#16a34a'; ctx.fillRect(500,180,70,40);
+    ctx.fillStyle='#fff'; ctx.font='16px sans-serif'; ctx.fillText('R_L',515,205);
+    // 回到原边（底线）
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(150,230); ctx.lineTo(150,270); ctx.lineTo(570,270); ctx.lineTo(570,220); ctx.stroke();
+    // 等效电路（右侧）—— 全部在 600~920 内
+    ctx.fillStyle='#1e293b'; ctx.font='18px sans-serif';
+    ctx.fillText('等效：原边看进去',620,120);
+    ctx.strokeStyle='#0ea5e9'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(700,170,25,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='#0ea5e9'; ctx.font='18px sans-serif'; ctx.fillText('U₁',690,175);
+    ctx.beginPath(); ctx.moveTo(725,170); ctx.lineTo(790,170); ctx.stroke();
+    ctx.fillStyle='#1e293b'; ctx.font='16px sans-serif'; ctx.fillText('L₁',745,160);
+    // 反射电阻 —— 限制在 790~890（canvas 宽920）
+    ctx.fillStyle='#dc2626'; ctx.fillRect(790,150,70,40);
+    ctx.fillStyle='#fff'; ctx.font='16px sans-serif'; ctx.fillText('Z_ref',805,175);
+    ctx.beginPath(); ctx.moveTo(860,170); ctx.lineTo(900,170); ctx.stroke();
+    // 标注
+    ctx.fillStyle='#dc2626'; ctx.font='16px sans-serif';
+    ctx.fillText('(ωM)²/Z₂₂',800,140);
+    ctx.fillStyle='#16a34a'; ctx.fillText('高Q时≈纯电阻',800,220);
+    // 条件说明
+    ctx.fillStyle='#78350f'; ctx.font='14px sans-serif';
+    ctx.fillText('条件：ωL₂ ≫ R₂+R_L（高Q线圈）',620,260);
+}
+
+function drawReflect(){
+    drawReflectModel();
+    var c = document.getElementById('cReflectPlot');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,800,340);
+    var w = 2*Math.PI*50;
+    // 严格 Zref 复数
+    var L2_val = 0.01; // 10mH 副边电感
+    var R2_val = 1.0;  // 副边绕组电阻
+    var Z22_real = R2_val + refR;
+    var Z22_imag = w * L2_val;
+    var Z22_mag = Math.sqrt(Z22_real*Z22_real + Z22_imag*Z22_imag);
+    var Zref_mag = (w*refM)*(w*refM) / Z22_mag;
+    var Zref_real = (w*refM)*(w*refM) * Z22_real / (Z22_mag*Z22_mag);
+    var I2 = 100 / Z22_mag;
+
+    // 坐标
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(80,260); ctx.lineTo(740,260); ctx.moveTo(80,40); ctx.lineTo(80,280); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='17px sans-serif';
+    ctx.fillText('M (mH) →',680,280); ctx.fillText('|Z_ref| (Ω)',40,50);
+
+    // 曲线：Zref vs M（严格公式）
+    var yMax = 260 - 40;
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=3;
+    ctx.beginPath();
+    for(var m=1; m<=20; m+=0.5){
+        var x = 80+m*30;
+        var mm = m*1e-3;
+        var z22 = Math.sqrt(Z22_real*Z22_real + (w*mm*mm/(mm)*w*L2_val/(w*mm)*w*L2_val));
+        // 简化: |Z22| 随 M 不变（M不影响Z22）
+        var z = (w*mm)*(w*mm) / Math.sqrt(Z22_real*Z22_real + (w*L2_val)*(w*L2_val));
+        var yRaw = 260 - z*8;
+        var yClamped = Math.max(40, Math.min(260, yRaw));
+        if(m===1) ctx.moveTo(x,yClamped); else ctx.lineTo(x,yClamped);
+    }
+    ctx.stroke();
+
+    // 当前点
+    var zCur = (w*refM)*(w*refM) / Math.sqrt(Z22_real*Z22_real + (w*L2_val)*(w*L2_val));
+    var xcur = 80+refM*1e3*30;
+    var ycurRaw = 260 - zCur*8;
+    var ycur = Math.max(40, Math.min(260, ycurRaw));
+    ctx.fillStyle='#dc2626'; ctx.beginPath(); ctx.arc(xcur,ycur,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#dc2626'; ctx.font='15px sans-serif';
+    ctx.fillText('当前 M='+(refM*1e3).toFixed(1)+'mH',xcur+10, ycur-8);
+
+    // 文本
+    ctx.fillStyle='#1e293b'; ctx.font='18px sans-serif';
+    ctx.fillText('ω='+(w).toFixed(0)+' rad/s, R_L='+refR+'Ω, L₂=10mH',100,80);
+    ctx.fillText('Z₂₂ = '+Z22_real.toFixed(1)+'+j'+(w*L2_val).toFixed(1)+'Ω',100,110);
+    ctx.fillText('|Z_ref| = (ωM)²/|Z₂₂| = '+zCur.toFixed(3)+' Ω',100,140);
+    ctx.fillStyle='#78350f'; ctx.font='16px sans-serif';
+    ctx.fillText('注：严格Z_ref是复数，高Q时虚部可忽略→近似纯阻',100,170);
+
+    var el = document.getElementById('reflectRes');
+    if(el){
+        el.innerHTML =
+            'M='+ (refM*1e3).toFixed(1) + ' mH → ωM='+ (w*refM).toFixed(2) + ' Ω<br>'+
+            'Z₂₂ = ' + Z22_real.toFixed(1) + '+j' + (w*L2_val).toFixed(1) + ' Ω (|Z₂₂|=' + Math.sqrt(Z22_real*Z22_real+(w*L2_val)**2).toFixed(1) + 'Ω)<br>'+
+            '|Z_ref| = ' + Zref_mag.toFixed(4) + ' Ω（严格复数，实部=' + Zref_real.toFixed(4) + 'Ω）<br>'+
+            '高Q时(ωL₂≫R₂+R_L)：Z_ref ≈ ' + ((w*refM)**2/Z22_real).toFixed(4) + 'Ω 纯阻';
+    }
+}
+
+// ============ 初始化 ============
+document.addEventListener('DOMContentLoaded', function(){
+    drawTheory();
+    drawTeq();
+    drawHvdc();
+    drawUnit();
+    drawReflect();
+});
+</script>
+</body>
+</html>
