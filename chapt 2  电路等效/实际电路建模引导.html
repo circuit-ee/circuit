@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实际工程电路的建模方法 · 交互式 H5</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{font-size:18px;-webkit-text-size-adjust:100%;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    background:linear-gradient(135deg,#eef2ff 0%,#f5f3ff 45%,#e0f2fe 100%);
+    color:#1e293b;line-height:1.7;min-height:100vh;padding:24px 16px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header.hero{
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:#fff;border-radius:20px;padding:34px 28px;margin-bottom:26px;
+    box-shadow:0 12px 30px rgba(79,70,229,.25);
+  }
+  header.hero h1{font-size:2.1rem;line-height:1.25;margin-bottom:12px;}
+  header.hero p{font-size:1.05rem;opacity:.95;}
+  .lead-card{background:#fff;border-radius:16px;padding:22px 24px;margin-bottom:22px;box-shadow:0 4px 14px rgba(0,0,0,.06);}
+  .lead-card h2{font-size:1.45rem;color:#4338ca;margin-bottom:10px;}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:1rem;margin-top:8px;}
+  .chip{background:#eef2ff;color:#4338ca;padding:8px 14px;border-radius:999px;font-weight:600;white-space:nowrap;}
+  .chip b{color:#7c3aed;}
+  .arrow{color:#a5b4fc;font-size:1.4rem;}
+  section.block{background:#fff;border-radius:16px;padding:24px;margin-bottom:22px;box-shadow:0 4px 14px rgba(0,0,0,.06);}
+  section.block h2{font-size:1.5rem;color:#4338ca;margin-bottom:8px;}
+  section.block h3{font-size:1.18rem;color:#5b21b6;margin:16px 0 8px;}
+  .sub{color:#64748b;font-size:.98rem;margin-bottom:14px;}
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:10px;}
+  .cat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;}
+  .cat .ct{font-weight:800;color:#4338ca;font-size:1.08rem;margin-bottom:6px;}
+  .cat .ci{color:#475569;font-size:.95rem;}
+  .cat ul{margin:8px 0 0 18px;color:#334155;font-size:.95rem;}
+  /* 交互区 */
+  .ctrl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0;}
+  .ctrl label{font-weight:700;color:#4338ca;}
+  select#mSel{
+    font-size:1.05rem;padding:9px 12px;border-radius:10px;border:2px solid #c7d2fe;
+    background:#fff;color:#1e293b;min-width:260px;outline:none;
+  }
+  select#mSel:focus{border-color:#7c3aed;}
+  .btn{font-size:1rem;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:700;transition:.15s;}
+  .btn-nav{background:#eef2ff;color:#4338ca;}
+  .btn-nav:hover{background:#e0e7ff;}
+  .btn-go{background:#4f46e5;color:#fff;}
+  .btn-go:hover{background:#4338ca;}
+  #mActive{font-weight:800;color:#7c3aed;font-size:1.08rem;margin-left:auto;}
+  .detail{background:#f8fafc;border:2px solid #e2e8f0;border-radius:14px;padding:18px;transition:.2s;}
+  .detail.active{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.15);background:#faf8ff;}
+  .detail .dt{font-size:1.2rem;font-weight:800;color:#4338ca;margin-bottom:8px;}
+  .detail .row{display:grid;grid-template-columns:130px 1fr;gap:8px;margin:7px 0;font-size:.98rem;}
+  .detail .row .k{color:#64748b;font-weight:600;}
+  .detail .row .v{color:#1e293b;}
+  canvas.mcanvas{display:block;width:100%;height:340px;background:#0f172a;border-radius:12px;margin-top:12px;}
+  table{width:100%;border-collapse:collapse;font-size:.95rem;margin-top:10px;}
+  th,td{padding:9px 10px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top;}
+  th{background:#eef2ff;color:#4338ca;font-weight:700;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:12px;}
+  .minicard{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;}
+  .minicard .mt{font-weight:800;color:#4338ca;margin-bottom:6px;}
+  .errbox{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:12px;margin-top:12px;font-size:.95rem;white-space:pre-wrap;}
+  .tip{font-size:.92rem;color:#64748b;margin-top:8px;}
+  footer{text-align:center;color:#94a3b8;font-size:.9rem;margin-top:10px;padding:14px;}
+  @media(max-width:640px){
+    header.hero h1{font-size:1.6rem;}
+    .flow{font-size:.9rem;}
+    .detail .row{grid-template-columns:100px 1fr;}
+    canvas.mcanvas{height:280px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>实际工程电路 → 理想电路模型</h1>
+    <p>从真实电子器件构成的实际工程电路出发，梳理 <b>四类 / 十四种</b> 常见建模方法，搞清"用什么建模方法、模型落到哪类元件"。面向电气工程及其自动化 / 自动化专业。</p>
+  </header>
+
+  <div class="lead-card">
+    <h2>一、建模的核心问题</h2>
+    <p>真实电路（如同步 Buck）到可仿真 / 可分析，要经历"<b>物理实现 → 理想电路模型</b>"的建模。建模方法取决于两件事：</p>
+    <div class="flow">
+      <span class="chip">手头有什么信息 <b>×</b></span>
+      <span class="chip">想要什么精度 / 速度</span>
+      <span class="arrow">→</span>
+      <span class="chip">选建模方法</span>
+      <span class="arrow">→</span>
+      <span class="chip">集总 / 分布 / 受控源 / 查表</span>
+    </div>
+    <p class="sub" style="margin-top:12px;">尺寸—波长判据：ℓ/λ &lt; 0.1 可集总；ℓ/λ ~ 0.25 进入过渡；ℓ/λ ≥ 0.25 建议分布（传输线）模型。此为<b>工程经验法则，非硬边界</b>。</p>
+  </div>
+
+  <section class="block">
+    <h2>二、四类建模方法总览</h2>
+    <p class="sub">按"抽象程度 × 信息来源"归类，同一 Buck 可在不同视角下选用不同方法。</p>
+    <div class="cat-grid">
+      <div class="cat"><div class="ct">① 黑箱类</div><div class="ci">以外特性 / 端口响应建模型，不关心内部物理。</div>
+        <ul><li>外特性（黑箱）建模</li><li>行为建模（LUT/S 参数）</li><li>二端口（Z/Y/S/ABCD）建模</li></ul></div>
+      <div class="cat"><div class="ct">② 白箱类</div><div class="ci">由器件物理方程构造可计算的等效模型。</div>
+        <ul><li>物理原理建模（BSIM）</li><li>状态空间建模</li><li>平均 / 大信号平均建模</li></ul></div>
+      <div class="cat"><div class="ct">③ 尺度类</div><div class="ci">由几何尺寸与波长关系决定模型形态。</div>
+        <ul><li>集总等效建模</li><li>分布参数建模</li><li>降阶模型 ROM（场→路）</li></ul></div>
+      <div class="cat"><div class="ct">④ 多域 / 鲁棒类</div><div class="ci">跨物理场、工艺鲁棒性与失效分析。</div>
+        <ul><li>电热耦合建模</li><li>混合多域建模</li><li>容差 / 故障建模</li></ul></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>三、交互 · 十四种建模方法对比</h2>
+    <p class="sub">下拉选择或点"上一/下一"切换；示意图随方法 3D 旋转动画变化。</p>
+    <div class="ctrl">
+      <label for="mSel">建模方法：</label>
+      <select id="mSel" onchange="window.__renderMethod(+this.value)"></select>
+      <button class="btn btn-nav" onclick="window.__stepMethod(-1)">上一方法</button>
+      <button class="btn btn-nav" onclick="window.__stepMethod(1)">下一方法</button>
+      <span id="mActive">当前：—</span>
+    </div>
+    <div id="mDetail" class="detail">
+      <div class="dt" id="mTitle">—</div>
+      <div class="row"><span class="k">所属类别</span><span class="v" id="mCat">—</span></div>
+      <div class="row"><span class="k">建模思路</span><span class="v" id="mIdea">—</span></div>
+      <div class="row"><span class="k">依赖信息</span><span class="v" id="mInfo">—</span></div>
+      <div class="row"><span class="k">模型形态</span><span class="v" id="mForm">—</span></div>
+      <div class="row"><span class="k">典型应用</span><span class="v" id="mApp">—</span></div>
+      <div class="row"><span class="k">常用 EDA</span><span class="v" id="mEda">—</span></div>
+      <canvas id="cvModel" class="mcanvas" width="900" height="420"></canvas>
+      <p class="tip" id="mTip">示意图为该方法代表性结构的 3D 示意（自绘伪 3D，持续旋转）。</p>
+    </div>
+    <div id="errBox" class="errbox"></div>
+  </section>
+
+  <section class="block">
+    <h2>四、Buck 实例 · 同一电路四种视角</h2>
+    <p class="sub">同步 Buck（Vin / Cin / M1 / M2 / L / Cout / Rload）在不同建模目的下的方法选择。</p>
+    <table>
+      <tr><th>建模视角</th><th>选用方法</th><th>用途 / 得到什么</th></tr>
+      <tr><td>板级小信号仿真</td><td>集总等效 + 外特性</td><td>用 R/L/C + 受控源搭平均模型，做环路补偿、稳态 / 小信号分析</td></tr>
+      <tr><td>芯片级 MOS 精度</td><td>物理原理（BSIM3v3/BSIM4）</td><td>纳米 CMOS 大信号 / 高频，SPICE/Spectre 工业标准，含沟道电荷与寄生电容</td></tr>
+      <tr><td>控制 / 状态分析</td><td>状态空间 / 平均建模</td><td>ẋ=Ax+Bu 求极点、设计数字控制与平均变量 ⟨i⟩,⟨u⟩</td></tr>
+      <tr><td>高速走线 / SI</td><td>分布参数 / S 参数</td><td>走线按传输线处理，做端接、反射与信号完整性分析</td></tr>
+      <tr><td>热设计 / 可靠性</td><td>电热耦合 / 容差故障</td><td>结温反喂 Vth/Rds_on，做温升、老化与失效预估</td></tr>
+    </table>
+  </section>
+
+  <section class="block">
+    <h2>五、建模方法选择指南</h2>
+    <div class="two">
+      <div class="minicard"><div class="mt">按"已知信息"选</div>
+        <p style="font-size:.96rem;color:#334155;">有 datasheet/伏安曲线 → <b>外特性</b>；有几何/材料与工艺 → <b>物理原理(BSIM)</b>；有实测多频响 → <b>S 参数/行为(LUT)</b>；只有端口响应 → <b>二端口</b>；有 FEM 场仿真 → <b>ROM 降阶</b>。</p></div>
+      <div class="minicard"><div class="mt">按"仿真目的"选</div>
+        <p style="font-size:.96rem;color:#334155;">环路补偿/小信号 → <b>集总+平均+状态空间</b>；高频/RF → <b>分布+S 参数</b>；大信号/瞬态精度 → <b>物理原理(BSIM)</b>；温升/寿命 → <b>电热耦合</b>；级联系统 → <b>二端口</b>。</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px;">📌 <b>没有绝对最优的模型，只有"够用且高效"的模型。</b>模型是物理系统的理想化近似，选取要在<b>精度 × 仿真速度 × 可用信息</b>之间权衡。</p>
+  </section>
+
+  <footer>电路模型是实际工程系统的理想化近似 · 建模方法随尺度 / 频率 / 可用信息升级 · 面向电气工程及其自动化 / 自动化专业</footer>
+</div>
+
+<script>
+(function(){
+  var METHODS = [
+    {id:0,name:"外特性（黑箱）建模",cat:"① 黑箱类",idea:"把器件当黑箱，由 datasheet / 伏安曲线拟合等效电路。",info:"端口 I-V / Q-V 曲线、datasheet 参数。",form:"受控源 + R/L/C 等效。",app:"板级仿真、器件替代、快速建模。",eda:"SPICE 拟合、Maple/MATLAB 曲线拟合。",draw:"blackbox"},
+    {id:1,name:"行为建模",cat:"① 黑箱类",idea:"用功能映射 / 查表 / 传递函数描述输入到输出的关系。",info:"实测输入-输出数据、S 参数。",form:"LUT / 传递函数 / S 参数模型。",app:"系统级仿真、RF 前端、频域分析。",eda:"ADS / HFSS(S 参数) / Simulink。",draw:"behavior"},
+    {id:2,name:"二端口（Z/Y/S/ABCD）建模",cat:"① 黑箱类",idea:"只关心端口关系，用矩阵参数代替内部电路。",info:"双端口实测或级联需求。",form:"Z/Y/S/ABCD 参数矩阵。",app:"变压器、放大器级联、滤波器。",eda:"ADS / AWR / 网络分析仪数据。",draw:"twoport"},
+    {id:3,name:"物理原理（BSIM）建模",cat:"② 白箱类",idea:"由半导体器件物理方程构造可计算的等效模型。",info:"工艺几何、材料参数、沟道尺寸。",form:"BSIM3v3/BSIM4 等效电路（沟道电荷 + 寄生电容）。",app:"纳米 CMOS 大信号 / 高频、芯片级精度。",eda:"SPICE/HSPICE/Spectre（工业标准）。",draw:"bsim"},
+    {id:4,name:"状态空间建模",cat:"② 白箱类",idea:"以储能变量为状态量，列写状态方程。",info:"拓扑 + 电感电流 / 电容电压。",form:"ẋ=Ax+Bu, y=Cx+Du。",app:"电力电子、控制系统分析、极点配置。",eda:"MATLAB/Simulink、Stateflow。",draw:"state"},
+    {id:5,name:"平均 / 大信号平均建模",cat:"② 白箱类",idea:"对开关周期取平均，消去开关纹波得连续模型。",info:"开关周期、占空比、拓扑。",form:"受控源 + 平均变量 ⟨i⟩,⟨u⟩。",app:"Buck/Boost 小信号环路设计与补偿。",eda:"MATLAB/Simulink、PLECS。",draw:"average"},
+    {id:6,name:"集总等效建模",cat:"③ 尺度类",idea:"ℓ≪λ 时把参数集总到若干端子，忽略场分布。",info:"几何尺寸 ℓ 与信号波长 λ 满足 ℓ/λ<0.1。",form:"R/L/C + 受控源 + KCL/KVL(ODE)。",app:"MHz 以下板级、电源、音频、IC 小信号。",eda:"SPICE、LTspice、PSpice。",draw:"lumped"},
+    {id:7,name:"分布参数建模",cat:"③ 尺度类",idea:"ℓ~λ 时参数沿位置分布，场线伸展不可忽略。",info:"走线 / 馈线长度与波长可比。",form:"R'/L'/C'/G' 微元级联 + 电报方程(PDE)。",app:"RF 馈线、高速 PCB(SerDes)、电力线。",eda:"HFSS、ADS 传输线 / 2.5D 求解器。",draw:"distributed"},
+    {id:8,name:"降阶模型 ROM（场→路）",cat:"③ 尺度类",idea:"把 FEM/场仿真结果压缩为低阶等效电路。",info:"COMSOL/ANSYS 场仿真结果。",form:"ARX/PRIMA/矩匹配等效电路。",app:"封装寄生、EMI 预估、场—路耦合中间地带。",eda:"COMSOL/ANSYS + Model Order Reduction。",draw:"rom"},
+    {id:9,name:"电热耦合建模",cat:"④ 多域/鲁棒类",idea:"功耗与热阻网络联立，结温反喂电参数。",info:"功耗、热阻 θJA、封装参数。",form:"热路 Rθ/Cθ 与电路联立。",app:"功率 MOS/IGBT/LED 结温、温升与可靠性。",eda:"SPICE 电热协同、FloTHERM、IcePak。",draw:"electrothermal"},
+    {id:10,name:"混合多域建模",cat:"④ 多域/鲁棒类",idea:"电路与热/机/磁/控制多物理场联立求解。",info:"多物理场耦合关系。",form:"电-热-机-磁多域方程组。",app:"电机驱动、MEMS、功率模块。",eda:"Modelica/OpenModelica、Simulink。",draw:"multidomain"},
+    {id:11,name:"容差 / 故障建模",cat:"④ 多域/鲁棒类",idea:"引入工艺角、参数分布与失效等效，评估鲁棒性。",info:"工艺角、蒙特卡洛分布、失效模式。",form:"参数分布 + 失效等效子电路。",app:"DFM、可靠性、老化与失效仿真。",eda:"SPICE 蒙特卡洛、Spectre-RF。",draw:"tolerance"}
+  ];
+
+  var sel=document.getElementById('mSel'),detail=document.getElementById('mDetail'),
+      tTitle=document.getElementById('mTitle'),tCat=document.getElementById('mCat'),
+      tIdea=document.getElementById('mIdea'),tInfo=document.getElementById('mInfo'),
+      tForm=document.getElementById('mForm'),tApp=document.getElementById('mApp'),
+      tEda=document.getElementById('mEda'),tActive=document.getElementById('mActive'),
+      cv=document.getElementById('cvModel'),errBox=document.getElementById('errBox');
+  var ctx=null,currentDraw='blackbox',angle=0,rafId=null;
+
+  function showErr(msg){if(!errBox)return;errBox.style.display='block';errBox.textContent=msg;}
+  function clearErr(){if(errBox){errBox.style.display='none';errBox.textContent='';}}
+
+  function proj(x,y,z){
+    var rx=angle*0.6,ry=angle*0.4;
+    var cosx=Math.cos(rx),sinx=Math.sin(rx),cosy=Math.cos(ry),siny=Math.sin(ry);
+    var X= cosy*x+siny*z, Z=-siny*x+cosy*z;
+    var Y= cosx*y-sinx*Z, ZZ=sinx*y+cosx*Z;
+    var f=900/(900+ZZ*0.9),sx=450+X*f,sy=240-Y*f;
+    return{sx:sx,sy:sy,f:f};
+  }
+  function line(x1,y1,z1,x2,y2,z2,st){
+    var a=proj(x1,y1,z1),b=proj(x2,y2,z2);
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);
+    ctx.strokeStyle=st||'#c7d2fe';ctx.lineWidth=st?2:1.5;ctx.stroke();
+  }
+  function dot(x,y,z,r,col){
+    var a=proj(x,y,z);ctx.beginPath();ctx.arc(a.sx,a.sy,(r||4)*a.f,0,Math.PI*2);
+    ctx.fillStyle=col||'#a5b4fc';ctx.fill();
+  }
+  function text3(x,y,z,s,col){
+    var a=proj(x,y,z);ctx.fillStyle=col||'#e0e7ff';ctx.font='13px sans-serif';ctx.fillText(s,a.sx,a.sy);
+  }
+
+  // 各方法示意图
+  function drawBlackbox(){ // 伏安曲线 + 黑箱框
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.beginPath();ctx.arc(450,210,150,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#475569';ctx.font='12px sans-serif';
+    ctx.fillText('端口 I-V 曲线',450-40,70);
+    line(-100,0,0,100,0,0,'#94a3b8');line(0,-80,0,0,80,0,'#94a3b8');
+    ctx.fillStyle='#f87171';ctx.font='12px sans-serif';
+    for(var i=0;i<40;i++){var t=-1+i/20,xx=t*90,yy=-Math.sin(t*3)*60;dot(xx,yy,0,2,'#f87171');}
+    ctx.fillStyle='#e0e7ff';ctx.font='15px sans-serif';ctx.fillText('黑箱',450-20,215);
+  }
+  function drawBehavior(){ // 功能映射 f:u->y
+    ctx.fillStyle='#c7d2fe';ctx.fillRect(300,150,300,140);
+    ctx.fillStyle='#4338ca';ctx.font='15px sans-serif';ctx.fillText('功能映射 f : u → y',330,215);
+    line(-130,0,0,-60,0,0,'#94a3b8');text3(-150,10,0,'u',"#e0e7ff");
+    line(60,0,0,150,0,0,'#94a3b8');text3(140,10,0,'y',"#e0e7ff");
+    ctx.fillStyle='#34d399';ctx.font='12px sans-serif';ctx.fillText('LUT / 传递函数 / S 参数',310,250);
+  }
+  function drawTwoport(){ // 双端口框 + 端口
+    ctx.strokeStyle='#c7d2fe';ctx.lineWidth=2;ctx.strokeRect(330,140,240,140);
+    ctx.fillStyle='#e0e7ff';ctx.font='14px sans-serif';ctx.fillText('二端口',390,215);
+    line(-120,30,0,-50,30,0,'#94a3b8');line(50,30,0,120,30,0,'#94a3b8');
+    line(-120,-30,0,-50,-30,0,'#94a3b8');line(50,-30,0,120,-30,0,'#94a3b8');
+    text3(-150,35,0,'1+',"#fbbf24");text3(-150,-40,0,'1-',"#fbbf24");
+    text3(130,35,0,'2+',"#fbbf24");text3(130,-40,0,'2-',"#fbbf24");
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('Z / Y / S / ABCD',345,270);
+  }
+  function drawBSIM(){ // MOS 沟道 + 栅极 + 寄生电容
+    line(-90,0,0,90,0,0,'#c7d2fe');line(90,0,0,-90,0,0,'#c7d2fe');
+    line(-40,-60,0,40,-60,0,'#fbbf24');dot(0,-60,0,5,'#fbbf24');text3(45,-70,0,'G',"#fbbf24");
+    dot(-90,0,0,6,'#34d399');text3(-110,-12,0,'S',"#34d399");dot(90,0,0,6,'#34d399');text3(95,-12,0,'D',"#34d399");
+    ctx.strokeStyle='#f87171';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,55,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#f87171';ctx.font='11px sans-serif';ctx.fillText('沟道电荷区',15,5);
+    line(-40,-60,0,-40,0,0,'#c7d2fe');line(40,-60,0,40,0,0,'#c7d2fe');
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('Cgs / Cgd (寄生电容)',-100,55);
+  }
+  function drawState(){ // 状态框 x_dot=Ax+Bu
+    ctx.fillStyle='#1e293b';ctx.fillRect(330,130,240,160);
+    ctx.fillStyle='#e0e7ff';ctx.font='14px sans-serif';ctx.fillText('ẋ = A x + B u',355,185);
+    ctx.fillStyle='#c7d2fe';ctx.fillText('y = C x + D u',360,215);
+    line(-130,0,0,-80,0,0,'#94a3b8');text3(-150,10,0,'u',"#e0e7ff");
+    line(80,0,0,150,0,0,'#94a3b8');text3(155,10,0,'y',"#e0e7ff");
+    ctx.fillStyle='#64748b';ctx.font='11px sans-serif';ctx.fillText('储能变量 x = [iL, uC]ᵀ',345,265);
+  }
+  function drawAverage(){ // 开关平均 → 受控源
+    ctx.fillStyle='#334155';ctx.fillRect(300,170,300,90);
+    ctx.fillStyle='#e0e7ff';ctx.font='14px sans-serif';ctx.fillText('开关周期平均',330,205);
+    ctx.fillStyle='#c7d2fe';ctx.fillText('受控源 + ⟨i⟩,⟨u⟩',325,235);
+    line(-130,0,0,-80,0,0,'#94a3b8');text3(-150,10,0,'d(t)',"#e0e7ff");
+    line(80,0,0,150,0,0,'#94a3b8');text3(155,10,0,'平均量',"#e0e7ff");
+  }
+  function drawLumped(){ // 集总 R+L+C
+    line(-130,0,0,-60,0,0,'#94a3b8');line(60,0,0,130,0,0,'#94a3b8');
+    ctx.strokeStyle='#fbbf24';ctx.beginPath();ctx.arc(-30,0,22,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#fbbf24';ctx.font='12px sans-serif';ctx.fillText('R',-42,4);
+    line(10,-30,0,10,30,0,'#34d399');line(10,30,0,10,-30,0,'#34d399');ctx.fillStyle='#34d399';ctx.fillText('L',18,0);
+    ctx.strokeStyle='#f87171';ctx.beginPath();ctx.moveTo(50,-30);ctx.lineTo(50,30);ctx.moveTo(70,-30);ctx.lineTo(70,30);ctx.stroke();
+    ctx.fillStyle='#f87171';ctx.fillText('C',52,45);
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('ℓ≪λ · KCL/KVL · ODE',-90,55);
+  }
+  function drawDistributed(){ // 传输线微元级联
+    for(var i=-2;i<=2;i++){var x=i*70;
+      line(x-25,-30,0,x+25,-30,0,'#c7d2fe');line(x-25,30,0,x+25,30,0,'#c7d2fe');
+      ctx.fillStyle='#475569';ctx.font='10px sans-serif';ctx.fillText('R\'L\'C\'G\'',x-28,0);
+      if(i<2)line(x+25,-30,0,x+45,-30,0,'#6366f1');
+    }
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('ℓ~λ · 微元级联 · 电报方程(PDE)',-110,55);
+  }
+  function drawROM(){ // 场→压缩→等效电路
+    ctx.fillStyle='#334155';ctx.fillRect(260,150,130,100);ctx.fillStyle='#e0e7ff';ctx.font='12px sans-serif';ctx.fillText('FEM 场',285,205);
+    line(-90,0,0,-50,0,0,'#94a3b8');text3(-110,10,0,'场',"#e0e7ff");
+    line(50,0,0,120,0,0,'#94a3b8');text3(130,10,0,'路',"#e0e7ff");
+    ctx.fillStyle='#fbbf24';ctx.fillText('矩匹配 / PRIMA',400,195);
+    ctx.fillStyle='#1e293b';ctx.fillRect(470,150,130,100);ctx.fillStyle='#c7d2fe';ctx.fillText('等效电路',490,205);
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('降阶 ROM（场→路）',300,270);
+  }
+  function drawElectrothermal(){ // 电路 + 热路 Rθ
+    ctx.fillStyle='#334155';ctx.fillRect(290,120,160,90);ctx.fillStyle='#e0e7ff';ctx.font='12px sans-serif';ctx.fillText('电路',325,165);
+    ctx.fillStyle='#7c3aed';ctx.fillText('Pd →',335,210);
+    ctx.fillStyle='#b45309';ctx.fillRect(470,120,150,90);ctx.fillStyle='#fde68a';ctx.fillText('热路 Rθ/Cθ',490,165);
+    ctx.fillStyle='#fde68a';ctx.fillText('Tj',525,210);
+    line(-120,0,0,-60,0,0,'#94a3b8');line(60,0,0,130,0,0,'#94a3b8');
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('电热联立 · 结温反喂 Vth/Rds_on',295,235);
+  }
+  function drawMultidomain(){ // 多域圆
+    var dom=[['电','#fbbf24'],['热','#f87171'],['机','#34d399'],['磁','#60a5fa'],['控','#c084fc']];
+    dom.forEach(function(d,i){var a=angle+i*1.256;var x=Math.cos(a)*70,y=Math.sin(a)*70;
+      ctx.beginPath();ctx.arc(450+x,210+y,22,0,Math.PI*2);ctx.fillStyle=d[1];ctx.fill();
+      ctx.fillStyle='#1e293b';ctx.font='12px sans-serif';ctx.fillText(d[0],450+x-7,210+y+4);});
+    ctx.fillStyle='#e0e7ff';ctx.font='12px sans-serif';ctx.fillText('多域联立',430,214);
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('Modelica / Simulink',385,265);
+  }
+  function drawTolerance(){ // 参数分布散点 + 失效
+    for(var i=0;i<60;i++){var x=(i%10-4.5)*28,y=Math.sin(i)*40+((i/10|0)-1)*50;
+      ctx.beginPath();ctx.arc(450+x,210+y,3,0,Math.PI*2);
+      ctx.fillStyle=(i>50)?'#f87171':'#34d399';ctx.fill();}
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('蒙特卡洛分布 · 失效等效',370,275);
+  }
+
+  var DRAWERS={blackbox:drawBlackbox,behavior:drawBehavior,twoport:drawTwoport,
+    bsimmos:drawBSIM,state:drawState,average:drawAverage,lumped:drawLumped,
+    distributed:drawDistributed,rom:drawROM,electrothermal:drawElectrothermal,
+    multidomain:drawMultidomain,tolerance:drawTolerance};
+
+  function render(idx){
+    try{clearErr();if(idx<0)idx=0;if(idx>=METHODS.length)idx=METHODS.length-1;
+      var m=METHODS[idx];tTitle.textContent=(idx+1)+' · '+m.name;
+      tCat.textContent=m.cat;tIdea.textContent=m.idea;tInfo.textContent=m.info;
+      tForm.textContent=m.form;tApp.textContent=m.app;tEda.textContent=m.eda;
+      tActive.textContent='当前：第 '+(idx+1)+' 种 · '+m.name;
+      if(detail)detail.classList.add('active');
+      currentDraw=m.draw;
+      if(sel){sel.value=String(idx);}
+    }catch(e){showErr('渲染方法时出错：'+e.message);}
+  }
+
+  function frame(){
+    try{
+      if(!ctx){var c=document.getElementById('cvModel');if(c)ctx=c.getContext('2d');}
+      if(!ctx){rafId=requestAnimationFrame(frame);return;}
+      ctx.fillStyle='#0f172a';ctx.fillRect(0,0,900,420);
+      angle+=0.012;
+      var fn=DRAWERS[currentDraw]||drawBlackbox;fn();
+    }catch(e){showErr('动画帧出错：'+e.message);}
+    rafId=requestAnimationFrame(frame);
+  }
+
+  window.__renderMethod=function(idx){render(idx|0);};
+  window.__stepMethod=function(d){(function(){var v=0;try{v=(+sel.value)||0;}catch(e){}v=(v+d+METHODS.length)%METHODS.length;render(v);})();};
+
+  function init(){
+    try{
+      if(!sel){showErr('找不到下拉框元素');return;}
+      while(sel.firstChild)sel.removeChild(sel.firstChild);
+      METHODS.forEach(function(m,i){var o=document.createElement('option');o.value=String(i);o.textContent=(i+1)+'. '+m.name;sel.appendChild(o);});
+      if(!ctx){try{ctx=cv.getContext('2d');}catch(e){ctx=null;}}
+      render(0);
+      if(rafId)cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame);
+    }catch(e){showErr('初始化出错：'+e.message);}
+  }
+
+  function onReady(){if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}}
+  window.addEventListener('load',init);onReady();
+})();
+</script>
+</body>
+</html>

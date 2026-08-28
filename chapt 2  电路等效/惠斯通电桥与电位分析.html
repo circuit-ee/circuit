@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>惠斯通电桥与等位点分析</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-muted: #f1f3f5;
+    --surface-raised: #ffffff;
+    --border: #dee2e6;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-tertiary: #868e96;
+    --text-quaternary: #adb5bd;
+    --accent: #228be6;
+    --positive: #40c057;
+    --warning: #fab005;
+    --danger: #fa5252;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: var(--bg);
+    margin: 0;
+    padding: 24px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 32px; font-weight: 600; margin: 0 0 20px 0; color: var(--text-primary); }
+  h2 { font-size: 24px; font-weight: 600; margin: 0 0 16px 0; color: var(--text-primary); }
+  h3 { font-size: 20px; font-weight: 600; margin: 20px 0 12px 0; color: var(--text-primary); }
+  .panel {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .col { flex: 1; min-width: 300px; }
+  .slider-group { margin-bottom: 20px; }
+  .slider-group label { display: flex; justify-content: space-between; font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--text-secondary); }
+  input[type="range"] {
+    width: 100%;
+    height: 10px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--surface-muted);
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    cursor: pointer;
+    border: 3px solid var(--surface);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    cursor: pointer;
+    border: 3px solid var(--surface);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .value-box {
+    background: var(--surface-muted);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    font-size: 18px;
+  }
+  .value-box .label { color: var(--text-tertiary); font-size: 15px; margin-bottom: 6px; }
+  .value-box .value { color: var(--text-primary); font-size: 22px; font-weight: 600; }
+  .status {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 24px;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .status.balanced { background: rgba(64,192,87,0.12); color: #2b8a3e; }
+  .status.unbalanced { background: rgba(250,176,5,0.12); color: #e67700; }
+  .equipotential-box {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 14px;
+    font-size: 17px;
+  }
+  .equipotential-box.active { border-color: var(--positive); background: rgba(64,192,87,0.06); }
+  .equipotential-box.forced-active { border-color: var(--accent); background: rgba(34,139,230,0.06); }
+  .switch-row { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+  .switch-row input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    accent-color: var(--text-primary);
+    cursor: pointer;
+  }
+  .switch-row label { font-size: 18px; font-weight: 500; cursor: pointer; }
+  .formula {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    background: var(--surface-muted);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 10px 0;
+    color: var(--text-primary);
+    overflow-x: auto;
+  }
+  .highlight { color: var(--accent); font-weight: 600; }
+  .highlight-green { color: var(--positive); font-weight: 600; }
+  .highlight-red { color: var(--danger); font-weight: 600; }
+  svg { width: 100%; height: auto; max-width: 420px; }
+  .circuit-container { display: flex; justify-content: center; padding: 16px; }
+  .note { font-size: 16px; color: var(--text-tertiary); margin-top: 10px; }
+  ul { margin: 10px 0; padding-left: 24px; }
+  ul li { margin-bottom: 6px; }
+  p { margin: 0 0 10px 0; }
+  @media (max-width: 640px) {
+    body { padding: 16px; font-size: 16px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 18px; }
+    .panel { padding: 16px; }
+    .col { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>惠斯通电桥与等位点分析</h1>
+
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h2>电路图</h2>
+        <div class="circuit-container">
+          <svg viewBox="0 0 400 380" id="circuit-svg">
+            <rect x="0" y="0" width="400" height="380" fill="transparent" />
+
+            <circle id="node-a" cx="200" cy="40" r="8" fill="var(--text-primary)" />
+            <circle id="node-b" cx="340" cy="190" r="8" fill="var(--text-primary)" />
+            <circle id="node-d" cx="60" cy="190" r="8" fill="var(--text-primary)" />
+            <circle id="node-c" cx="200" cy="340" r="8" fill="var(--text-primary)" />
+
+            <text x="200" y="28" text-anchor="middle" font-size="20" font-weight="600" fill="var(--text-primary)">A</text>
+            <text x="360" y="196" text-anchor="middle" font-size="20" font-weight="600" fill="var(--text-primary)">B</text>
+            <text x="40" y="196" text-anchor="middle" font-size="20" font-weight="600" fill="var(--text-primary)">D</text>
+            <text x="200" y="366" text-anchor="middle" font-size="20" font-weight="600" fill="var(--text-primary)">C</text>
+
+            <g id="r1-group">
+              <line x1="200" y1="48" x2="200" y2="80" stroke="var(--text-primary)" stroke-width="2.5" />
+              <line x1="200" y1="80" x2="340" y2="182" stroke="var(--text-primary)" stroke-width="2.5" />
+              <rect x="255" y="115" width="30" height="14" rx="3" fill="var(--surface-muted)" stroke="var(--text-primary)" stroke-width="2" transform="rotate(-48 270 122)" />
+              <text x="285" y="105" font-size="16" font-weight="600" fill="var(--text-secondary)">R₁</text>
+              <text id="r1-val" x="285" y="125" font-size="14" fill="var(--text-tertiary)">10Ω</text>
+            </g>
+
+            <g id="r2-group">
+              <line x1="200" y1="48" x2="200" y2="80" stroke="var(--text-primary)" stroke-width="2.5" />
+              <line x1="200" y1="80" x2="60" y2="182" stroke="var(--text-primary)" stroke-width="2.5" />
+              <rect x="115" y="115" width="30" height="14" rx="3" fill="var(--surface-muted)" stroke="var(--text-primary)" stroke-width="2" transform="rotate(48 130 122)" />
+              <text x="115" y="105" font-size="16" font-weight="600" fill="var(--text-secondary)">R₂</text>
+              <text id="r2-val" x="115" y="125" font-size="14" fill="var(--text-tertiary)">10Ω</text>
+            </g>
+
+            <g id="r3-group">
+              <line x1="340" y1="198" x2="340" y2="230" stroke="var(--text-primary)" stroke-width="2.5" />
+              <line x1="340" y1="230" x2="200" y2="332" stroke="var(--text-primary)" stroke-width="2.5" />
+              <rect x="255" y="255" width="30" height="14" rx="3" fill="var(--surface-muted)" stroke="var(--text-primary)" stroke-width="2" transform="rotate(48 270 262)" />
+              <text x="285" y="275" font-size="16" font-weight="600" fill="var(--text-secondary)">R₃</text>
+              <text id="r3-val" x="285" y="295" font-size="14" fill="var(--text-tertiary)">10Ω</text>
+            </g>
+
+            <g id="r4-group">
+              <line x1="60" y1="198" x2="60" y2="230" stroke="var(--text-primary)" stroke-width="2.5" />
+              <line x1="60" y1="230" x2="200" y2="332" stroke="var(--text-primary)" stroke-width="2.5" />
+              <rect x="115" y="255" width="30" height="14" rx="3" fill="var(--surface-muted)" stroke="var(--text-primary)" stroke-width="2" transform="rotate(-48 130 262)" />
+              <text x="115" y="275" font-size="16" font-weight="600" fill="var(--text-secondary)">R₄</text>
+              <text id="r4-val" x="115" y="295" font-size="14" fill="var(--text-tertiary)">10Ω</text>
+            </g>
+
+            <g id="bridge-group">
+              <line id="bridge-line" x1="68" y1="190" x2="332" y2="190" stroke="var(--text-quaternary)" stroke-width="2" stroke-dasharray="6,4" />
+              <text id="bridge-label" x="200" y="180" text-anchor="middle" font-size="14" fill="var(--text-quaternary)">桥臂</text>
+            </g>
+
+            <line x1="200" y1="40" x2="200" y2="10" stroke="var(--text-primary)" stroke-width="2.5" />
+            <circle cx="200" cy="10" r="4" fill="var(--text-primary)" />
+            <text x="220" y="14" font-size="14" fill="var(--text-tertiary)">+V</text>
+
+            <line x1="200" y1="340" x2="200" y2="370" stroke="var(--text-primary)" stroke-width="2.5" />
+            <circle cx="200" cy="370" r="4" fill="var(--text-primary)" />
+            <text x="220" y="374" font-size="14" fill="var(--text-tertiary)">GND</text>
+
+            <circle id="eq-b" cx="340" cy="190" r="14" fill="none" stroke="var(--positive)" stroke-width="3" opacity="0" />
+            <circle id="eq-d" cx="60" cy="190" r="14" fill="none" stroke="var(--positive)" stroke-width="3" opacity="0" />
+
+            <line id="short-line" x1="68" y1="190" x2="332" y2="190" stroke="var(--accent)" stroke-width="4" opacity="0" />
+            <text id="short-label" x="200" y="210" text-anchor="middle" font-size="14" fill="var(--accent)" opacity="0">强制短接</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>电阻调节</h2>
+        <div class="slider-group">
+          <label><span>R₁ (A→B)</span><span id="r1-display">10 Ω</span></label>
+          <input type="range" id="r1" min="1" max="100" value="10" step="1">
+        </div>
+        <div class="slider-group">
+          <label><span>R₂ (A→D)</span><span id="r2-display">10 Ω</span></label>
+          <input type="range" id="r2" min="1" max="100" value="10" step="1">
+        </div>
+        <div class="slider-group">
+          <label><span>R₃ (B→C)</span><span id="r3-display">10 Ω</span></label>
+          <input type="range" id="r3" min="1" max="100" value="10" step="1">
+        </div>
+        <div class="slider-group">
+          <label><span>R₄ (D→C)</span><span id="r4-display">10 Ω</span></label>
+          <input type="range" id="r4" min="1" max="100" value="10" step="1">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>平衡状态</h2>
+        <div id="balance-status" class="status balanced">电桥已平衡</div>
+        <div class="value-box">
+          <div class="label">平衡条件</div>
+          <div class="value" style="font-size: 18px;">R₁ / R₂ = R₃ / R₄</div>
+        </div>
+        <div class="formula" id="balance-formula">10 / 10 = 10 / 10 → 1.00 = 1.00 ✓</div>
+        <div class="value-box">
+          <div class="label">节点电压 (V = 10V)</div>
+          <div class="value" style="font-size: 18px;">V<sub>B</sub> = <span id="vb-val">5.00</span>V &nbsp; V<sub>D</sub> = <span id="vd-val">5.00</span>V</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h2>自然等位点</h2>
+        <div id="natural-eq" class="equipotential-box active">
+          <p><strong>定义：</strong>电路因内在对称或比例关系而自然形成的等电位节点，无需外部连接。</p>
+          <p>当电桥平衡时，节点 <span class="highlight-green">B</span> 与 <span class="highlight-green">D</span> 自然等电位。</p>
+        </div>
+        <div class="value-box">
+          <div class="label">等效电阻（利用自然等位点）</div>
+          <div class="formula" id="natural-req">R<sub>eq</sub> = (R₁+R₃) ∥ (R₂+R₄) = 10.0 Ω</div>
+        </div>
+        <p class="note">原理：B、D 等电位 → 桥臂无电流 → 可断开桥臂 → 电路简化为两并联支路</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>强制等位点</h2>
+        <div class="switch-row">
+          <input type="checkbox" id="force-short">
+          <label for="force-short">短接 B 与 D（强制等电位）</label>
+        </div>
+        <div id="forced-eq" class="equipotential-box">
+          <p><strong>定义：</strong>用理想导线（零电阻）将两个节点强制连接，使其电压相等，不论原电路状态如何。</p>
+          <p>短接后，<span class="highlight">B</span> 与 <span class="highlight">D</span> 被强制为同一电位。</p>
+        </div>
+        <div class="value-box">
+          <div class="label">等效电阻（利用强制等位点）</div>
+          <div class="formula" id="forced-req">R<sub>eq</sub> = (R₁∥R₂) + (R₃∥R₄) = 10.0 Ω</div>
+        </div>
+        <p class="note">原理：B、D 短接 → R₁∥R₂ 与 R₃∥R₄ 串联 → 电路等效变换</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>对比总结</h2>
+    <div class="row">
+      <div class="col">
+        <div style="font-size: 17px; line-height: 1.9;">
+          <p><strong>自然等位点</strong></p>
+          <ul>
+            <li>由电路结构和对称性自然产生</li>
+            <li>等位点之间无电流流动</li>
+            <li>可安全断开（移除导线）简化电路</li>
+            <li>不改变电路的电气特性</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div style="font-size: 17px; line-height: 1.9;">
+          <p><strong>强制等位点</strong></p>
+          <ul>
+            <li>通过外部短路线人为强制连接</li>
+            <li>可能改变原电路的电流分布</li>
+            <li>用于 Y-Δ 变换等电路简化</li>
+            <li>是电路等效变换的重要工具</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const r1 = document.getElementById('r1');
+  const r2 = document.getElementById('r2');
+  const r3 = document.getElementById('r3');
+  const r4 = document.getElementById('r4');
+  const forceShort = document.getElementById('force-short');
+  const V = 10;
+
+  function update() {
+    const R1 = parseInt(r1.value);
+    const R2 = parseInt(r2.value);
+    const R3 = parseInt(r3.value);
+    const R4 = parseInt(r4.value);
+    const forced = forceShort.checked;
+
+    document.getElementById('r1-display').textContent = R1 + ' Ω';
+    document.getElementById('r2-display').textContent = R2 + ' Ω';
+    document.getElementById('r3-display').textContent = R3 + ' Ω';
+    document.getElementById('r4-display').textContent = R4 + ' Ω';
+    document.getElementById('r1-val').textContent = R1 + 'Ω';
+    document.getElementById('r2-val').textContent = R2 + 'Ω';
+    document.getElementById('r3-val').textContent = R3 + 'Ω';
+    document.getElementById('r4-val').textContent = R4 + 'Ω';
+
+    const Vb = V * R3 / (R1 + R3);
+    const Vd = V * R4 / (R2 + R4);
+    document.getElementById('vb-val').textContent = Vb.toFixed(2);
+    document.getElementById('vd-val').textContent = Vd.toFixed(2);
+
+    const ratio1 = R1 / R2;
+    const ratio2 = R3 / R4;
+    const balanced = Math.abs(ratio1 - ratio2) < 0.001;
+
+    const statusEl = document.getElementById('balance-status');
+    if (balanced) {
+      statusEl.textContent = '电桥已平衡 — B、D 为自然等位点';
+      statusEl.className = 'status balanced';
+    } else {
+      statusEl.textContent = '电桥未平衡 — B、D 电位不等';
+      statusEl.className = 'status unbalanced';
+    }
+
+    const eq = Math.abs(ratio1 - ratio2) < 0.01 ? '✓' : '✗';
+    document.getElementById('balance-formula').innerHTML = 
+      R1 + ' / ' + R2 + ' = ' + R3 + ' / ' + R4 + ' → ' + 
+      ratio1.toFixed(2) + ' ' + (Math.abs(ratio1-ratio2)<0.001?'=':'≠') + ' ' + ratio2.toFixed(2) + ' ' + eq;
+
+    const naturalBox = document.getElementById('natural-eq');
+    const eqB = document.getElementById('eq-b');
+    const eqD = document.getElementById('eq-d');
+    const bridgeLine = document.getElementById('bridge-line');
+    const bridgeLabel = document.getElementById('bridge-label');
+
+    if (balanced) {
+      naturalBox.classList.add('active');
+      eqB.setAttribute('opacity', '1');
+      eqD.setAttribute('opacity', '1');
+      bridgeLine.setAttribute('stroke', '#40c057');
+      bridgeLine.setAttribute('stroke-dasharray', '6,4');
+      bridgeLine.setAttribute('stroke-width', '2');
+      bridgeLabel.setAttribute('fill', '#40c057');
+      bridgeLabel.textContent = '可断开（无电流）';
+    } else {
+      naturalBox.classList.remove('active');
+      eqB.setAttribute('opacity', '0');
+      eqD.setAttribute('opacity', '0');
+      bridgeLine.setAttribute('stroke', '#adb5bd');
+      bridgeLine.setAttribute('stroke-dasharray', '6,4');
+      bridgeLine.setAttribute('stroke-width', '2');
+      bridgeLabel.setAttribute('fill', '#adb5bd');
+      bridgeLabel.textContent = '桥臂';
+    }
+
+    const naturalReq = (R1 + R3) * (R2 + R4) / (R1 + R3 + R2 + R4);
+    document.getElementById('natural-req').innerHTML = 
+      'R<sub>eq</sub> = (R₁+R₃) ∥ (R₂+R₄) = (' + R1 + '+' + R3 + ') ∥ (' + R2 + '+' + R4 + ') = ' + naturalReq.toFixed(2) + ' Ω';
+
+    const forcedBox = document.getElementById('forced-eq');
+    const shortLine = document.getElementById('short-line');
+    const shortLabel = document.getElementById('short-label');
+
+    if (forced) {
+      forcedBox.classList.add('forced-active');
+      shortLine.setAttribute('opacity', '1');
+      shortLabel.setAttribute('opacity', '1');
+      bridgeLine.setAttribute('opacity', '0');
+      bridgeLabel.setAttribute('opacity', '0');
+    } else {
+      forcedBox.classList.remove('forced-active');
+      shortLine.setAttribute('opacity', '0');
+      shortLabel.setAttribute('opacity', '0');
+      bridgeLine.setAttribute('opacity', '1');
+      bridgeLabel.setAttribute('opacity', '1');
+    }
+
+    const r12 = R1 * R2 / (R1 + R2);
+    const r34 = R3 * R4 / (R3 + R4);
+    const forcedReq = r12 + r34;
+    document.getElementById('forced-req').innerHTML = 
+      'R<sub>eq</sub> = (R₁∥R₂) + (R₃∥R₄) = ' + r12.toFixed(2) + ' + ' + r34.toFixed(2) + ' = ' + forcedReq.toFixed(2) + ' Ω';
+  }
+
+  r1.addEventListener('input', update);
+  r2.addEventListener('input', update);
+  r3.addEventListener('input', update);
+  r4.addEventListener('input', update);
+  forceShort.addEventListener('change', update);
+
+  update();
+})();
+</script>
+</body>
+</html>

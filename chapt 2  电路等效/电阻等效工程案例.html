@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>邱关源第2章 · 无源电路等效变换 · 自动化控制案例</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin:0; font-family: "PingFang SC","Microsoft YaHei",sans-serif;
+        background: #f8fafc; color: #1e293b; font-size: 22px; line-height: 1.85;
+    }
+    header {
+        background: linear-gradient(135deg, #059669, #0d9488);
+        color: white; padding: 36px 24px; text-align: center;
+    }
+    header h1 { font-size: 40px; margin: 0; }
+    header p { font-size: 21px; opacity: 0.9; margin-top: 10px; }
+
+    .tabs {
+        display: flex; justify-content: center; gap: 12px;
+        background: #d1fae5; padding: 16px; flex-wrap: wrap;
+        position: sticky; top: 0; z-index: 10;
+    }
+    .tabs button {
+        font-size: 19px; padding: 14px 22px; border: none;
+        border-radius: 12px; cursor: pointer; background: white; color: #065f46;
+        transition: all .2s;
+    }
+    .tabs button:hover { background: #a7f3d0; }
+    .tabs button.active { background: #065f46; color: white; }
+
+    .pane {
+        max-width: 1180px; margin: 30px auto;
+        background: white; border-radius: 18px; padding: 44px;
+        box-shadow: 0 12px 48px rgba(0,0,0,.08); display: none;
+    }
+    .pane.active { display: block; }
+
+    h2 { font-size: 34px; color: #065f46; margin-top: 0; }
+    h3 { font-size: 26px; color: #475569; margin-top: 24px; }
+
+    .bg-card {
+        background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+        border-left: 8px solid #059669; padding: 24px; border-radius: 14px;
+        margin-bottom: 28px;
+    }
+    .bg-card strong { font-size: 24px; }
+
+    .eq {
+        background: #f1f5f9; padding: 22px 28px; border-radius: 14px;
+        font-size: 25px; text-align: center; border-left: 6px solid #6366f1;
+        margin: 20px 0; font-family: "Consolas", "Courier New", monospace;
+    }
+
+    .ctrl { display: flex; gap: 28px; flex-wrap: wrap; margin: 24px 0; align-items: center; }
+    .ctrl label { font-size: 21px; min-width: 180px; }
+    .ctrl span { font-weight: bold; color: #9a3412; font-size: 22px; }
+    input[type=range] { width: 220px; height: 10px; cursor: pointer; }
+
+    canvas {
+        display: block; margin: 24px auto; background: white;
+        border: 2px solid #d1fae5; border-radius: 14px;
+    }
+
+    .box { padding: 20px 24px; border-radius: 12px; font-size: 21px; margin: 18px 0; }
+    .b { background: #ecfdf5; border-left: 6px solid #059669; }
+    .g { background: #eff6ff; border-left: 6px solid #2563eb; }
+    .w { background: #fef3c7; border-left: 6px solid #d97706; }
+    .r { background: #fef2f2; border-left: 6px solid #dc2626; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 19px; margin: 18px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 13px; text-align: center; }
+    th { background: #f1f5f9; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>第2章 无源电路的等效变换</h1>
+    <p>串并联 · 分压公式 · Δ-Y 变换 · 输入电阻 → 自动化：电桥传感器 / 接地网</p>
+</header>
+
+<div class="tabs">
+    <button class="tabBtn active" onclick="showTab('theory', this)">📘 原理</button>
+    <button class="tabBtn" onclick="showTab('bridge', this)">🎛️ 称重电桥</button>
+    <button class="tabBtn" onclick="showTab('ground', this)">⚡ 接地网</button>
+    <button class="tabBtn" onclick="showTab('calc', this)">🧮 Δ-Y 计算器</button>
+</div>
+
+<!-- ====== 原理 ====== -->
+<div id="theory" class="pane active">
+    <div class="bg-card">
+        <strong>第2章核心：把复杂无源网络，化简成一个等效电阻</strong><br>
+        不用列 KCL/KVL 方程组，只靠串并联和 Δ-Y 变换，就能求出任意端口的等效电阻。<br>
+        这是后续所有"电路分析"的地基——第3章的系统化方法，本质是本章思想的自动化。
+    </div>
+
+    <h3>串并联快速回顾</h3>
+    <table>
+        <tr><th>连接</th><th>公式</th><th>直觉</th></tr>
+        <tr><td>串联</td><td>R = R₁+R₂+...+Rₙ</td><td>电流同，电阻加</td></tr>
+        <tr><td>并联</td><td>1/R = 1/R₁+1/R₂+...+1/Rₙ</td><td>电压同，电导加</td></tr>
+        <tr><td>两电阻并联</td><td>R = R₁R₂/(R₁+R₂)</td><td>最常用特例</td></tr>
+    </table>
+
+    <h3>分压公式</h3>
+    <div class="eq">
+        U₁ = U · R₁ / (R₁ + R₂) &nbsp;&nbsp;&nbsp; U₂ = U · R₂ / (R₁ + R₂)
+    </div>
+    <p>电流 I = U/(R₁+R₂)，各电阻上电压 = I × Rᵢ。电阻越大，分得的电压越多。</p>
+
+    <h3>Δ → Y 变换公式（邱关源式 2-4）</h3>
+    <div class="eq">
+        R₁ = Rₐ·R꜀ / (Rₐ+Rᵦ+R꜀)<br>
+        R₂ = Rₐ·Rᵦ / (Rₐ+Rᵦ+R꜀)<br>
+        R₃ = Rᵦ·R꜀ / (Rₐ+Rᵦ+R꜀)
+    </div>
+    <p><b>口诀：</b>Y 形某臂 = Δ 形中与该臂相连的两电阻之积 ÷ Δ 形三电阻之和。</p>
+
+    <h3>Y → Δ 变换公式</h3>
+    <div class="eq">
+        Rₐ = R₁+R₂ + R₁·R₂/R₃<br>
+        Rᵦ = R₂+R₃ + R₂·R₃/R₁<br>
+        R꜀ = R₃+R₁ + R₃·R₁/R₂
+    </div>
+
+    <canvas id="cTheory" width="800" height="340"></canvas>
+
+    <div class="w box">
+        💡 什么时候用 Δ-Y？——三个电阻首尾相接成三角形，且所求端口不在同一支路时。<br>
+        自动化里的电桥传感器、PCB 地线网格，全是桥形/网格，必须掌握 Δ-Y。
+    </div>
+</div>
+
+<!-- ====== 自动化：应变片电桥 ====== -->
+<div id="bridge" class="pane">
+    <div class="bg-card">
+        <strong>🎛️ 自动化案例：工业电子秤（惠斯通电桥）</strong><br><br>
+        自动化生产线上的称重传感器、汽车油箱液位计、甚至你的体重秤，核心都是<strong>惠斯通电桥</strong>。<br>
+        金属箔应变片贴在弹性体上，受力后电阻微变（ΔR）。电桥把"电阻变化"转换成"电压信号"，送给放大器。<br><br>
+        <b>真实参数（国标 GB/T 7551）：</b>标称电阻 120 Ω，供电 10 V DC，满负荷 ΔR ≈ ±0.5 Ω，输出 ±20 mV。<br>
+        这个 mV 级信号，正是第1章学的 4–20 mA 变送器的前级输入。
+    </div>
+
+    <h3>惠斯通电桥电路模型</h3>
+    <p>
+        左臂：R₁ = 120+ΔR（应变片，受拉时 ΔR&gt;0），R₂ = 120Ω（固定电阻）<br>
+        右臂：R₃ = 120Ω（固定），R₄ = 120Ω（固定）<br>
+        输出端 Vout = V⁺ − V⁻，接到仪表放大器（增益 100~500 倍）。
+    </p>
+    <canvas id="cBridge" width="840" height="500"></canvas>
+
+    <div class="ctrl">
+        <label>施加重量 → ΔR = <span id="drVal">0.00</span> Ω</label>
+        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" oninput="updBridge(this.value)">
+        <span style="color:#059669">(拉正压 / 压缩负)</span>
+    </div>
+
+    <div class="eq" id="bridgeEq">Vout = 0.0000 V</div>
+
+    <table>
+        <tr><th>物理量</th><th>计算值</th><th>对应第2章原理</th></tr>
+        <tr><td>左臂中点电位 V⁺</td><td id="vp">-</td><td>分压：V⁺ = 10 × R₂/(R₁+R₂)</td></tr>
+        <tr><td>右臂中点电位 V⁻</td><td id="vn">-</td><td>分压：V⁻ = 10 × R₄/(R₃+R₄)</td></tr>
+        <tr><td>电桥输出 Vout</td><td id="vout">-</td><td>Vout = V⁺ − V⁻（差模信号）</td></tr>
+        <tr><td>输出等效电阻 R_out</td><td id="rout">-</td><td>电源短路后从输出端看进去</td></tr>
+    </table>
+
+    <div id="bridgeRes" class="g box"></div>
+
+    <div class="w box">
+        💡 <b>为什么要用电桥而不是直接测电阻？</b><br>
+        直接测 120 Ω 变成 120.5 Ω（变化 0.4%）极难精确测量。<br>
+        但电桥把它变成 20 mV 电压信号，精度提升百倍。<br>
+        而且温度变化时，四个电阻同步漂移，Vout 几乎不变 → 自动抵消温度漂移。
+    </div>
+
+    <h3>用 Δ-Y 求输出阻抗（进阶）</h3>
+    <p>
+        把电桥从"输出端"看进去，可以等效为一个电阻 R_out。<br>
+        方法：将电压源短路（10V → 导线），从输出端口看进去的等效电阻。<br>
+        此时 R₁ 与 R₂ 并联、R₃ 与 R₄ 并联，两条并联支路串联在输出端口两端。
+    </p>
+    <canvas id="cBridgeZ" width="840" height="380"></canvas>
+    <div id="bridgeZRes" class="b box"></div>
+</div>
+
+<!-- ====== 变电站接地网 ====== -->
+<div id="ground" class="pane">
+    <div class="bg-card">
+        <strong>⚡ 工程背景：110kV 变电站接地网</strong><br><br>
+        变电站地下埋着一张钢铁网格（40×4mm 扁钢焊接），所有设备外壳、避雷针、中性线都接在上面。<br>
+        国标 GB/T 50065 规定：接地电阻 R ≤ 0.5Ω，否则雷击时地电位抬升太高，会"反击"损坏设备。<br>
+        设计流程：先用公式估算（第2章等效思想）→ 再用 CDEGS 等专业软件校核。<br><br>
+        <b>物理本质：</b>电流从网格径向流入土壤，等效为一个"半球接地极"，散流电阻主导。
+    </div>
+
+    <h3>物理模型：等效半球接地极</h3>
+    <div class="eq">
+        R_g = ρ / (2π · r) &nbsp;&nbsp; 其中 r = √(A/π) = a/√π
+    </div>
+    <p>推导：电流从半球面径向散流，dR = ρ·dr/(2πr²)，积分 0→∞ 得 R = ρ/(2πr)。</p>
+
+    <h3>接地网简化示意图</h3>
+    <canvas id="cGround" width="840" height="440"></canvas>
+
+    <div class="ctrl">
+        <label>网格边长 a = <span id="aVal">60</span> m</label>
+        <input type="range" min="20" max="120" value="60" step="5" oninput="updGround('a',this.value)">
+        <label>土壤电阻率 ρ = <span id="rhoVal">100</span> Ω·m</label>
+        <input type="range" min="50" max="800" value="100" step="10" oninput="updGround('r',this.value)">
+    </div>
+
+    <div class="eq" id="groundEq">R_g = 0.000 Ω</div>
+    <div id="groundRes" class="b box"></div>
+
+    <h3>不同土壤、不同面积的达标速查表</h3>
+    <table id="groundTable">
+        <tr><th>面积</th><th>r_eq (m)</th><th>ρ=50</th><th>ρ=100</th><th>ρ=300</th><th>ρ=500</th></tr>
+    </table>
+
+    <div class="r box">
+        ⚠️ 第2章精神：把"地下钢铁网"这个复杂形状，等效为"一个半球"——只用一个公式就抓住主要矛盾。<br>
+        精确设计还要用 CDEGS 软件考虑网格间距、埋深、季节系数等修正。
+    </div>
+</div>
+
+<!-- ====== Δ-Y 计算器 ====== -->
+<div id="calc" class="pane">
+    <div class="bg-card">
+        <strong>🧮 Δ-Y 变换计算器</strong><br>
+        拖动滑块改变 Δ 形三个电阻，下方同时画出 Δ 和 Y 电路图，并标注每个等效电阻值。
+    </div>
+
+    <div class="ctrl">
+        <label>Rₐ = <span id="ra">30</span> Ω</label>
+        <input type="range" min="5" max="100" value="30" step="1" oninput="updCalc('a',this.value)">
+        <label>Rᵦ = <span id="rb">30</span> Ω</label>
+        <input type="range" min="5" max="100" value="30" step="1" oninput="updCalc('b',this.value)">
+        <label>R꜀ = <span id="rc">30</span> Ω</label>
+        <input type="range" min="5" max="100" value="30" step="1" oninput="updCalc('c',this.value)">
+    </div>
+
+    <canvas id="cCalc" width="800" height="360"></canvas>
+
+    <div class="eq" id="calcRes">R₁ = R₂ = R₃ = 10.0 Ω</div>
+    <div id="calcDetail" class="b box"></div>
+
+    <h3>反过来：Y → Δ</h3>
+    <div class="eq" id="calcReverse">Rₐ = Rᵦ = R꜀ = 30.0 Ω</div>
+
+    <h3>手算验证表</h3>
+    <table>
+        <tr><th>Δ 输入</th><th>R₁ (Y)</th><th>R₂ (Y)</th><th>R₃ (Y)</th><th>Y→Δ 还原校验</th></tr>
+        <tr><td>10, 20, 30</td><td>5.0</td><td>3.33</td><td>10.0</td><td id="chk1">-</td></tr>
+        <tr><td>30, 30, 30</td><td>10.0</td><td>10.0</td><td>10.0</td><td id="chk2">-</td></tr>
+    </table>
+
+    <div class="w box">
+        💡 对称 Δ（30Ω）→ 对称 Y（10Ω），正好是 1:3 关系。<br>
+        变电站接地网的每个"方格"就是这样的对称单元，化简极快。
+    </div>
+</div>
+
+<script>
+/* ============ 全局变量 ============ */
+var rho = 100, side = 60;
+var dr = 0;
+var ra = 30, rb = 30, rc = 30;
+
+/* ============ Tab 切换 ============ */
+function showTab(id, btn) {
+    document.querySelectorAll('.pane').forEach(function(p){
+        p.classList.remove('active');
+    });
+    var target = document.getElementById(id);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.tabBtn').forEach(function(b){
+        b.classList.remove('active');
+    });
+    if (btn) btn.classList.add('active');
+
+    if (id === 'theory') drawTheory();
+    if (id === 'bridge') { drawBridge(); drawBridgeZ(); }
+    if (id === 'ground') drawGround();
+    if (id === 'calc') drawCalc();
+}
+
+/* ============ Canvas 工具 ============ */
+function getCtx(id) {
+    var c = document.getElementById(id);
+    if (!c) { console.error('Canvas not found: ' + id); return null; }
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    return ctx;
+}
+function dot(ctx, x, y, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, 7);
+    ctx.fillStyle = color || '#0ea5e9';
+    ctx.fill();
+}
+
+/* ============ 原理图 ============ */
+function drawTheory() {
+    var ctx = getCtx('cTheory'); if (!ctx) return;
+    ctx.font = '18px sans-serif';
+
+    // Δ 形（左侧）
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3;
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath(); ctx.moveTo(180, 120); ctx.lineTo(320, 120);
+    ctx.lineTo(250, 210); ctx.closePath(); ctx.stroke();
+    ctx.fillText('Rₐ', 240, 110);
+    ctx.fillText('Rᵦ', 330, 175);
+    ctx.fillText('R꜀', 155, 175);
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Δ', 245, 180);
+
+    // 箭头
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(360, 170); ctx.lineTo(440, 170); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = '16px sans-serif';
+    ctx.fillText('变换', 370, 160);
+
+    // Y 形（右侧）
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3;
+    var cx = 560, cy = 170;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 70); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + 60, cy + 50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - 60, cy + 50); ctx.stroke();
+    dot(ctx, cx, cy, '#2563eb');
+    ctx.fillStyle = '#2563eb'; ctx.font = '18px sans-serif';
+    ctx.fillText('R₁', cx + 10, cy - 55);
+    ctx.fillText('R₂', cx + 70, cy + 55);
+    ctx.fillText('R₃', cx - 80, cy + 55);
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Y', cx - 25, cy + 5);
+
+    // 串联/并联小图（底部）
+    ctx.strokeStyle = '#059669'; ctx.lineWidth = 3;
+    ctx.fillStyle = '#059669'; ctx.font = '16px sans-serif';
+    // 串联
+    ctx.beginPath(); ctx.moveTo(80, 280); ctx.lineTo(180, 280); ctx.stroke();
+    ctx.fillRect(120, 268, 30, 24); ctx.fillStyle='#fff'; ctx.fillText('R₁',125,286);
+    ctx.fillStyle='#059669';
+    ctx.beginPath(); ctx.moveTo(200, 280); ctx.lineTo(300, 280); ctx.stroke();
+    ctx.fillRect(240, 268, 30, 24); ctx.fillStyle='#fff'; ctx.fillText('R₂',245,286);
+    ctx.fillStyle='#059669';
+    ctx.fillText('串联: R = R₁+R₂', 100, 310);
+
+    // 并联
+    ctx.beginPath(); ctx.moveTo(400, 260); ctx.lineTo(400, 300); ctx.stroke();
+    ctx.fillRect(388, 268, 24, 24); ctx.fillStyle='#fff'; ctx.fillText('R₁',391,286);
+    ctx.beginPath(); ctx.moveTo(450, 260); ctx.lineTo(450, 300); ctx.stroke();
+    ctx.fillRect(438, 268, 24, 24); ctx.fillStyle='#fff'; ctx.fillText('R₂',441,286);
+    ctx.fillStyle='#059669';
+    ctx.beginPath(); ctx.moveTo(400, 300); ctx.lineTo(450, 300); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(380, 260); ctx.lineTo(470, 260); ctx.stroke();
+    ctx.fillText('并联: 1/R = 1/R₁+1/R₂', 410, 320);
+
+    // 分压
+    ctx.fillText('分压: U₁ = U·R₁/(R₁+R₂)', 600, 285);
+}
+
+/* ============ 电桥 ============ */
+function updBridge(v) {
+    dr = parseFloat(v);
+    var el = document.getElementById('drVal');
+    if (el) el.innerText = dr.toFixed(2);
+    drawBridge();
+    drawBridgeZ();
+}
+
+function drawBridge() {
+    var ctx = getCtx('cBridge'); if (!ctx) return;
+    ctx.font = '17px sans-serif';
+
+    // 节点坐标
+    var xC = 420, yC = 100;   // 电源正 (10V)
+    var xG = 420, yG = 380;   // 电源负 (GND)
+    var xL = 280, yM = 240;   // 左中点 (V+)
+    var xR = 560, yM2 = 240;  // 右中点 (V-)
+
+    // ===== 电源（顶部）=====
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(xC - 35, yC - 28, 70, 22);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('10V', xC - 18, yC - 13);
+    ctx.fillStyle = '#dc2626'; ctx.font = '18px sans-serif';
+    ctx.fillText('+', xC + 40, yC - 13);
+    // 连线到上方
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xC, yC - 28); ctx.lineTo(xC, yC - 40); ctx.stroke();
+    ctx.fillText('直流电源', xC - 30, yC - 48);
+
+    // ===== 地线（底部）=====
+    ctx.fillStyle = '#0369a1';
+    ctx.fillRect(xG - 35, yG + 6, 70, 22);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('GND', xG - 22, yG + 22);
+    ctx.fillStyle = '#0369a1'; ctx.font = '18px sans-serif';
+    ctx.fillText('−', xG + 40, yG + 22);
+    // 连线
+    ctx.strokeStyle = '#0369a1'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xG, yG + 28); ctx.lineTo(xG, yG + 40); ctx.stroke();
+    ctx.fillText('接地参考点', xG - 35, yG + 58);
+
+    // ===== 四条电阻臂 =====
+    ctx.strokeStyle = '#374151'; ctx.lineWidth = 3;
+    // R1 (上左): 电源正 → 左中点
+    ctx.beginPath(); ctx.moveTo(xC, yC); ctx.lineTo(xL, yM); ctx.stroke();
+    // R2 (下左): 左中点 → GND
+    ctx.beginPath(); ctx.moveTo(xL, yM); ctx.lineTo(xG, yG); ctx.stroke();
+    // R3 (上右): 电源正 → 右中点
+    ctx.beginPath(); ctx.moveTo(xC, yC); ctx.lineTo(xR, yM2); ctx.stroke();
+    // R4 (下右): 右中点 → GND
+    ctx.beginPath(); ctx.moveTo(xR, yM2); ctx.lineTo(xG, yG); ctx.stroke();
+
+    // ===== 输出线（水平虚线）=====
+    ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(xL, yM); ctx.lineTo(xL - 100, yM); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xR, yM2); ctx.lineTo(xR + 100, yM2); ctx.stroke();
+    ctx.setLineDash([]);
+    // 输出连接线（实线中间段）
+    ctx.beginPath(); ctx.moveTo(xL, yM); ctx.lineTo(xR, yM2); ctx.stroke();
+
+    // ===== 节点圆点 =====
+    dot(ctx, xC, yC, '#dc2626');
+    dot(ctx, xG, yG, '#0369a1');
+    dot(ctx, xL, yM, '#0ea5e9');
+    dot(ctx, xR, yM2, '#0ea5e9');
+
+    // ===== 电阻符号（小矩形在臂上）=====
+    function drawRBox(ctx, x, y, label, color) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(x - 18, y - 10, 36, 20);
+        ctx.strokeStyle = color || '#374151';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x - 18, y - 10, 36, 20);
+        ctx.fillStyle = '#1e293b'; ctx.font = '14px sans-serif';
+        ctx.fillText(label, x - 16, y + 4);
+    }
+
+    var R = 120;
+    // R1 上左中点
+    drawRBox(ctx, (xC+xL)/2 - 15, (yC+yM)/2, 'R₁', '#dc2626');
+    // R2 下左
+    drawRBox(ctx, (xG+xL)/2 - 15, (yG+yM)/2, 'R₂', '#ea580c');
+    // R3 上右
+    drawRBox(ctx, (xC+xR)/2 + 15, (yC+yM2)/2, 'R₃', '#059669');
+    // R4 下右
+    drawRBox(ctx, (xG+xR)/2 + 15, (yG+yM2)/2, 'R₄', '#0891b2');
+
+    // 电阻值标注
+    ctx.fillStyle = '#dc2626'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('R₁=' + (R+dr).toFixed(2) + 'Ω', (xC+xL)/2 - 50, (yC+yM)/2 - 18);
+    ctx.fillStyle = '#1e293b'; ctx.font = '12px sans-serif';
+    ctx.fillText('（应变片）', (xC+xL)/2 - 55, (yC+yM)/2 - 35);
+
+    ctx.fillStyle = '#ea580c'; ctx.font = '15px sans-serif';
+    ctx.fillText('R₂=' + R + 'Ω', (xG+xL)/2 - 45, (yG+yM)/2 + 28);
+
+    ctx.fillStyle = '#059669'; ctx.font = '15px sans-serif';
+    ctx.fillText('R₃=' + R + 'Ω', (xC+xR)/2 + 25, (yC+yM2)/2 - 18);
+
+    ctx.fillStyle = '#0891b2'; ctx.font = '15px sans-serif';
+    ctx.fillText('R₄=' + R + 'Ω', (xG+xR)/2 + 25, (yG+yM2)/2 + 28);
+
+    // ===== 输出标注 =====
+    ctx.fillStyle = '#7c3aed'; ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('V⁺', xL - 90, yM - 10);
+    ctx.fillText('V⁻', xR + 70, yM2 - 10);
+    // Vout 箭头
+    ctx.beginPath();
+    ctx.moveTo(xR + 70, yM2 + 15);
+    ctx.lineTo(xR + 70, yM2 + 45);
+    ctx.stroke();
+    ctx.fillText('Vout = V⁺ − V⁻', xR + 75, yM2 + 60);
+
+    // ===== 电流方向箭头 =====
+    ctx.fillStyle = '#9ca3f8'; ctx.font = '13px sans-serif';
+    ctx.fillText('I₁', (xC+xL)/2 + 5, (yC+yM)/2 + 5);
+    ctx.fillText('I₂', (xG+xL)/2 + 5, (yG+yM)/2 - 5);
+    ctx.fillText('I₃', (xC+xR)/2 - 18, (yC+yM2)/2 + 5);
+    ctx.fillText('I₄', (xG+xR)/2 - 18, (yG+yM2)/2 - 5);
+
+    // ===== 数值计算 =====
+    var R1 = R + dr, R2 = R, R3 = R, R4 = R;
+    var Vplus = 10 * R2 / (R1 + R2);
+    var Vminus = 10 * R4 / (R3 + R4);
+    var Vout = Vplus - Vminus;
+    var Rout = R1 * R2 / (R1 + R2) + R3 * R4 / (R3 + R4);
+
+    var eqEl = document.getElementById('bridgeEq');
+    if (eqEl) {
+        var sign = Vout >= 0 ? '+' : '−';
+        eqEl.innerText = 'Vout = ' + Vplus.toFixed(4) + ' − ' + Vminus.toFixed(4)
+            + ' = ' + Vout.toFixed(4) + ' V  (' + (Vout * 1000).toFixed(2) + ' mV)';
+    }
+    var vp = document.getElementById('vp');
+    if (vp) vp.innerText = Vplus.toFixed(4) + ' V';
+    var vn = document.getElementById('vn');
+    if (vn) vn.innerText = Vminus.toFixed(4) + ' V';
+    var vo = document.getElementById('vout');
+    if (vo) vo.innerText = (Vout * 1000).toFixed(2) + ' mV';
+    var ro = document.getElementById('rout');
+    if (ro) ro.innerText = Rout.toFixed(2) + ' Ω';
+
+    var res = document.getElementById('bridgeRes');
+    if (res) {
+        var pct = Vout / 0.020 * 100;
+        var ampOut = Vout * 100 * 1000; // mV * 100 = mV out, convert to V
+        res.innerHTML =
+            '📊 当前输出 ' + (Vout * 1000).toFixed(2) + ' mV，对应满量程的 ' + pct.toFixed(1) + '%<br>' +
+            '→ 仪表放大器（增益 100）× ' + (Vout * 1000).toFixed(2) + ' mV = ' + (ampOut/1000).toFixed(3) + ' V → PLC 模拟量输入<br>' +
+            '→ 满量程时：20 mV × 100 = 2.0 V（典型 PLC 量程 0–10V 的 20%）';
+    }
+}
+
+/* ============ 电桥输出阻抗图（修正版）============ */
+function drawBridgeZ() {
+    var ctx = getCtx('cBridgeZ'); if (!ctx) return;
+    ctx.font = '17px sans-serif';
+
+    var R = 120, R1v = R + dr, R2v = R, R3v = R, R4v = R;
+    var Rpar1 = R1v * R2v / (R1v + R2v);
+    var Rpar2 = R3v * R4v / (R3v + R4v);
+
+    // 左侧说明
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('求输出阻抗 R_out 的步骤：', 80, 50);
+    ctx.font = '15px sans-serif';
+    ctx.fillText('① 将电压源短路（10V → 导线）', 80, 80);
+    ctx.fillText('② 从输出端看进去', 80, 105);
+    ctx.fillText('③ 此时 R₁∥R₂ 与 R₃∥R₄ 串联', 80, 130);
+
+    // 左侧等效电路图
+    var zx = 280, zy = 240;
+    ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 3;
+    // 输出端口两个端点
+    dot(ctx, zx - 80, zy, '#7c3aed');  // 左端
+    dot(ctx, zx + 80, zy, '#7c3aed');  // 右端
+
+    // 上支路 (R1∥R2)
+    // 实际是：左端 → R1 → 中点 → R2 → 右端 ... 不对
+    // 正确：短路后，电源正和GND短接
+    // 从输出端口看：左端连到 R1+R2 的中点
+    // 不，让我重新想：
+    // 电桥输出端是 V+ 和 V- 两点
+    // 短路电源后，+10V 和 GND 变成同一点
+    // 从 V+ 看：R1 连到短接点，R2 也连到短接点 → R1∥R2
+    // 从 V- 看：R3∥R4
+    // V+ 和 V- 之间：R1∥R2 串联 R3∥R4
+
+    // 画成水平结构：V+ ----[R1∥R2]---- node ----[R3∥R4]---- V-
+    // 但 V+ 和 V- 就是输出两端
+
+    // 简化图：左端=V+out，右端=V-out
+    // 上方：R1∥R2
+    // 下方：R3∥R4
+    // 它们是并联关系！
+
+    // 重新画：输出端口两端之间，有两条并联支路
+    // 上支路：R1∥R2 (但这个值是 R1和R2并联的结果)
+    // 下支路：R3∥R4
+
+    // 不对，再想：
+    // 短路电源后，原电桥变成：
+    // V+ 节点连 R1 到短接点，连 R2 到短接点 → R1∥R2 从 V+ 到短接点
+    // V- 节点连 R3 到短接点，连 R4 到短接点 → R3∥R4 从 V- 到短接点
+    // V+ 和 V- 之间没有直接连接
+    // 从 V+ 到 V- 看：经过 R1∥R2 到短接点，再经过 R3∥R4 到 V-
+    // 所以是串联！
+
+    // 画成：V+ ----[R1∥R2]---- GND ----[R3∥R4]---- V-
+    // 但 GND 是同一个点，所以 V+ 到 V- = (R1∥R2) + (R3∥R4)
+
+    // 水平画：左=V+out 右=V-out
+    var leftX = zx - 100, rightX = zx + 100, midY = zy;
+
+    // 上路径：左 → R1∥R2 → 中 → R3∥R4 → 右 (不对，太复杂)
+
+    // 简化：画一个等效电路
+    // V+out ──[R_par1]──┬──[R_par2]── V-out
+    //                   │
+    //                  GND
+
+    // 实际就是：R_par1 和 R_par2 串联在 V+out 和 V-out 之间
+    // 因为 GND 是公共参考
+
+    // 让我画简单点：
+    // 左端点 ──[R₁∥R₂]── 中间节点 ──[R₃∥R₄]── 右端点
+    var midX = zx;
+
+    // 左到中
+    ctx.beginPath(); ctx.moveTo(leftX, midY); ctx.lineTo(midX, midY); ctx.stroke();
+    // 中到右
+    ctx.beginPath(); ctx.moveTo(midX, midY); ctx.lineTo(rightX, midY); ctx.stroke();
+
+    // 中到 GND（向下）
+    ctx.beginPath(); ctx.moveTo(midX, midY); ctx.lineTo(midX, midY + 60); ctx.stroke();
+    ctx.fillStyle = '#0369a1'; ctx.font = '14px sans-serif';
+    ctx.fillText('GND', midX - 15, midY + 78);
+
+    // 电阻标注
+    ctx.fillStyle = '#7c3aed'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('R₁∥R₂=' + Rpar1.toFixed(2) + 'Ω', (leftX+midX)/2 - 40, midY - 10);
+    ctx.fillText('R₃∥R₄=' + Rpar2.toFixed(2) + 'Ω', (midX+rightX)/2 - 40, midY - 10);
+
+    // 端口标注
+    ctx.fillStyle = '#dc2626'; ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('V⁺out', leftX - 50, midY - 15);
+    ctx.fillText('V⁻out', rightX + 15, midY - 15);
+
+    // 右侧数值
+    var rx = 480;
+    ctx.fillStyle = '#1e293b'; ctx.font = '15px sans-serif';
+    ctx.fillText('R_par1 = R₁∥R₂', rx, 130);
+    ctx.fillText('= ' + R1v + '∥' + R2v, rx, 155);
+    ctx.fillText('= ' + R1v + '×' + R2v + '/(' + R1v + '+' + R2v + ')', rx, 180);
+    ctx.fillText('= ' + Rpar1.toFixed(2) + ' Ω', rx, 205);
+
+    ctx.fillText('R_par2 = R₃∥R₄', rx, 240);
+    ctx.fillText('= ' + R3v + '∥' + R4v, rx, 265);
+    ctx.fillText('= ' + Rpar2.toFixed(2) + ' Ω', rx, 290);
+
+    ctx.fillStyle = '#059669'; ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('R_out = R_par1 + R_par2', rx, 325);
+    ctx.fillText('= ' + Rpar1.toFixed(2) + ' + ' + Rpar2.toFixed(2), rx, 350);
+    ctx.fillText('= ' + (Rpar1+Rpar2).toFixed(2) + ' Ω', rx, 375);
+
+    var res = document.getElementById('bridgeZRes');
+    if (res) {
+        res.innerHTML =
+            '<b>计算：</b><br>' +
+            'R₁∥R₂ = ' + R1v + '×' + R2v + '/(' + R1v + '+' + R2v + ') = ' + Rpar1.toFixed(2) + ' Ω<br>' +
+            'R₃∥R₄ = ' + R3v + '×' + R4v + '/(' + R3v + '+' + R4v + ') = ' + Rpar2.toFixed(2) + ' Ω<br>' +
+            '<b>R_out = ' + Rpar1.toFixed(2) + ' + ' + Rpar2.toFixed(2) + ' = ' + (Rpar1+Rpar2).toFixed(2) + ' Ω</b><br>' +
+            '<i>后级仪表放大器的输入阻抗应 ≫ ' + (Rpar1+Rpar2).toFixed(0) + 'Ω（通常 ≥ 1MΩ），否则会分压导致误差。</i>';
+    }
+}
+
+/* ============ 接地网 ============ */
+function updGround(kind, v) {
+    if (kind === 'a') {
+        side = +v;
+        var ea = document.getElementById('aVal');
+        if (ea) ea.innerText = v;
+    }
+    if (kind === 'r') {
+        rho = +v;
+        var er = document.getElementById('rhoVal');
+        if (er) er.innerText = v;
+    }
+    drawGround();
+}
+
+function drawGround() {
+    var ctx = getCtx('cGround'); if (!ctx) return;
+    ctx.font = '16px sans-serif';
+
+    // 3x3 网格（左侧）
+    ctx.strokeStyle = '#059669'; ctx.lineWidth = 2;
+    var ox = 160, oy = 100, step = 55;
+    for (var i = 0; i < 4; i++) {
+        ctx.beginPath(); ctx.moveTo(ox + i * step, oy); ctx.lineTo(ox + i * step, oy + 3 * step); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ox, oy + i * step); ctx.lineTo(ox + 3 * step, oy + i * step); ctx.stroke();
+    }
+    for (var ni = 0; ni < 4; ni++) {
+        for (var nj = 0; nj < 4; nj++) {
+            dot(ctx, ox + ni * step, oy + nj * step, '#0ea5e9');
+        }
+    }
+
+    // 电流注入点（左上角）
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath(); ctx.arc(ox, oy, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('I', ox - 5, oy + 4);
+    ctx.fillStyle = '#dc2626'; ctx.font = '15px sans-serif';
+    ctx.fillText('雷击电流注入点', ox + 20, oy - 8);
+
+    // 扁钢标注
+    ctx.fillStyle = '#059669'; ctx.font = '13px sans-serif';
+    ctx.fillText('40×4mm 扁钢焊接', ox + step - 10, oy + step/2 + 5);
+    ctx.fillText('网格间距 5~10m', ox + step, oy + step + 15);
+
+    // 标注面积
+    ctx.fillStyle = '#1e293b'; ctx.font = '16px sans-serif';
+    ctx.fillText('面积 A = ' + side + 'm × ' + side + 'm', ox + 3 * step + 30, oy + 30);
+    ctx.fillText('= ' + (side * side) + ' m²', ox + 3 * step + 30, oy + 55);
+    ctx.fillText('埋深 h = 0.8m', ox + 3 * step + 30, oy + 80);
+
+    // 半球等效示意（右侧）
+    var hx = 560, hy = 240;
+    // 地面线
+    ctx.strokeStyle = '#78716c'; ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath(); ctx.moveTo(hx - 120, hy); ctx.lineTo(hx + 120, hy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#78716c'; ctx.font = '13px sans-serif';
+    ctx.fillText('地面', hx - 15, hy - 10);
+
+    // 半球
+    ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(hx, hy, 80, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(234, 88, 12, 0.08)';
+    ctx.fill();
+
+    // 半径标注
+    ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + 80, hy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ea580c'; ctx.font = '14px sans-serif';
+    ctx.fillText('r', hx + 35, hy - 8);
+
+    // 电流箭头（径向）
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + 60, hy - 55); ctx.stroke();
+    ctx.fillStyle = '#dc2626'; ctx.font = '13px sans-serif';
+    ctx.fillText('I 径向散流', hx + 65, hy - 58);
+
+    // 标注
+    ctx.fillStyle = '#ea580c'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('等效半球电极', hx - 50, hy - 95);
+    ctx.fillStyle = '#1e293b'; ctx.font = '14px sans-serif';
+    ctx.fillText('r = √(A/π)', hx - 35, hy + 100);
+    ctx.fillText('= ' + side + '/√π', hx - 25, hy + 120);
+
+    // ===== 计算 =====
+    var A = side * side;
+    var r_eq = Math.sqrt(A / Math.PI);
+    var R_g = rho / (2 * Math.PI * r_eq);
+    var status = R_g <= 0.5 ? '✅ 达标' : '❌ 超标';
+    var statusColor = R_g <= 0.5 ? '#059669' : '#dc2626';
+
+    var eqEl = document.getElementById('groundEq');
+    if (eqEl) {
+        eqEl.innerText = 'R_g = ' + rho + ' / (2π × ' + r_eq.toFixed(1) + ') = ' + R_g.toFixed(3) + ' Ω  ' + status;
+    }
+
+    var detail = '等效半球半径 r = √(A/π) = √(' + A + '/π) = ' + r_eq.toFixed(1) + ' m<br>';
+    detail += 'R_g = ρ / (2πr) = ' + rho + ' / (2π × ' + r_eq.toFixed(1) + ') = ' + R_g.toFixed(3) + ' Ω<br>';
+    if (R_g <= 0.5) {
+        detail += '<b style="color:#059669">✅ 满足 GB/T 50065 要求（R ≤ 0.5Ω）</b>';
+    } else if (R_g <= 1.0) {
+        detail += '<b style="color:#d97706">⚠️ 临界，建议加降阻模块</b>';
+    } else {
+        detail += '<b style="color:#dc2626">❌ 严重超标！必须加深井接地极或降阻剂</b>';
+    }
+    // 添加物理说明
+    detail += '<br><i>物理含义：电流从半球面径向流入无穷远土壤，微元电阻 dR=ρ·dr/(2πr²)，积分得 R=ρ/(2πr)</i>';
+    var resEl = document.getElementById('groundRes');
+    if (resEl) resEl.innerHTML = detail;
+
+    ctx.fillStyle = statusColor; ctx.font = 'bold 18px monospace';
+    ctx.fillText('R_g = ' + R_g.toFixed(3) + ' Ω', ox + 3 * step + 30, oy + 110);
+
+    // 速查表
+    var tbl = document.getElementById('groundTable');
+    if (tbl) {
+        var sizes = [30, 40, 50, 60, 80, 100];
+        var rhos = [50, 100, 300, 500];
+        var html = '<tr><th>面积</th><th>r_eq (m)</th>';
+        for (var r = 0; r < rhos.length; r++) html += '<th>ρ=' + rhos[r] + '</th>';
+        html += '</tr>';
+        for (var s = 0; s < sizes.length; s++) {
+            var area = sizes[s] * sizes[s];
+            var re = Math.sqrt(area / Math.PI);
+            html += '<tr><td>' + sizes[s] + '×' + sizes[s] + 'm</td><td>' + re.toFixed(1) + '</td>';
+            for (var r2 = 0; r2 < rhos.length; r2++) {
+                var rg = rhos[r2] / (2 * Math.PI * re);
+                var ok = rg <= 0.5;
+                html += '<td style="color:' + (ok ? '#059669' : '#dc2626') + '">' + rg.toFixed(3) + (ok ? ' ✅' : ' ❌') + '</td>';
+            }
+            html += '</tr>';
+        }
+        tbl.innerHTML = html;
+    }
+}
+
+/* ============ Δ-Y 计算器 ============ */
+function updCalc(t, v) {
+    if (t === 'a') { ra = +v; var ela = document.getElementById('ra'); if (ela) ela.innerText = v; }
+    if (t === 'b') { rb = +v; var elb = document.getElementById('rb'); if (elb) elb.innerText = v; }
+    if (t === 'c') { rc = +v; var elc = document.getElementById('rc'); if (elc) elc.innerText = v; }
+    drawCalc();
+}
+
+function drawCalc() {
+    var ctx = getCtx('cCalc'); if (!ctx) return;
+    ctx.font = '18px sans-serif';
+
+    // Δ 形
+    var dx = 180, dy = 180, ds = 80;
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(dx - ds, dy); ctx.lineTo(dx + ds, dy);
+    ctx.lineTo(dx, dy + ds * 0.866); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = '#dc2626'; ctx.font = '16px sans-serif';
+    ctx.fillText('Rₐ=' + ra + 'Ω', dx - 50, dy - 15);
+    ctx.fillText('Rᵦ=' + rb + 'Ω', dx + ds + 10, dy + 5);
+    ctx.fillText('R꜀=' + rc + 'Ω', dx - ds - 65, dy + 5);
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Δ', dx + 5, dy + 30);
+
+    // 节点
+    dot(ctx, dx - ds, dy, '#dc2626');
+    dot(ctx, dx + ds, dy, '#dc2626');
+    dot(ctx, dx, dy + ds * 0.866, '#dc2626');
+
+    // 箭头
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(dx + ds + 40, dy + 50); ctx.lineTo(dx + ds + 100, dy + 50); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = '15px sans-serif';
+    ctx.fillText('Δ→Y', dx + ds + 45, dy + 42);
+
+    // Y 形
+    var yx = 500, yy = 180;
+    var sum = ra + rb + rc;
+    var r1 = ra * rc / sum;
+    var r2 = ra * rb / sum;
+    var r3 = rb * rc / sum;
+
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(yx, yy); ctx.lineTo(yx, yy - 80); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(yx, yy); ctx.lineTo(yx + 70, yy + 50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(yx, yy); ctx.lineTo(yx - 70, yy + 50); ctx.stroke();
+    dot(ctx, yx, yy, '#2563eb');
+
+    // Y 形节点标注
+    dot(ctx, yx, yy - 80, '#2563eb');
+    dot(ctx, yx + 70, yy + 50, '#2563eb');
+    dot(ctx, yx - 70, yy + 50, '#2563eb');
+
+    ctx.fillStyle = '#2563eb'; ctx.font = '17px sans-serif';
+    ctx.fillText('R₁=' + r1.toFixed(1) + 'Ω', yx + 10, yy - 65);
+    ctx.fillText('R₂=' + r2.toFixed(1) + 'Ω', yx + 80, yy + 55);
+    ctx.fillText('R₃=' + r3.toFixed(1) + 'Ω', yx - 100, yy + 55);
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Y', yx - 20, yy + 5);
+
+    // 更新文本
+    var eqEl = document.getElementById('calcRes');
+    if (eqEl) eqEl.innerText = 'R₁=' + r1.toFixed(1) + 'Ω, R₂=' + r2.toFixed(1) + 'Ω, R₃=' + r3.toFixed(1) + 'Ω';
+
+    var detail = 'R₁ = ' + ra + '×' + rc + '/(' + ra + '+' + rb + '+' + rc + ') = ' + r1.toFixed(2) + ' Ω<br>';
+    detail += 'R₂ = ' + ra + '×' + rb + '/(' + ra + '+' + rb + '+' + rc + ') = ' + r2.toFixed(2) + ' Ω<br>';
+    detail += 'R₃ = ' + rb + '×' + rc + '/(' + ra + '+' + rb + '+' + rc + ') = ' + r3.toFixed(2) + ' Ω';
+    var detEl = document.getElementById('calcDetail');
+    if (detEl) detEl.innerHTML = detail;
+
+    // Y→Δ 反向
+    var ra_rev = r1 + r2 + r1 * r2 / r3;
+    var rb_rev = r2 + r3 + r2 * r3 / r1;
+    var rc_rev = r3 + r1 + r3 * r1 / r2;
+    var revEl = document.getElementById('calcReverse');
+    if (revEl) {
+        revEl.innerText = 'Rₐ=' + ra_rev.toFixed(1) + 'Ω, Rᵦ=' + rb_rev.toFixed(1) + 'Ω, R꜀=' + rc_rev.toFixed(1) + 'Ω';
+    }
+
+    // 验算表（与手算表第二行 Δ(10,20,30)→Y(5,3.33,10) 对应）
+    var chk1 = document.getElementById('chk1');
+    if (chk1) {
+        // Y(5, 3.333, 10) → Δ 还原
+        var c1a = 5 + 3.333 + 5 * 3.333 / 10;
+        var c1b = 3.333 + 10 + 3.333 * 10 / 5;
+        var c1c = 10 + 5 + 10 * 5 / 3.333;
+        chk1.innerText = 'Ra=' + c1a.toFixed(2) + ', Rb=' + c1b.toFixed(2) + ', Rc=' + c1c.toFixed(2) + ' Ω (应=10,20,30) ' + (Math.abs(c1a-10)<0.1&&Math.abs(c1b-20)<0.1&&Math.abs(c1c-30)<0.1?'✅':'❌');
+    }
+    var chk2 = document.getElementById('chk2');
+    if (chk2) {
+        // 对称 Δ(30,30,30) → Y(10,10,10) → Δ 还原
+        var c2a = 10 + 10 + 10 * 10 / 10;
+        chk2.innerText = 'Ra=' + c2a.toFixed(1) + ' Ω (应=30.0) ' + (Math.abs(c2a-30)<0.1?'✅':'❌');
+    }
+}
+
+/* ============ 初始化 ============ */
+document.addEventListener('DOMContentLoaded', function () {
+    var firstBtn = document.querySelector('.tabBtn');
+    showTab('theory', firstBtn);
+});
+</script>
+</body>
+</html>

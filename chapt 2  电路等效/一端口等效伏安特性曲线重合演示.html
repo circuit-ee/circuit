@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一端口网络等效性原理演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .canvas-container {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .slider-thumb::-webkit-slider-thumb {
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 3px solid white;
+        }
+        
+        .curve-legend {
+            display: inline-block;
+            width: 40px;
+            height: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- 标题 -->
+    <div class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-5xl md:text-6xl font-black text-gray-800 mb-6">
+            一端口网络<span class="text-blue-600">等效性</span>原理
+        </h1>
+        <div class="text-2xl md:text-3xl text-gray-700 font-bold max-w-4xl mx-auto leading-relaxed bg-white/80 p-6 rounded-2xl shadow-lg">
+            <span class="text-red-500">关键概念：</span>等效 = <span class="text-green-600 border-b-4 border-green-400">伏安特性曲线完全重合</span><br>
+            <span class="text-lg text-gray-500 font-normal">而非仅仅在某个工作点电压电流相同</span>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
+        
+        <!-- 左侧：电路示意 (占1列) -->
+        <div class="canvas-container rounded-3xl p-6 border border-gray-200 lg:col-span-2">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="w-4 h-4 bg-blue-500 rounded-full"></span>
+                电路结构
+            </h2>
+            <canvas id="circuitCanvas" width="400" height="450" class="w-full rounded-xl"></canvas>
+            
+            <div class="mt-6 space-y-3">
+                <div class="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-500">
+                    <div class="font-bold text-blue-900 text-xl mb-1">网络 A (实际电源)</div>
+                    <div class="text-blue-700 text-lg">Us = 12V, Rs = 2Ω</div>
+                </div>
+                <div id="networkBInfo" class="p-4 bg-green-50 rounded-xl border-l-4 border-green-500 transition-colors">
+                    <div class="font-bold text-green-900 text-xl mb-1">网络 B (等效电源)</div>
+                    <div class="text-green-700 text-lg" id="networkBParams">Us' = 12V, Rs' = 2Ω</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：伏安特性曲线 (占3列) -->
+        <div class="canvas-container rounded-3xl p-6 border border-gray-200 lg:col-span-3">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <span class="w-4 h-4 bg-purple-500 rounded-full"></span>
+                    伏安特性曲线 (V-I Characteristic)
+                </h2>
+                <div class="flex gap-6 text-lg font-bold bg-gray-50 px-4 py-2 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="curve-legend bg-blue-500"></span>
+                        <span class="text-gray-700">网络 A</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="legendB" class="curve-legend bg-green-500"></span>
+                        <span id="labelB" class="text-gray-700">网络 B</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 这里显示伏安特性曲线 -->
+            <div class="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden" style="height: 450px;">
+                <canvas id="viCanvas" class="w-full h-full block"></canvas>
+            </div>
+            
+            <!-- 状态指示器 -->
+            <div id="statusPanel" class="mt-6 p-6 rounded-xl text-center font-bold text-xl transition-all duration-500 bg-blue-50 text-blue-800 border-2 border-blue-200">
+                当前状态：调整负载观察两条曲线的关系
+            </div>
+        </div>
+    </div>
+
+    <!-- 控制区 -->
+    <div class="max-w-7xl mx-auto mt-6">
+        <div class="canvas-container rounded-3xl p-8 border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                
+                <!-- 负载控制 -->
+                <div class="bg-gray-50 p-6 rounded-2xl">
+                    <label class="block text-2xl font-bold text-gray-800 mb-4">
+                        负载电阻 R<sub>L</sub> = <span id="rlDisplay" class="text-blue-600 text-3xl">10</span> Ω
+                    </label>
+                    <input type="range" id="loadSlider" min="1" max="20" value="10" step="0.5"
+                           class="w-full h-4 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb mb-4">
+                    <div class="flex justify-between text-gray-500 font-bold">
+                        <span>1Ω (重载)</span>
+                        <span>20Ω (轻载)</span>
+                    </div>
+                </div>
+
+                <!-- 模式切换 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="setMode('equivalent')" id="btnEquiv" 
+                            class="p-6 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold text-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 border-4 border-green-500">
+                        <div class="text-3xl mb-2">✓</div>
+                        <div>等效网络</div>
+                        <div class="text-sm font-normal mt-1 opacity-90">曲线完全重合</div>
+                    </button>
+                    <button onclick="setMode('different')" id="btnDiff" 
+                            class="p-6 bg-white text-gray-700 hover:bg-red-50 rounded-2xl font-bold text-xl transition-all shadow-md hover:shadow-lg border-4 border-gray-300">
+                        <div class="text-3xl mb-2">✗</div>
+                        <div>非等效网络</div>
+                        <div class="text-sm font-normal mt-1 text-gray-500">仅一点相交</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 说明 -->
+            <div class="mt-8 p-6 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-300">
+                <div class="flex items-start gap-4">
+                    <div class="text-5xl">💡</div>
+                    <div>
+                        <h4 class="text-2xl font-bold text-gray-800 mb-3">什么是真正的等效？</h4>
+                        <p class="text-xl text-gray-700 leading-relaxed">
+                            两个一端口网络<span class="font-bold text-red-600">等效</span>，意味着对于<strong>任意负载</strong>，它们端口的电压-电流关系都相同。
+                            在 V-I 坐标系中，这表现为<span class="font-bold text-green-600 bg-green-100 px-2 py-1 rounded">两条曲线完全重合</span>，
+                            而不是仅仅在某一个负载点（某一个工作点）相交。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 参数设置
+        const Us = 12;      // 网络A：开路电压
+        const Rs = 2;       // 网络A：内阻
+        
+        let Us_b = 12;      // 网络B：开路电压
+        let Rs_b = 2;       // 网络B：内阻
+        let Rl = 10;        // 负载电阻
+        let mode = 'equivalent';
+        
+        // 获取画布
+        const cvsCircuit = document.getElementById('circuitCanvas');
+        const ctxCircuit = cvsCircuit.getContext('2d');
+        const cvsVi = document.getElementById('viCanvas');
+        const ctxVi = cvsVi.getContext('2d');
+        
+        // 初始化画布尺寸
+        function initCanvas(canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { width: rect.width, height: rect.height, ctx: ctx };
+        }
+        
+        // 绘制电路图
+        function drawCircuit() {
+            const { width: w, height: h } = initCanvas(cvsCircuit);
+            ctxCircuit.clearRect(0, 0, w, h);
+            
+            const boxW = 140;
+            const boxH = 100;
+            
+            // 网络A (上方)
+            const y1 = h * 0.25;
+            drawNetworkBox(ctxCircuit, w/2, y1, boxW, boxH, 'A', '#3b82f6', Us, Rs);
+            
+            // 网络B (下方)
+            const y2 = h * 0.75;
+            const colorB = mode === 'equivalent' ? '#22c55e' : '#ef4444';
+            drawNetworkBox(ctxCircuit, w/2, y2, boxW, boxH, 'B', colorB, Us_b, Rs_b);
+            
+            // 连接线和负载
+            ctxCircuit.strokeStyle = '#6b7280';
+            ctxCircuit.lineWidth = 2;
+            ctxCircuit.setLineDash([5, 5]);
+            
+            // 从A端口引出
+            ctxCircuit.beginPath();
+            ctxCircuit.moveTo(w/2 + boxW/2, y1 + boxH/2);
+            ctxCircuit.lineTo(w/2 + boxW/2 + 30, y1 + boxH/2);
+            ctxCircuit.lineTo(w/2 + boxW/2 + 30, (y1 + y2)/2);
+            
+            // 负载电阻符号
+            const yLoad = (y1 + y2)/2;
+            ctxCircuit.lineTo(w/2 + boxW/2 + 60, yLoad);
+            ctxCircuit.stroke();
+            
+            // 绘制负载电阻
+            ctxCircuit.fillStyle = '#8b5cf6';
+            ctxCircuit.fillRect(w/2 + boxW/2 + 60, yLoad - 15, 40, 30);
+            ctxCircuit.fillStyle = 'white';
+            ctxCircuit.font = 'bold 14px sans-serif';
+            ctxCircuit.textAlign = 'center';
+            ctxCircuit.fillText('RL', w/2 + boxW/2 + 80, yLoad + 5);
+            
+            // 连接到B
+            ctxCircuit.beginPath();
+            ctxCircuit.moveTo(w/2 + boxW/2 + 100, yLoad);
+            ctxCircuit.lineTo(w/2 + boxW/2 + 130, yLoad);
+            ctxCircuit.lineTo(w/2 + boxW/2 + 130, y2 - boxH/2);
+            ctxCircuit.lineTo(w/2 + boxW/2, y2 - boxH/2);
+            ctxCircuit.stroke();
+            ctxCircuit.setLineDash([]);
+            
+            // 负载值标注
+            ctxCircuit.fillStyle = '#7c3aed';
+            ctxCircuit.font = 'bold 18px sans-serif';
+            ctxCircuit.fillText(`${Rl}Ω`, w/2 + boxW/2 + 130, yLoad - 25);
+        }
+        
+        function drawNetworkBox(ctx, x, y, w, h, label, color, us, rs) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x - w/2, y - h/2, w, h);
+            
+            ctx.fillStyle = color + '20'; // 透明度
+            ctx.fillRect(x - w/2, y - h/2, w, h);
+            
+            // 标签
+            ctx.fillStyle = color;
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`网络 ${label}`, x, y - h/2 - 15);
+            
+            // 内部电路：电压源 + 电阻
+            // 电压源 (圆形)
+            ctx.beginPath();
+            ctx.arc(x, y - 10, 18, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.font = '16px sans-serif';
+            ctx.fillText(us + 'V', x, y - 6);
+            
+            // 电阻 (锯齿形)
+            ctx.beginPath();
+            ctx.moveTo(x, y + 8);
+            ctx.lineTo(x, y + 20);
+            const zigzag = [-10, 10, -10, 10, 0];
+            for(let i=0; i<5; i++) {
+                ctx.lineTo(x + zigzag[i], y + 25 + i*8);
+            }
+            ctx.stroke();
+            
+            // 电阻值
+            ctx.fillText(rs + 'Ω', x + 25, y + 45);
+            
+            // 端口线
+            ctx.beginPath();
+            ctx.moveTo(x - 40, y + h/2 - 10);
+            ctx.lineTo(x + 40, y + h/2 - 10);
+            ctx.stroke();
+            
+            // 端口符号
+            ctx.fillStyle = '#374151';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('+', x - 50, y + h/2 - 5);
+            ctx.fillText('-', x + 45, y + h/2 - 5);
+        }
+        
+        // 绘制伏安特性曲线
+        function drawViCurve() {
+            const { width: w, height: h } = initCanvas(cvsVi);
+            
+            // 清空
+            ctxVi.fillStyle = '#ffffff';
+            ctxVi.fillRect(0, 0, w, h);
+            
+            const padding = 70;
+            const graphW = w - 2 * padding;
+            const graphH = h - 2 * padding;
+            
+            // 坐标范围
+            const maxI = 8;  // 最大电流 8A
+            const maxU = 14; // 最大电压 14V
+            
+            // 绘制网格
+            ctxVi.strokeStyle = '#e5e7eb';
+            ctxVi.lineWidth = 1;
+            
+            // 垂直网格线 (电流)
+            for(let i=0; i<=maxI; i+=1) {
+                const x = padding + (i / maxI) * graphW;
+                ctxVi.beginPath();
+                ctxVi.moveTo(x, padding);
+                ctxVi.lineTo(x, h - padding);
+                ctxVi.stroke();
+                
+                // X轴刻度
+                ctxVi.fillStyle = '#6b7280';
+                ctxVi.font = '12px sans-serif';
+                ctxVi.textAlign = 'center';
+                ctxVi.fillText(i + 'A', x, h - padding + 25);
+            }
+            
+            // 水平网格线 (电压)
+            for(let i=0; i<=maxU; i+=2) {
+                const y = h - padding - (i / maxU) * graphH;
+                ctxVi.beginPath();
+                ctxVi.moveTo(padding, y);
+                ctxVi.lineTo(w - padding, y);
+                ctxVi.stroke();
+                
+                // Y轴刻度
+                ctxVi.fillStyle = '#6b7280';
+                ctxVi.font = '12px sans-serif';
+                ctxVi.textAlign = 'right';
+                ctxVi.fillText(i + 'V', padding - 15, y + 4);
+            }
+            
+            // 绘制坐标轴
+            ctxVi.strokeStyle = '#1f2937';
+            ctxVi.lineWidth = 2;
+            
+            // X轴
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, h - padding);
+            ctxVi.lineTo(w - padding + 10, h - padding);
+            ctxVi.stroke();
+            
+            // Y轴
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, h - padding);
+            ctxVi.lineTo(padding, padding - 10);
+            ctxVi.stroke();
+            
+            // 箭头
+            ctxVi.fillStyle = '#1f2937';
+            // X轴箭头
+            ctxVi.beginPath();
+            ctxVi.moveTo(w - padding + 10, h - padding);
+            ctxVi.lineTo(w - padding + 5, h - padding - 5);
+            ctxVi.lineTo(w - padding + 5, h - padding + 5);
+            ctxVi.fill();
+            // Y轴箭头
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, padding - 10);
+            ctxVi.lineTo(padding - 5, padding - 5);
+            ctxVi.lineTo(padding + 5, padding - 5);
+            ctxVi.fill();
+            
+            // 轴标签
+            ctxVi.font = 'bold 16px sans-serif';
+            ctxVi.textAlign = 'center';
+            ctxVi.fillText('电流 I (A)', w/2, h - 20);
+            
+            ctxVi.save();
+            ctxVi.translate(25, h/2);
+            ctxVi.rotate(-Math.PI/2);
+            ctxVi.fillText('电压 U (V)', 0, 0);
+            ctxVi.restore();
+            
+            // 计算网络A的V-I曲线点：U = Us - I*Rs
+            // 当 I=0, U=Us; 当 U=0, I=Us/Rs
+            const iShortA = Us / Rs; // 短路电流
+            
+            // 绘制网络A曲线 (蓝色)
+            ctxVi.strokeStyle = '#3b82f6';
+            ctxVi.lineWidth = 4;
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, h - padding - (Us/maxU)*graphH); // 开路点
+            ctxVi.lineTo(padding + (iShortA/maxI)*graphW, h - padding); // 短路点
+            ctxVi.stroke();
+            
+            // 标注网络A
+            ctxVi.fillStyle = '#3b82f6';
+            ctxVi.font = 'bold 14px sans-serif';
+            ctxVi.fillText('网络A', padding + 80, h - padding - (Us/maxU)*graphH + 20);
+            
+            // 计算网络B的V-I曲线
+            const iShortB = Us_b / Rs_b;
+            
+            // 绘制网络B曲线
+            ctxVi.strokeStyle = mode === 'equivalent' ? '#22c55e' : '#ef4444';
+            ctxVi.lineWidth = mode === 'equivalent' ? 4 : 3;
+            if(mode !== 'equivalent') {
+                ctxVi.setLineDash([8, 4]);
+            }
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, h - padding - (Us_b/maxU)*graphH);
+            ctxVi.lineTo(padding + (iShortB/maxI)*graphW, h - padding);
+            ctxVi.stroke();
+            ctxVi.setLineDash([]);
+            
+            // 标注网络B
+            ctxVi.fillStyle = mode === 'equivalent' ? '#22c55e' : '#ef4444';
+            ctxVi.fillText(mode === 'equivalent' ? '网络B (重合)' : '网络B', 
+                          padding + 80, h - padding - (Us_b/maxU)*graphH + (mode==='equivalent'?35:20));
+            
+            // 计算当前工作点
+            const ia = Us / (Rs + Rl);
+            const ua = Us - ia * Rs;
+            const ib = Us_b / (Rs_b + Rl);
+            const ub = Us_b - ib * Rs_b;
+            
+            const xa = padding + (ia / maxI) * graphW;
+            const ya = h - padding - (ua / maxU) * graphH;
+            const xb = padding + (ib / maxI) * graphW;
+            const yb = h - padding - (ub / maxU) * graphH;
+            
+            // 绘制负载线 (从原点出发，斜率为Rl)
+            // U = I * Rl
+            ctxVi.strokeStyle = '#a855f7';
+            ctxVi.lineWidth = 2;
+            ctxVi.setLineDash([4, 4]);
+            ctxVi.beginPath();
+            ctxVi.moveTo(padding, h - padding);
+            // 找到与最大电压的交点
+            const iAtMaxU = maxU / Rl;
+            if(iAtMaxU <= maxI) {
+                ctxVi.lineTo(padding + (iAtMaxU/maxI)*graphW, padding);
+            } else {
+                const uAtMaxI = maxI * Rl;
+                ctxVi.lineTo(w - padding, h - padding - (uAtMaxI/maxU)*graphH);
+            }
+            ctxVi.stroke();
+            ctxVi.setLineDash([]);
+            
+            // 负载线标注
+            ctxVi.fillStyle = '#a855f7';
+            ctxVi.font = '12px sans-serif';
+            ctxVi.fillText(`负载线 RL=${Rl}Ω`, w - 120, h - padding - 100);
+            
+            // 绘制工作点
+            // 网络A工作点 (蓝色圆点)
+            ctxVi.fillStyle = '#3b82f6';
+            ctxVi.beginPath();
+            ctxVi.arc(xa, ya, 10, 0, Math.PI*2);
+            ctxVi.fill();
+            ctxVi.strokeStyle = 'white';
+            ctxVi.lineWidth = 3;
+            ctxVi.stroke();
+            
+            // 网络B工作点
+            ctxVi.fillStyle = mode === 'equivalent' ? '#22c55e' : '#ef4444';
+            ctxVi.beginPath();
+            ctxVi.arc(xb, yb, 10, 0, Math.PI*2);
+            ctxVi.fill();
+            ctxVi.strokeStyle = 'white';
+            ctxVi.lineWidth = 3;
+            ctxVi.stroke();
+            
+            // 如果两点重合，特殊标记
+            const dist = Math.sqrt((xa-xb)**2 + (ya-yb)**2);
+            if(dist < 5) {
+                ctxVi.fillStyle = '#fbbf24';
+                ctxVi.beginPath();
+                ctxVi.arc(xa, ya - 25, 12, 0, Math.PI*2);
+                ctxVi.fill();
+                ctxVi.fillStyle = '#92400e';
+                ctxVi.font = 'bold 14px sans-serif';
+                ctxVi.textAlign = 'center';
+                ctxVi.fillText('!', xa, ya - 20);
+            }
+            
+            // 绘制从工作点到坐标轴的虚线
+            ctxVi.strokeStyle = '#9ca3af';
+            ctxVi.lineWidth = 1;
+            ctxVi.setLineDash([3, 3]);
+            
+            // 网络A的投影线
+            ctxVi.beginPath();
+            ctxVi.moveTo(xa, ya);
+            ctxVi.lineTo(xa, h - padding);
+            ctxVi.moveTo(xa, ya);
+            ctxVi.lineTo(padding, ya);
+            ctxVi.stroke();
+            
+            // 如果非等效，绘制网络B的投影线
+            if(mode !== 'equivalent' && dist > 5) {
+                ctxVi.strokeStyle = '#fca5a5';
+                ctxVi.beginPath();
+                ctxVi.moveTo(xb, yb);
+                ctxVi.lineTo(xb, h - padding);
+                ctxVi.moveTo(xb, yb);
+                ctxVi.lineTo(padding, yb);
+                ctxVi.stroke();
+            }
+            ctxVi.setLineDash([]);
+            
+            // 数值标注
+            ctxVi.fillStyle = '#3b82f6';
+            ctxVi.font = 'bold 13px sans-serif';
+            ctxVi.textAlign = 'left';
+            ctxVi.fillText(`IA=${ia.toFixed(2)}A`, xa + 15, h - padding + 40);
+            ctxVi.fillText(`UA=${ua.toFixed(2)}V`, padding + 10, ya - 10);
+            
+            if(mode !== 'equivalent') {
+                ctxVi.fillStyle = '#ef4444';
+                ctxVi.fillText(`IB=${ib.toFixed(2)}A`, xb + 15, h - padding + 55);
+                ctxVi.fillText(`UB=${ub.toFixed(2)}V`, padding + 10, yb - 25);
+            }
+            
+            // 更新状态面板
+            updateStatus(ua, ub, ia, ib, dist);
+        }
+        
+        function updateStatus(ua, ub, ia, ib, dist) {
+            const panel = document.getElementById('statusPanel');
+            
+            if(mode === 'equivalent') {
+                panel.className = 'mt-6 p-6 rounded-xl text-center font-bold text-xl transition-all duration-500 bg-green-100 text-green-800 border-2 border-green-400 shadow-lg';
+                panel.innerHTML = `
+                    <div class="text-3xl mb-2">✓ 完全等效</div>
+                    <div>两网络伏安曲线完全重合</div>
+                    <div class="text-lg mt-2 font-normal">当前工作点：U = ${ua.toFixed(2)}V，I = ${ia.toFixed(2)}A</div>
+                `;
+            } else {
+                const diffU = Math.abs(ua - ub);
+                const diffI = Math.abs(ia - ib);
+                
+                if(dist < 5) {
+                    panel.className = 'mt-6 p-6 rounded-xl text-center font-bold text-xl transition-all duration-500 bg-yellow-100 text-yellow-800 border-2 border-yellow-400 shadow-lg';
+                    panel.innerHTML = `
+                        <div class="text-3xl mb-2">⚠ 巧合相同</div>
+                        <div>仅在 RL=${Rl}Ω 时两工作点重合</div>
+                        <div class="text-lg mt-2 font-normal text-red-600">改变负载后：UA=${ua.toFixed(2)}V, UB=${ub.toFixed(2)}V</div>
+                    `;
+                } else {
+                    panel.className = 'mt-6 p-6 rounded-xl text-center font-bold text-xl transition-all duration-500 bg-red-100 text-red-800 border-2 border-red-400 shadow-lg';
+                    panel.innerHTML = `
+                        <div class="text-3xl mb-2">✗ 不等效</div>
+                        <div>两曲线不重合，工作点分离</div>
+                        <div class="text-lg mt-2 font-normal">
+                            差异：ΔU=${diffU.toFixed(2)}V，ΔI=${diffI.toFixed(2)}A
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function setMode(newMode) {
+            mode = newMode;
+            const btnEquiv = document.getElementById('btnEquiv');
+            const btnDiff = document.getElementById('btnDiff');
+            const netBInfo = document.getElementById('networkBInfo');
+            const netBParams = document.getElementById('networkBParams');
+            const legendB = document.getElementById('legendB');
+            const labelB = document.getElementById('labelB');
+            
+            if(mode === 'equivalent') {
+                Us_b = Us;
+                Rs_b = Rs;
+                
+                btnEquiv.className = 'p-6 bg-green-500 text-white rounded-2xl font-bold text-xl transition-all shadow-lg border-4 border-green-500 transform scale-105';
+                btnDiff.className = 'p-6 bg-white text-gray-700 hover:bg-red-50 rounded-2xl font-bold text-xl transition-all shadow-md border-4 border-gray-300';
+                
+                netBInfo.className = 'p-4 bg-green-50 rounded-xl border-l-4 border-green-500 transition-colors';
+                netBParams.textContent = `Us' = ${Us_b}V, Rs' = ${Rs_b}Ω (与A相同)`;
+                netBParams.className = 'text-green-700 text-lg';
+                
+                legendB.className = 'curve-legend bg-green-500';
+                labelB.textContent = '网络 B (重合)';
+                labelB.className = 'text-gray-700';
+            } else {
+                // 设置不同参数，制造交点但不重合
+                Us_b = 8;   // 不同的开路电压
+                Rs_b = 1.2; // 不同的内阻，使得在某处相交
+                
+                btnDiff.className = 'p-6 bg-red-500 text-white rounded-2xl font-bold text-xl transition-all shadow-lg border-4 border-red-500 transform scale-105';
+                btnEquiv.className = 'p-6 bg-white text-gray-700 hover:bg-green-50 rounded-2xl font-bold text-xl transition-all shadow-md border-4 border-gray-300';
+                
+                netBInfo.className = 'p-4 bg-red-50 rounded-xl border-l-4 border-red-500 transition-colors';
+                netBParams.textContent = `Us' = ${Us_b}V, Rs' = ${Rs_b}Ω (与A不同)`;
+                netBParams.className = 'text-red-700 text-lg';
+                
+                legendB.className = 'curve-legend bg-red-500';
+                labelB.textContent = '网络 B (不同)';
+                labelB.className = 'text-gray-700';
+            }
+            
+            drawCircuit();
+            drawViCurve();
+        }
+        
+        // 事件监听
+        document.getElementById('loadSlider').addEventListener('input', function(e) {
+            Rl = parseFloat(e.target.value);
+            document.getElementById('rlDisplay').textContent = Rl;
+            document.getElementById('rlValue').textContent = Rl;
+            drawCircuit();
+            drawViCurve();
+        });
+        
+        // 窗口大小改变时重绘
+        window.addEventListener('resize', () => {
+            drawCircuit();
+            drawViCurve();
+        });
+        
+        // 初始化
+        setMode('equivalent');
+    </script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>元件公差与最坏情况分析（WCA）· 交互式学习</title>
+<style>
+  :root{
+    --ink:#1f2a37;
+    --muted:#5b6572;
+    --brand:#0e7c5f;
+    --brand-dark:#095a44;
+    --accent:#e07a1a;
+    --card:#ffffff;
+    --line:#e4e9ee;
+    --soft:#f2f7f4;
+    --code-bg:#eef3f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:linear-gradient(180deg,#f4fbf8 0%,#eef4fb 100%);
+    color:var(--ink);
+    font-size:20px;
+    line-height:1.75;
+    padding-bottom:80px;
+  }
+  header{
+    background:linear-gradient(135deg,#0e7c5f 0%,#149a76 100%);
+    color:#fff;
+    padding:52px 24px 44px;
+    text-align:center;
+  }
+  header h1{font-size:46px;font-weight:800;letter-spacing:1px;margin-bottom:14px;}
+  header p{font-size:21px;opacity:.95;max-width:820px;margin:0 auto;}
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+    padding:12px 16px;
+  }
+  nav a{
+    color:var(--brand-dark);text-decoration:none;font-weight:700;font-size:17px;
+    padding:8px 14px;border-radius:999px;transition:.2s;
+  }
+  nav a:hover{background:var(--soft);}
+  main{max-width:960px;margin:0 auto;padding:0 20px;}
+  section{margin-top:42px;}
+  .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+  .sec-idx{
+    flex:none;width:46px;height:46px;border-radius:12px;
+    background:var(--brand);color:#fff;font-weight:800;font-size:24px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sec-head h2{font-size:30px;font-weight:800;color:var(--brand-dark);}
+  .lead{font-size:21px;color:var(--muted);margin-bottom:18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;box-shadow:0 6px 20px rgba(31,42,55,.05);margin-bottom:20px;}
+  .card h3{font-size:24px;color:var(--brand-dark);margin-bottom:10px;}
+  .formula{
+    background:var(--code-bg);border-left:5px solid var(--brand);
+    padding:14px 18px;border-radius:8px;font-size:21px;
+    font-family:"Cambria Math","Times New Roman",serif;margin:12px 0;
+    overflow-x:auto;white-space:nowrap;
+  }
+  .note{
+    background:#fff6ec;border-left:5px solid var(--accent);
+    padding:14px 18px;border-radius:8px;font-size:19px;color:#7a4a12;
+  }
+  .note b{color:#a3540d;}
+  /* tabs */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .tab{
+    padding:10px 18px;border-radius:10px;font-size:18px;font-weight:700;
+    border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;transition:.2s;
+  }
+  .tab.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .panel{display:none;animation:fade .35s ease;}
+  .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  /* controls */
+  .ctrl{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:14px 0;}
+  .ctrl label{font-weight:700;font-size:19px;color:var(--ink);}
+  .ctrl input[type=range]{flex:1;min-width:180px;accent-color:var(--brand);}
+  .val{font-weight:800;color:var(--brand-dark);font-size:22px;min-width:90px;text-align:right;}
+  .row{display:flex;flex-wrap:wrap;gap:14px;}
+  .mini{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 16px;flex:1;min-width:200px;}
+  .mini b{display:block;font-size:17px;color:var(--muted);margin-bottom:4px;font-weight:600;}
+  .mini span{font-size:26px;font-weight:800;color:var(--brand-dark);}
+  table{width:100%;border-collapse:collapse;font-size:19px;margin-top:8px;}
+  th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);}
+  th{background:var(--soft);color:var(--brand-dark);font-weight:800;}
+  tr:last-child td{border-bottom:none;}
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;}
+  details summary{list-style:none;cursor:pointer;padding:16px 20px;font-weight:800;font-size:21px;color:var(--brand-dark);display:flex;align-items:center;justify-content:space-between;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:"+";font-size:28px;color:var(--brand);font-weight:800;transition:.2s;}
+  details[open] summary::after{content:"−";}
+  details .body{padding:6px 20px 20px;font-size:19px;color:var(--muted);}
+  details .body .formula{font-size:19px;}
+  .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:14px;font-weight:800;vertical-align:middle;margin-left:6px;}
+  .tag.ok{background:#e0f5ec;color:var(--brand-dark);}
+  .tag.no{background:#fde4e0;color:#b0361f;}
+  .tag.warn{background:#fdefdc;color:#a3540d;}
+  footer{text-align:center;color:var(--muted);font-size:16px;margin-top:50px;padding:0 20px;}
+  @media(max-width:640px){
+    header h1{font-size:34px;}header p,body{font-size:18px;}
+    .sec-head h2{font-size:25px;}.card{padding:20px 18px;}
+    .formula{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>元件公差与最坏情况分析（WCA）</h1>
+  <p>面向电路初学者 · 用分压电路与同相放大电路两个实例，交互式理解公差定义、WCA 的使用条件与使用限制、以及灵敏度的定义与计算</p>
+</header>
+
+<nav>
+  <a href="#tol">① 公差定义</a>
+  <a href="#wca">② WCA 方法</a>
+  <a href="#limit">③ 使用限制</a>
+  <a href="#sens">④ 灵敏度</a>
+  <a href="#calc">⑤ 交互计算</a>
+</nav>
+
+<main>
+
+<!-- 1 公差定义 -->
+<section id="tol">
+  <div class="sec-head"><div class="sec-idx">1</div><h2>什么是元件公差？</h2></div>
+  <p class="lead">公差 = 元件实际参数相对标称值所允许的<strong>最大偏差范围</strong>，是生产制造的"误差带"。</p>
+  <div class="card">
+    <h3>定义式</h3>
+    <div class="formula">实际值 ∈ [ 标称值 ×(1−公差) , 标称值 ×(1+公差) ]</div>
+    <p><strong>例：</strong>标称 <strong>10 kΩ ±5%</strong> 的电阻，实际值保证在 <strong>9.5 kΩ ~ 10.5 kΩ</strong> 之间。</p>
+    <div class="note" style="margin-top:12px;"><b>提示：</b>公差只在数据手册规定的条件（通常 25°C）下保证；温度漂移与老化是另一回事，初学阶段先聚焦公差本身。</div>
+  </div>
+  <div class="card">
+    <h3>常见元件的典型公差</h3>
+    <table>
+      <tr><th>元件</th><th>典型公差</th><th>说明</th></tr>
+      <tr><td>金属膜电阻</td><td>±0.1% ~ ±1%</td><td>精密电路常用 ±1%</td></tr>
+      <tr><td>碳膜电阻</td><td>±5%</td><td>普通场合</td></tr>
+      <tr><td>陶瓷电容 C0G</td><td>±0.1% ~ ±5%</td><td>温稳性好</td></tr>
+      <tr><td>陶瓷电容 X7R</td><td>±10% ~ ±20%</td><td>容量大、公差大</td></tr>
+      <tr><td>电解电容</td><td>±20%</td><td>公差最大的一类</td></tr>
+      <tr><td>电感</td><td>±5% ~ ±20%</td><td>受磁芯/绕线影响</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2 WCA -->
+<section id="wca">
+  <div class="sec-head"><div class="sec-idx">2</div><h2>最坏情况分析（WCA）</h2></div>
+  <p class="lead">WCA 假设<strong>所有元件误差同时取到使输出偏差最大的那个极限</strong>，从而给出一个"绝对不会超出"的误差边界。</p>
+  <div class="card">
+    <h3>三步极值法（学生专用）</h3>
+    <table>
+      <tr><th>步骤</th><th>做法</th></tr>
+      <tr><td>第 1 步</td><td>写出电路输出关于元件参数的公式（如分压、放大公式）</td></tr>
+      <tr><td>第 2 步</td><td>由公差求出每个元件的 <strong>R<sub>max</sub></strong> 与 <strong>R<sub>min</sub></strong></td></tr>
+      <tr><td>第 3 步</td><td>代入极值：求 V<sub>out,max</sub> 时，让"有利增大输出"的元件取最大、"不利"的取最小；反之求 V<sub>out,min</sub></td></tr>
+    </table>
+    <div class="note" style="margin-top:14px;"><b>为什么适合初学者：</b>只用加减乘除，逻辑直观，结果是一个绝对安全的边界，能帮你建立扎实的电路直觉。</div>
+  </div>
+</section>
+
+<!-- 3 使用限制 -->
+<section id="limit">
+  <div class="sec-head"><div class="sec-idx">3</div><h2>WCA 的使用条件与使用限制</h2></div>
+  <p class="lead">WCA 不是万能的——知道它什么时候该用、什么时候会"算过头"，比会用它本身更重要。</p>
+  <div class="tabs" id="limitTabs">
+    <button class="tab active" data-limit="cond">✅ 使用条件</button>
+    <button class="tab" data-limit="limit">⚠️ 使用限制</button>
+    <button class="tab" data-limit="compare">📊 三种方法对比</button>
+  </div>
+  <div class="panel active" data-limit="cond">
+    <div class="card">
+      <h3>适合使用 WCA 的场景</h3>
+      <table>
+        <tr><th>场景</th><th>原因</th></tr>
+        <tr><td>安全关键 / 高可靠电路<span class="tag ok">推荐</span></td><td>必须保证"绝对不超限"，如保护阈值、断电判据</td></tr>
+        <tr><td>元件少的关键路径<span class="tag ok">推荐</span></td><td>反馈网络、基准、增益级，手工即可算清</td></tr>
+        <tr><td>课程作业 / 毕业设计<span class="tag ok">推荐</span></td><td>老师想看到的正是"极值误差分析"过程</td></tr>
+        <tr><td>公差以 ±% 明确给出<span class="tag ok">可用</span></td><td>能明确写出 max / min 极值</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="panel" data-limit="limit">
+    <div class="card">
+      <h3>WCA 的局限（避坑）</h3>
+      <table>
+        <tr><th>限制</th><th>说明</th></tr>
+        <tr><td>结果过于保守<span class="tag warn">注意</span></td><td>把所有误差同向叠加，实际几乎不会同时取到极限</td></tr>
+        <tr><td>不能评估良率<span class="tag no">不足</span></td><td>给的是边界，无法回答"多少 % 的板子会合格"</td></tr>
+        <tr><td>统计性元件会失真<span class="tag no">不足</span></td><td>如三极管 β（100~300 是分布而非 ±%），WCA 会算得离谱地大</td></tr>
+        <tr><td>元件多时手工繁琐<span class="tag warn">注意</span></td><td>可考虑改用 RSS 或蒙特卡洛仿真</td></tr>
+      </table>
+      <div class="note" style="margin-top:12px;"><b>一句话：</b>WCA 是"安全带"——保证不出大错；但它会让你觉得"误差很大"，此时要意识到它偏保守。</div>
+    </div>
+  </div>
+  <div class="panel" data-limit="compare">
+    <div class="card">
+      <h3>WCA / RSS / 蒙特卡洛 对比</h3>
+      <table>
+        <tr><th>方法</th><th>核心思想</th><th>优点</th><th>缺点</th><th>适合阶段</th></tr>
+        <tr><td><b>WCA</b></td><td>误差同向叠加取极值</td><td>绝对安全、只用心算</td><td>极度保守</td><td>初学 / 安全关键</td></tr>
+        <tr><td><b>RSS</b></td><td>独立误差按平方和开方</td><td>接近实际量产</td><td>需概率论基础</td><td>学完概率论后</td></tr>
+        <tr><td><b>蒙特卡洛</b></td><td>随机仿真统计分布</td><td>最精确、可见良率</td><td>需仿真软件</td><td>使用 SPICE 后</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 4 灵敏度 -->
+<section id="sens">
+  <div class="sec-head"><div class="sec-idx">4</div><h2>灵敏度：谁对误差贡献最大？</h2></div>
+  <p class="lead">灵敏度 = 输出对某元件参数变化的"敏感程度"。灵敏度高的元件，应优先选高精度（低公差）的。</p>
+  <div class="card">
+    <h3>定义</h3>
+    <div class="formula">灵敏度 S_x = ∂y/∂x （输出 y 对参数 x 的偏导数，常归一化为 S_x = (x/y)·(∂y/∂x) ）</div>
+    <p>直观理解：x 变化 1%，y 大约变化 |S_x|%。<strong>|S_x| 越大，该元件越"关键"。</strong></p>
+  </div>
+  <details open>
+    <summary>📐 分压电路 Vout = Vin·R₂/(R₁+R₂) 的灵敏度</summary>
+    <div class="body">
+      <p>对 R₁、R₂ 分别求偏导并归一化：</p>
+      <div class="formula">S_{R2} = + R₂/(R₁+R₂) ； S_{R1} = − R₁/(R₁+R₂)</div>
+      <p>当 R₁=R₂ 时：|S_{R1}|=|S_{R2}|=0.5。两电阻对输出误差贡献相同。</p>
+      <div class="note"><b>结论：</b>分压电路中两个电阻同等重要，应取相同等级（或同等高精度）的公差。</div>
+    </div>
+  </details>
+  <details>
+    <summary>📐 同相放大 Av = 1 + Rf/Ri 的灵敏度</summary>
+    <div class="body">
+      <div class="formula">S_{Rf} = Rf/Ri /(1+Rf/Ri) ； S_{Ri} = − (Rf/Ri)/(1+Rf/Ri)</div>
+      <p>增益主要由 Rf 决定，Rf 的公差对增益误差贡献更大。若 Rf/Ri 很大，Rf 是高灵敏度元件。</p>
+      <div class="note"><b>省钱技巧：</b>对高灵敏度元件（如 Rf）选 ±0.1%~±1% 精密电阻；对低灵敏度元件可用普通 ±5% 电阻。</div>
+    </div>
+  </details>
+  <details>
+    <summary>📐 误差传递：WCA 与 RSS 的灵敏度加权</summary>
+    <div class="body">
+      <p>若输出 y = f(x₁,x₂,...)，各元件公差 Δxᵢ/xᵢ = tᵢ：</p>
+      <div class="formula">WCA: Δy/y ≈ Σ |S_{xi}|·tᵢ ； RSS: Δy/y ≈ √( Σ (S_{xi}·tᵢ)² )</div>
+      <p>可见：误差贡献 = |灵敏度| × 该元件公差。先找 |S| 最大的元件，优先压低它的公差，性价比最高。</p>
+    </div>
+  </details>
+</section>
+
+<!-- 5 交互计算 -->
+<section id="calc">
+  <div class="sec-head"><div class="sec-idx">5</div><h2>交互计算：亲手算一算</h2></div>
+  <p class="lead">选择电路实例，拖动滑块改变标称值与公差，实时看到极值输出、WCA 误差带与灵敏度。</p>
+  <div class="tabs" id="circuitTabs">
+    <button class="tab active" data-circuit="divider">分压电路</button>
+    <button class="tab" data-circuit="amp">同相放大</button>
+  </div>
+
+  <!-- 分压 -->
+  <div class="panel active" data-circuit="divider">
+    <div class="card">
+      <h3>分压电路 Vout = Vin · R₂/(R₁+R₂)</h3>
+      <div class="ctrl"><label>Vin (V)</label><input id="d_vin" type="range" min="1" max="24" step="1" value="10"><span class="val" id="d_vin_v">10</span></div>
+      <div class="ctrl"><label>R₁ (kΩ)</label><input id="d_r1" type="range" min="1" max="100" step="1" value="10"><span class="val" id="d_r1_v">10</span></div>
+      <div class="ctrl"><label>R₁ 公差 ±%</label><input id="d_t1" type="range" min="0" max="20" step="1" value="5"><span class="val" id="d_t1_v">5%</span></div>
+      <div class="ctrl"><label>R₂ (kΩ)</label><input id="d_r2" type="range" min="1" max="100" step="1" value="10"><span class="val" id="d_r2_v">10</span></div>
+      <div class="ctrl"><label>R₂ 公差 ±%</label><input id="d_t2" type="range" min="0" max="20" step="1" value="5"><span class="val" id="d_t2_v">5%</span></div>
+      <div class="row">
+        <div class="mini"><b>理想 Vout</b><span id="d_ideal">5.000 V</span></div>
+        <div class="mini"><b>Vout,max（WCA）</b><span id="d_max">5.250 V</span></div>
+        <div class="mini"><b>Vout,min（WCA）</b><span id="d_min">4.750 V</span></div>
+        <div class="mini"><b>WCA 误差带</b><span id="d_err">±0.250 V (±5.0%)</span></div>
+      </div>
+      <div class="note" style="margin-top:14px;" id="d_tip"></div>
+    </div>
+  </div>
+
+  <!-- 同相放大 -->
+  <div class="panel" data-circuit="amp">
+    <div class="card">
+      <h3>同相放大 Vout = Vin · (1 + Rf/Ri)</h3>
+      <div class="ctrl"><label>Vin (V)</label><input id="a_vin" type="range" min="0.1" max="10" step="0.1" value="1"><span class="val" id="a_vin_v">1.0</span></div>
+      <div class="ctrl"><label>Ri (kΩ)</label><input id="a_ri" type="range" min="1" max="100" step="1" value="10"><span class="val" id="a_ri_v">10</span></div>
+      <div class="ctrl"><label>Ri 公差 ±%</label><input id="a_ti" type="range" min="0" max="20" step="1" value="1"><span class="val" id="a_ti_v">1%</span></div>
+      <div class="ctrl"><label>Rf (kΩ)</label><input id="a_rf" type="range" min="1" max="200" step="1" value="100"><span class="val" id="a_rf_v">100</span></div>
+      <div class="ctrl"><label>Rf 公差 ±%</label><input id="a_tf" type="range" min="0" max="20" step="1" value="1"><span class="val" id="a_tf_v">1%</span></div>
+      <div class="row">
+        <div class="mini"><b>理想增益 Av</b><span id="a_avid">11.00</span></div>
+        <div class="mini"><b>理想 Vout</b><span id="a_ideal">11.000 V</span></div>
+        <div class="mini"><b>Vout,max（WCA）</b><span id="a_max">11.111 V</span></div>
+        <div class="mini"><b>Vout,min（WCA）</b><span id="a_min">10.889 V</span></div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <div class="mini"><b>WCA 增益误差</b><span id="a_err">±0.111 (±1.0%)</span></div>
+        <div class="mini"><b>|S_Rf| 灵敏度</b><span id="a_sf">0.91</span></div>
+        <div class="mini"><b>|S_Ri| 灵敏度</b><span id="a_si">0.91</span></div>
+      </div>
+      <div class="note" style="margin-top:14px;" id="a_tip"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🧭 怎么读这些结果？</h3>
+    <table>
+      <tr><th>你看的是什么</th><th>它能告诉你什么</th></tr>
+      <tr><td>Vout,max / Vout,min</td><td>WCA 给出的"绝对不会超出"的输出边界</td></tr>
+      <tr><td>WCA 误差带 (±%)</td><td>相对理想值的百分比误差，便于跨电路比较</td></tr>
+      <tr><td>|S_Rf| / |S_Ri|</td><td>该元件公差对输出的贡献权重，越大越该用精密电阻</td></tr>
+    </table>
+    <div class="note" style="margin-top:12px;"><b>小实验：</b>在"同相放大"中把 Rf 公差从 1% 调到 5%，观察误差带明显变大——这就是高灵敏度元件要优先选低公差的原因。</div>
+  </div>
+</section>
+
+<footer>
+  教学演示 · 元件公差为数据手册标称条件（通常 25°C）下的初始公差；实际全寿命误差还需叠加温度系数与老化。<br>
+  计算由浏览器实时完成，无需联网。
+</footer>
+
+</main>
+
+<script>
+/* tabs */
+function bindTabs(groupId){
+  const root=document.getElementById(groupId);
+  root.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      root.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const key=t.dataset[groupId.replace('Tabs','')]||t.dataset.circuit||t.dataset.limit;
+      const panels=root.parentElement.querySelectorAll('.panel');
+      panels.forEach(p=>p.classList.remove('active'));
+      const target=Array.from(panels).find(p=>p.dataset[groupId.replace('Tabs','')]===key||p.dataset.circuit===key||p.dataset.limit===key);
+      if(target)target.classList.add('active');
+    });
+  });
+}
+bindTabs('limitTabs');
+bindTabs('circuitTabs');
+
+/* divider */
+const d={vin:document.getElementById('d_vin'),r1:document.getElementById('d_r1'),t1:document.getElementById('d_t1'),
+         r2:document.getElementById('d_r2'),t2:document.getElementById('d_t2')};
+function calcDivider(){
+  const vin=+d.vin.value, r1=+d.r1.value, t1=+d.t1.value, r2=+d.r2.value, t2=+d.t2.value;
+  document.getElementById('d_vin_v').textContent=vin;
+  document.getElementById('d_r1_v').textContent=r1; document.getElementById('d_t1_v').textContent=t1+'%';
+  document.getElementById('d_r2_v').textContent=r2; document.getElementById('d_t2_v').textContent=t2+'%';
+  const ideal=vin*r2/(r1+r2);
+  const r1max=r1*(1+t1/100),r1min=r1*(1-t1/100);
+  const r2max=r2*(1+t2/100),r2min=r2*(1-t2/100);
+  const vmax=vin*r2max/(r1min+r2max);
+  const vmin=vin*r2min/(r1max+r2min);
+  document.getElementById('d_ideal').textContent=ideal.toFixed(3)+' V';
+  document.getElementById('d_max').textContent=vmax.toFixed(3)+' V';
+  document.getElementById('d_min').textContent=vmin.toFixed(3)+' V';
+  const err=Math.max(Math.abs(vmax-ideal),Math.abs(vmin-ideal));
+  const pct=ideal?err/ideal*100:0;
+  document.getElementById('d_err').textContent='±'+err.toFixed(3)+' V (±'+pct.toFixed(1)+'%)';
+  document.getElementById('d_tip').innerHTML=
+    '<b>WCA 解读：</b>求 Vout,max 时令 R₂ 取最大、R₁ 取最小；求 Vout,min 时令 R₂ 取最小、R₁ 取最大。'+
+    ' 当前两电阻 '+ (t1===t2?'公差相同，对输出贡献相同':'公差不同，贡献需看灵敏度 |S|=R/(R₁+R₂)') +'。';
+}
+['input'].forEach(ev=>Object.values(d).forEach(el=>el.addEventListener(ev,calcDivider)));
+calcDivider();
+
+/* amplifier */
+const a={vin:document.getElementById('a_vin'),ri:document.getElementById('a_ri'),ti:document.getElementById('a_ti'),
+         rf:document.getElementById('a_rf'),tf:document.getElementById('a_tf')};
+function calcAmp(){
+  const vin=+a.vin.value, ri=+a.ri.value, ti=+a.ti.value, rf=+a.rf.value, tf=+a.tf.value;
+  document.getElementById('a_vin_v').textContent=vin.toFixed(1);
+  document.getElementById('a_ri_v').textContent=ri; document.getElementById('a_ti_v').textContent=ti+'%';
+  document.getElementById('a_rf_v').textContent=rf; document.getElementById('a_tf_v').textContent=tf+'%';
+  const Av=1+rf/ri;
+  const rimax=ri*(1+ti/100),rimin=ri*(1-ti/100);
+  const rfmax=rf*(1+tf/100),rfmin=rf*(1-tf/100);
+  const Avmax=1+rfmax/rimin, Avmin=1+rfmin/rimax;
+  const vmax=vin*Avmax, vmin=vin*Avmin;
+  document.getElementById('a_avid').textContent=Av.toFixed(2);
+  document.getElementById('a_ideal').textContent=(vin*Av).toFixed(3)+' V';
+  document.getElementById('a_max').textContent=vmax.toFixed(3)+' V';
+  document.getElementById('a_min').textContent=vmin.toFixed(3)+' V';
+  const err=Math.max(Math.abs(vmax-vin*Av),Math.abs(vmin-vin*Av));
+  const pct=Av?err/(vin*Av)*100:0;
+  document.getElementById('a_err').textContent='±'+err.toFixed(3)+' V (±'+pct.toFixed(1)+'%)';
+  const ratio=rf/ri;
+  const sf=ratio/(1+ratio), si=ratio/(1+ratio);
+  document.getElementById('a_sf').textContent=sf.toFixed(2);
+  document.getElementById('a_si').textContent=si.toFixed(2);
+  const key=sf>=si?'Rf（反馈电阻）':'Ri（输入电阻）';
+  document.getElementById('a_tip').innerHTML=
+    '<b>灵敏度解读：</b>|S_Rf|≈|S_Ri|≈'+sf.toFixed(2)+'，增益主要由 Rf/Ri 比值决定，'+
+    '两电阻同等关键。若把 Rf 公差调大，误差带会明显增大——说明 <b>'+key+'</b> 应优先选低公差精密电阻。';
+}
+['input'].forEach(ev=>Object.values(a).forEach(el=>el.addEventListener(ev,calcAmp)));
+calcAmp();
+</script>
+</body>
+</html>

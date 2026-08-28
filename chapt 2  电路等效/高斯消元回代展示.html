@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>非齐次方程组高斯消元 + 解对比（高对比版）</title>
+<style>
+body{
+  font-family: '微软雅黑', '宋体', sans-serif;
+  background: #ffffff;
+  color: #000000;
+  margin: 0;
+  padding: 20px;
+  line-height: 1.8;
+  font-weight: bold;
+}
+.container{
+  max-width: 1000px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  backdrop-filter: none;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 3px solid #333;
+}
+h1{
+  text-align: center;
+  color: #0066cc;
+  font-size: 2.8rem;
+  font-weight: 900;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+h2{
+  color: #cc0000;
+  border-bottom: 4px solid #cc0000;
+  padding-bottom: 12px;
+  margin-top: 35px;
+  font-size: 2rem;
+  font-weight: 900;
+}
+.controls{
+  text-align: center;
+  margin: 35px 0;
+}
+button{
+  padding: 18px 32px;
+  margin: 0 12px;
+  font-size: 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: linear-gradient(45deg, #0066cc, #0099ff);
+  color: white;
+  transition: all 0.3s ease;
+  font-weight: 900;
+  box-shadow: 0 5px 15px rgba(0, 102, 204, 0.4);
+}
+button:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 102, 204, 0.6);
+}
+button:disabled{
+  background: linear-gradient(45deg, #757575, #9e9e9e);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.step{
+  margin: 30px 0;
+  padding: 30px;
+  border-left: 8px solid #0066cc;
+  background: #ffffff;
+  border-radius: 0 16px 16px 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.step.active{
+  animation: pulse 1.5s infinite;
+  border-left: 8px solid #009900;
+  background: #e8f5e9;
+}
+@keyframes pulse{
+  0% { 
+    box-shadow: 0 0 0 0 rgba(0, 153, 0, 0.4);
+    transform: translateX(0);
+  }
+  70% { 
+    box-shadow: 0 0 0 12px rgba(0, 153, 0, 0);
+    transform: translateX(8px);
+  }
+  100% { 
+    box-shadow: 0 0 0 0 rgba(0, 153, 0, 0);
+    transform: translateX(0);
+  }
+}
+.equation{
+  font-size: 24px;
+  margin: 20px 0;
+  padding: 20px;
+  background: #e3f2fd;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  border: 3px solid #0066cc;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  font-weight: bold;
+}
+.matrix{
+  display: inline-block;
+  position: relative;
+  padding: 0 20px;
+}
+.matrix:before, .matrix:after{
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #0066cc;
+}
+.matrix:before{
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+.matrix:after{
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+.highlight{
+  background-color: #ffff00;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 2px solid #ff0000;
+  font-weight: 900;
+  font-size: 26px;
+}
+.zero{
+  color: #ff0000;
+  font-weight: 900;
+  font-size: 26px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+.solution{
+  color: #006600;
+  font-weight: 900;
+  background: #c8e6c9;
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 3px solid #006600;
+  font-size: 22px;
+}
+.explanation{
+  background: #fff3e0;
+  padding: 25px;
+  border-radius: 12px;
+  margin: 25px 0;
+  border: 3px solid #ff9800;
+  font-size: 20px;
+  font-weight: bold;
+}
+.explanation p, .explanation li{
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.8;
+}
+canvas{
+  border: 3px solid #0066cc;
+  border-radius: 8px;
+  background: #ffffff;
+  display: block;
+  margin: 20px auto;
+}
+.legend{
+  text-align: center;
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.legend span{
+  display: inline-block;
+  width: 22px;
+  height: 4px;
+  margin: 0 6px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+p, li{
+  font-size: 20px;
+  font-weight: bold;
+}
+strong{
+  font-weight: 900;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>非齐次方程组高斯消元 + 解对比</h1>
+
+<div class="controls">
+  <button onclick="showStep(0)">原方程组</button>
+  <button onclick="showStep(1)">Step1 消元</button>
+  <button onclick="showStep(2)">Step2 上三角</button>
+  <button onclick="showStep(3)">消元后解对比</button>
+  <button onclick="showStep(4)">回代求解</button>
+  <button onclick="showStep(-1)">自动演示</button>
+</div>
+
+<!-- Step0 原方程组 -->
+<div id="step0" class="step active">
+  <h2>Step 0：给定非齐次方程组</h2>
+  <div class="equation">
+    2x + y − z = 8<br>
+    x − y + 3z = 9<br>
+    3x + y + 2z = 17
+  </div>
+  <p>矩阵形式 <span class="matrix">A x = b</span>：</p>
+  <div class="equation">
+    <span class="matrix">
+      2 &nbsp; 1 &nbsp; −1<br>
+      1 &nbsp; −1 &nbsp; 3<br>
+      3 &nbsp; 1 &nbsp; 2
+    </span>
+    <span class="matrix">
+      x<br>y<br>z
+    </span>
+    =
+    <span class="matrix">
+      8<br>9<br>17
+    </span>
+  </div>
+  <canvas id="mat0" width="700" height="200"></canvas>
+  <div class="legend">增广矩阵 [A | b]</div>
+</div>
+
+<!-- Step1 消元 -->
+<div id="step1" class="step">
+  <h2>Step 1：高斯消元 —— 消去 x</h2>
+  <p>用第1行消第2、3行 x 系数。</p>
+  <canvas id="mat1" width="700" height="200"></canvas>
+  <div class="legend">消元后矩阵（Step1）</div>
+</div>
+
+<!-- Step2 上三角 -->
+<div id="step2" class="step">
+  <h2>Step 2：继续消去 y 得下三角 0</h2>
+  <p>此时矩阵已上三角，可直接解出 z。</p>
+  <canvas id="mat2" width="700" height="200"></canvas>
+  <div class="legend">上三角矩阵（Step2）</div>
+</div>
+
+<!-- Step3 消元后解对比 -->
+<div id="step3" class="step">
+  <h2>Step 3：消元后 ≠ 完整解！</h2>
+  <div class="explanation">
+    <strong>关键认识：</strong>
+    <ul>
+      <li>消元后未回代 ⇒ 仅保证"等价约束"，但 x,y 仍未知。</li>
+      <li>此时若只取 z=3 代入原方程组，会发现第1、2行<strong>并不满足</strong> ⇒ 仅部分同解。</li>
+    </ul>
+  </div>
+  <canvas id="mat3" width="700" height="200"></canvas>
+  <div class="legend">消元后矩阵（未回代）</div>
+  <div class="equation">
+    当前仅知：<span class="solution">z = 3</span> &nbsp;&nbsp; x,y 仍未知
+  </div>
+</div>
+
+<!-- Step4 回代 -->
+<div id="step4" class="step">
+  <h2>Step 4：回代求解 —— 与原方程组完全同解</h2>
+  <p>自下而上依次代入，得完整解。</p>
+  <canvas id="mat4" width="700" height="200"></canvas>
+  <div class="legend">回代完成 → 唯一解</div>
+  <div class="equation">
+    解向量：<span class="solution">x = 1, y = 2, z = 3</span><br>
+    验证：代入原方程组三式全部成立 ⟹ 与原方程组<strong>完全同解</strong>。
+  </div>
+</div>
+</div>
+
+<script>
+/* ========== 矩阵绘制通用 ========== */
+const colors = {
+  bg: '#ffffff', 
+  grid: 'rgba(0, 102, 204, 0.2)', 
+  line: '#0066cc', 
+  pivot: '#ff0000', 
+  zero: '#009900'
+};
+
+function clear(cvs) {
+  const g = cvs.getContext('2d');
+  g.fillStyle = colors.bg;
+  g.fillRect(0, 0, cvs.width, cvs.height);
+}
+
+function drawGrid(g, W, H) {
+  g.strokeStyle = colors.grid;
+  g.lineWidth = 1;
+  for (let i = 1; i < 10; i++) {
+    g.beginPath();
+    g.moveTo(i * W / 10, 0);
+    g.lineTo(i * W / 10, H);
+    g.stroke();
+  }
+  for (let i = 1; i < 6; i++) {
+    g.beginPath();
+    g.moveTo(0, i * H / 6);
+    g.lineTo(W, i * H / 6);
+    g.stroke();
+  }
+}
+
+function drawText(g, x, y, text, font = 'bold 18px monospace', fill = '#000000') {
+  g.font = font;
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+}
+
+/* ---------- 矩阵可视化（增广） ---------- */
+function drawMatrix(cvs, mat, title, highlightRow = -1) {
+  clear(cvs);
+  const g = cvs.getContext('2d'), 
+        W = cvs.width, 
+        H = cvs.height, 
+        rows = mat.length, 
+        cols = mat[0].length;
+  drawGrid(g, W, H);
+  const cellW = W / cols, 
+        cellH = H / rows;
+  g.font = 'bold 20px monospace';
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const x = j * cellW + cellW / 2 - 20;
+      const y = i * cellH + cellH / 2 + 7;
+      g.fillStyle = (highlightRow === i) ? colors.pivot : (Math.abs(mat[i][j]) < 1e-6 ? colors.zero : '#000000');
+      g.fillText(mat[i][j].toFixed(2), x, y);
+    }
+  }
+  g.fillStyle = colors.pivot;
+  g.font = 'bold 16px sans-serif';
+  g.fillText(title, 8, 20);
+}
+
+/* ---------- 具体每一步矩阵 ---------- */
+const steps = [
+  [[2, 1, -1, 8], [1, -1, 3, 9], [3, 1, 2, 17]],          // Step0 增广
+  [[2, 1, -1, 8], [0, -1.5, 3.5, 5], [0, -0.5, 3.5, 5]],  // Step1 消x
+  [[2, 1, -1, 8], [0, -1.5, 3.5, 5], [0, 0, 3.333, 10]],   // Step2 上三角
+  [[2, 1, -1, 8], [0, -1.5, 3.5, 5], [0, 0, 3.333, 10]],   // Step3 同Step2（仅高亮）
+  [[1, 0, 0, 1], [0, 1, 0, 2], [0, 0, 1, 3]]               // Step4 回代完成
+];
+
+function updateMatrix(step) {
+  const cvsId = ['mat0', 'mat1', 'mat2', 'mat3', 'mat4'][step];
+  drawMatrix(document.getElementById(cvsId), steps[step], `Step${step} 矩阵`, step === 3 ? 2 : -1);
+}
+
+/* ========== 步骤控制器 ========== */
+let currentStep = 0, 
+    animId;
+
+function showStep(s) {
+  document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+  if (animId) clearInterval(animId);
+  if (s === -1) {
+    currentStep = 0;
+    animate();
+    return;
+  }
+  const el = document.getElementById('step' + s);
+  if (el) {
+    el.classList.add('active');
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  updateMatrix(s);
+}
+
+function animate() {
+  const steps = document.querySelectorAll('.step');
+  animId = setInterval(() => {
+    steps.forEach(el => el.classList.remove('active'));
+    if (currentStep < steps.length) {
+      steps[currentStep].classList.add('active');
+      steps[currentStep].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      updateMatrix(currentStep);
+      currentStep++;
+    } else {
+      clearInterval(animId);
+      currentStep = 0;
+    }
+  }, 2500);
+}
+
+/* ========== 初始化 ========== */
+window.onload = () => {
+  updateMatrix(0);
+  showStep(0);
+};
+</script>
+</body>
+</html>
