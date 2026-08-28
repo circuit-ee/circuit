@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三相对称电源：星型(Y)与三角形(Δ)连接对比</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .y-title { background: #fff3cd; color: #856404; }
+        .d-title { background: #d1ecf1; color: #0c5460; }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .waveform-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 200px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #dee2e6;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        button {
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-play {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-play:hover { background: #229954; }
+        .btn-pause {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-pause:hover { background: #c0392b; }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .color-box {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .info-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .info-card {
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .info-y {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .info-d {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+        }
+        .info-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .info-card p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #495057;
+        }
+        .formula {
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 16px;
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .connection-diagram {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .connection-svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>三相对称电源：星型(Y)与三角形(Δ)连接对比</h1>
+        <p class="subtitle">交互式波形图与相量图展示 | 线电压与相电压关系 | 逆时针旋转</p>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title y-title">星型(Y)连接 - 相量图</div>
+                <canvas id="canvasY" width="400" height="400"></canvas>
+                <div class="connection-diagram">
+                    <svg width="200" height="120" class="connection-svg">
+                        <!-- Y connection diagram -->
+                        <circle cx="100" cy="60" r="4" fill="#333"/>
+                        <text x="108" y="64" font-size="12" fill="#333">N</text>
+                        <line x1="100" y1="60" x2="60" y2="20" stroke="#e74c3c" stroke-width="3"/>
+                        <line x1="100" y1="60" x2="140" y2="20" stroke="#2ecc71" stroke-width="3"/>
+                        <line x1="100" y1="60" x2="100" y2="110" stroke="#3498db" stroke-width="3"/>
+                        <text x="50" y="18" font-size="11" fill="#e74c3c" font-weight="bold">A</text>
+                        <text x="145" y="18" font-size="11" fill="#2ecc71" font-weight="bold">B</text>
+                        <text x="105" y="118" font-size="11" fill="#3498db" font-weight="bold">C</text>
+                        <text x="60" y="40" font-size="10" fill="#666">Vph</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title d-title">三角形(Δ)连接 - 相量图</div>
+                <canvas id="canvasD" width="400" height="400"></canvas>
+                <div class="connection-diagram">
+                    <svg width="200" height="120" class="connection-svg">
+                        <!-- Delta connection diagram -->
+                        <polygon points="100,20 160,80 40,80" fill="none" stroke="#333" stroke-width="2"/>
+                        <line x1="100" y1="20" x2="160" y2="80" stroke="#e74c3c" stroke-width="3"/>
+                        <line x1="160" y1="80" x2="40" y2="80" stroke="#2ecc71" stroke-width="3"/>
+                        <line x1="40" y1="80" x2="100" y2="20" stroke="#3498db" stroke-width="3"/>
+                        <text x="95" y="15" font-size="11" fill="#e74c3c" font-weight="bold">A</text>
+                        <text x="165" y="78" font-size="11" fill="#2ecc71" font-weight="bold">B</text>
+                        <text x="25" y="78" font-size="11" fill="#3498db" font-weight="bold">C</text>
+                        <text x="105" y="55" font-size="10" fill="#666">VL=Vph</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="waveform-panel">
+            <div class="panel-title" style="background: #f8f9fa; color: #2c3e50;">波形对比：相电压 vs 线电压（余弦波形对应正弦量）</div>
+            <canvas id="canvasWave" width="1200" height="350"></canvas>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="color-box" style="background: #e74c3c;"></div>
+                    <span>A相电压 (VAN / VAB)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #2ecc71;"></div>
+                    <span>B相电压 (VBN / VBC)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #3498db;"></div>
+                    <span>C相电压 (VCN / VCA)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #e67e22; height: 2px; border-top: 2px dashed #e67e22;"></div>
+                    <span>Y接线电压 (√3倍)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-card info-y">
+                <h3>星型(Y)连接特性</h3>
+                <p>
+                    <span class="formula">VL = √3 × Vph ≈ 1.732 Vph</span><br>
+                    线电压超前对应相电压 30°<br>
+                    线电流 = 相电流<br>
+                    可提供中性点，适合不平衡负载
+                </p>
+            </div>
+            <div class="info-card info-d">
+                <h3>三角形(Δ)连接特性</h3>
+                <p>
+                    <span class="formula">VL = Vph</span><br>
+                    线电压 = 相电压 (同相位)<br>
+                    线电流 = √3 × 相电流<br>
+                    无中性点，仅适用于平衡负载
+                </p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <button id="playBtn" class="btn-play">▶ 播放动画</button>
+            </div>
+            <div class="control-group">
+                <label>时间角度 ωt:</label>
+                <input type="range" id="timeSlider" min="0" max="720" value="0">
+                <span id="timeValue">0°</span>
+            </div>
+            <div class="control-group">
+                <label>显示模式:</label>
+                <select id="viewMode" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="both">同时显示</option>
+                    <option value="y">仅星型(Y)</option>
+                    <option value="d">仅三角形(Δ)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas contexts
+        const ctxY = document.getElementById('canvasY').getContext('2d');
+        const ctxD = document.getElementById('canvasD').getContext('2d');
+        const ctxWave = document.getElementById('canvasWave').getContext('2d');
+
+        // Parameters
+        let angle = 0;  // current angle in degrees
+        let isPlaying = false;
+        let animationId = null;
+        let viewMode = 'both';
+
+        const colors = {
+            A: '#e74c3c',
+            B: '#2ecc71', 
+            C: '#3498db',
+            lineY: '#e67e22',
+            lineD: '#9b59b6',
+            grid: '#e9ecef',
+            text: '#2c3e50'
+        };
+
+        function toRad(deg) {
+            return deg * Math.PI / 180;
+        }
+
+        function drawGrid(ctx, width, height, centerX, centerY) {
+            ctx.strokeStyle = colors.grid;
+            ctx.lineWidth = 1;
+
+            // Horizontal and vertical axes
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, height);
+            ctx.stroke();
+
+            // Grid circles
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 80, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 160, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width = 3, dashed = false) {
+            const headlen = 12;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            if (dashed) {
+                ctx.setLineDash([8, 4]);
+            } else {
+                ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrow head
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI/6), toY - headlen * Math.sin(angle - Math.PI/6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI/6), toY - headlen * Math.sin(angle + Math.PI/6));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.setLineDash([]);
+        }
+
+        function drawPhasorY() {
+            const w = 400, h = 400;
+            const cx = w/2, cy = h/2;
+            const scale = 140;  // scale factor
+
+            ctxY.clearRect(0, 0, w, h);
+            drawGrid(ctxY, w, h, cx, cy);
+
+            const theta = toRad(angle);
+            const Vph = 1.0;
+            const Vline = Vph * Math.sqrt(3);
+
+            // Phase voltages (from neutral) - COUNTER-CLOCKWISE rotation
+            // Standard: v = Vm * cos(ωt + φ), phasor rotates CCW
+            const vA = { x: cx + scale * Vph * Math.cos(theta), y: cy - scale * Vph * Math.sin(theta) };
+            const vB = { x: cx + scale * Vph * Math.cos(theta - 2*Math.PI/3), y: cy - scale * Vph * Math.sin(theta - 2*Math.PI/3) };
+            const vC = { x: cx + scale * Vph * Math.cos(theta + 2*Math.PI/3), y: cy - scale * Vph * Math.sin(theta + 2*Math.PI/3) };
+
+            // Draw phase voltages
+            drawArrow(ctxY, cx, cy, vA.x, vA.y, colors.A, 4);
+            drawArrow(ctxY, cx, cy, vB.x, vB.y, colors.B, 4);
+            drawArrow(ctxY, cx, cy, vC.x, vC.y, colors.C, 4);
+
+            // Line voltages (phasor differences)
+            // V_AB = V_A - V_B
+            drawArrow(ctxY, vB.x, vB.y, vA.x, vA.y, colors.lineY, 3, true);
+            drawArrow(ctxY, vC.x, vC.y, vB.x, vB.y, colors.lineY, 3, true);
+            drawArrow(ctxY, vA.x, vA.y, vC.x, vC.y, colors.lineY, 3, true);
+
+            // Neutral point
+            ctxY.beginPath();
+            ctxY.arc(cx, cy, 6, 0, 2*Math.PI);
+            ctxY.fillStyle = '#333';
+            ctxY.fill();
+            ctxY.fillStyle = colors.text;
+            ctxY.font = 'bold 14px sans-serif';
+            ctxY.fillText('N', cx + 10, cy - 10);
+
+            // Labels
+            ctxY.fillStyle = colors.A;
+            ctxY.fillText('VA', vA.x + 10, vA.y);
+            ctxY.fillStyle = colors.B;
+            ctxY.fillText('VB', vB.x - 25, vB.y);
+            ctxY.fillStyle = colors.C;
+            ctxY.fillText('VC', vC.x + 10, vC.y);
+
+            ctxY.fillStyle = colors.lineY;
+            ctxY.font = 'bold 12px sans-serif';
+            ctxY.fillText('VAB', (vA.x + vB.x)/2 - 15, (vA.y + vB.y)/2 - 10);
+            ctxY.fillText('VBC', (vB.x + vC.x)/2, (vB.y + vC.y)/2 + 15);
+            ctxY.fillText('VCA', (vC.x + vA.x)/2 - 10, (vC.y + vA.y)/2 - 10);
+        }
+
+        function drawPhasorD() {
+            const w = 400, h = 400;
+            const cx = w/2, cy = h/2;
+            const scale = 140;
+
+            ctxD.clearRect(0, 0, w, h);
+            drawGrid(ctxD, w, h, cx, cy);
+
+            const theta = toRad(angle);
+            const Vph = 1.0;
+
+            // In delta: line voltage = phase voltage, same vectors - COUNTER-CLOCKWISE
+            const vAB = { x: cx + scale * Vph * Math.cos(theta), y: cy - scale * Vph * Math.sin(theta) };
+            const vBC = { x: cx + scale * Vph * Math.cos(theta - 2*Math.PI/3), y: cy - scale * Vph * Math.sin(theta - 2*Math.PI/3) };
+            const vCA = { x: cx + scale * Vph * Math.cos(theta + 2*Math.PI/3), y: cy - scale * Vph * Math.sin(theta + 2*Math.PI/3) };
+
+            // Draw line voltages (which equal phase voltages in delta)
+            drawArrow(ctxD, cx, cy, vAB.x, vAB.y, colors.lineY, 4);
+            drawArrow(ctxD, cx, cy, vBC.x, vBC.y, colors.lineD, 4);
+            drawArrow(ctxD, cx, cy, vCA.x, vCA.y, '#1abc9c', 4);
+
+            // Labels
+            ctxD.fillStyle = colors.lineY;
+            ctxD.font = 'bold 14px sans-serif';
+            ctxD.fillText('VAB=VA', vAB.x + 10, vAB.y);
+            ctxD.fillStyle = colors.lineD;
+            ctxD.fillText('VBC=VB', vBC.x - 40, vBC.y);
+            ctxD.fillStyle = '#1abc9c';
+            ctxD.fillText('VCA=VC', vCA.x + 10, vCA.y);
+
+            // Center point
+            ctxD.beginPath();
+            ctxD.arc(cx, cy, 5, 0, 2*Math.PI);
+            ctxD.fillStyle = '#333';
+            ctxD.fill();
+        }
+
+        function drawWaveforms() {
+            const w = 1200, h = 350;
+            const padding = 60;
+            const graphW = w - 2*padding;
+            const graphH = h - 2*padding;
+            const cx = padding;
+            const cy = h/2;
+
+            ctxWave.clearRect(0, 0, w, h);
+
+            // Grid
+            ctxWave.strokeStyle = colors.grid;
+            ctxWave.lineWidth = 1;
+            ctxWave.beginPath();
+            ctxWave.moveTo(cx, cy);
+            ctxWave.lineTo(w - padding, cy);
+            ctxWave.stroke();
+
+            // Y-axis labels
+            ctxWave.fillStyle = colors.text;
+            ctxWave.font = '12px sans-serif';
+            ctxWave.textAlign = 'right';
+            ctxWave.fillText('2', cx - 10, cy - graphH/2 + 5);
+            ctxWave.fillText('1', cx - 10, cy - graphH/4 + 5);
+            ctxWave.fillText('0', cx - 10, cy + 5);
+            ctxWave.fillText('-1', cx - 10, cy + graphH/4 + 5);
+            ctxWave.fillText('-2', cx - 10, cy + graphH/2 + 5);
+            ctxWave.textAlign = 'center';
+
+            // X-axis labels
+            for (let i = 0; i <= 4; i++) {
+                const x = cx + (i/4) * graphW;
+                ctxWave.fillText((i * Math.PI).toFixed(0) + 'π', x, h - padding + 20);
+            }
+
+            const theta = toRad(angle);
+            const Vph = 1.0;
+            const Vline = Vph * Math.sqrt(3);
+
+            // Draw Y-connection waveforms
+            if (viewMode === 'both' || viewMode === 'y') {
+                // Phase voltages - COSINE waveform for sine quantity
+                // v(t) = Vm * cos(ωt + φ)
+                drawWave(ctxWave, cx, cy, graphW, graphH, 
+                    t => Vph * Math.cos(t + theta), colors.A, 2, false, 0.6);
+                drawWave(ctxWave, cx, cy, graphW, graphH, 
+                    t => Vph * Math.cos(t + theta - 2*Math.PI/3), colors.B, 2, false, 0.6);
+                drawWave(ctxWave, cx, cy, graphW, graphH, 
+                    t => Vph * Math.cos(t + theta + 2*Math.PI/3), colors.C, 2, false, 0.6);
+
+                // Line voltages (Y) - COSINE waveform, magnitude sqrt(3), leads by 30°
+                drawWave(ctxWave, cx, cy, graphW, graphH, 
+                    t => Vline * Math.cos(t + theta + Math.PI/6), colors.lineY, 3, true, 0.9);
+            }
+
+            // Draw Delta-connection waveforms
+            if (viewMode === 'both' || viewMode === 'd') {
+                // In delta, line voltage = phase voltage
+                const offset = viewMode === 'both' ? 0.15 : 0;
+                drawWave(ctxWave, cx, cy, graphW, graphH, 
+                    t => Vph * Math.cos(t + theta + offset), colors.A, 2, false, 
+                    viewMode === 'both' ? 0.3 : 0.8);
+            }
+
+            // Current time indicator
+            const currentX = cx + (theta / (4*Math.PI)) * graphW;
+            ctxWave.strokeStyle = '#e74c3c';
+            ctxWave.lineWidth = 2;
+            ctxWave.setLineDash([5, 5]);
+            ctxWave.beginPath();
+            ctxWave.moveTo(currentX, padding);
+            ctxWave.lineTo(currentX, h - padding);
+            ctxWave.stroke();
+            ctxWave.setLineDash([]);
+
+            // Axis labels
+            ctxWave.fillStyle = colors.text;
+            ctxWave.font = 'bold 14px sans-serif';
+            ctxWave.textAlign = 'center';
+            ctxWave.fillText('电角度 ωt (rad)', w/2, h - 10);
+
+            ctxWave.save();
+            ctxWave.translate(15, h/2);
+            ctxWave.rotate(-Math.PI/2);
+            ctxWave.fillText('电压 (标幺值)', 0, 0);
+            ctxWave.restore();
+        }
+
+        function drawWave(ctx, cx, cy, w, h, fn, color, width, dashed, alpha) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.globalAlpha = alpha;
+            if (dashed) {
+                ctx.setLineDash([10, 5]);
+            } else {
+                ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            const steps = 200;
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * 4 * Math.PI;
+                const x = cx + (i / steps) * w;
+                const y = cy - (fn(t) * h / 4);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+        }
+
+        function update() {
+            drawPhasorY();
+            drawPhasorD();
+            drawWaveforms();
+
+            document.getElementById('timeValue').textContent = angle.toFixed(0) + '°';
+            document.getElementById('timeSlider').value = angle;
+        }
+
+        function animate() {
+            if (isPlaying) {
+                angle = (angle + 1) % 720;
+                update();
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('playBtn').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? '⏸ 暂停动画' : '▶ 播放动画';
+            this.className = isPlaying ? 'btn-pause' : 'btn-play';
+            if (isPlaying) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        });
+
+        document.getElementById('timeSlider').addEventListener('input', function() {
+            angle = parseFloat(this.value);
+            update();
+        });
+
+        document.getElementById('viewMode').addEventListener('change', function() {
+            viewMode = this.value;
+            update();
+        });
+
+        // Initial draw
+        update();
+    </script>
+</body>
+</html>
