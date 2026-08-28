@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滤波器时域响应演示 - 电路分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e6eef7 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+        }
+        
+        .canvas-bg {
+            background: #fafbfc;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+            transition: transform 0.1s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .filter-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .filter-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .filter-card.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .signal-btn {
+            transition: all 0.2s;
+        }
+        
+        .signal-btn.active {
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .live-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="p-4 md:p-8 text-slate-800">
+
+    <!-- 标题 -->
+    <div class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-5xl font-bold text-slate-900 mb-3 tracking-tight">滤波器时域分析演示</h1>
+        <p class="text-xl text-slate-600">实时观察低通、高通、带通滤波器对信号的动态处理过程</p>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 左侧控制面板 -->
+        <div class="lg:col-span-3 space-y-6">
+            
+            <!-- 滤波器选择 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    滤波器类型
+                </h2>
+                
+                <div class="space-y-3">
+                    <button onclick="setFilter('lowpass')" id="btn-lowpass" class="filter-card active w-full p-4 rounded-xl bg-white border text-left shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-lg text-blue-900">低通 LPF</span>
+                            <span class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">低</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-2">允许低频通过，抑制高频</p>
+                        <div class="text-xs text-blue-700 font-mono bg-blue-50 p-2 rounded">y(t) = ∫(x-y)/τ dt</div>
+                    </button>
+
+                    <button onclick="setFilter('highpass')" id="btn-highpass" class="filter-card w-full p-4 rounded-xl bg-white border text-left shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-lg text-orange-900">高通 HPF</span>
+                            <span class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold">高</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-2">允许高频通过，抑制低频</p>
+                        <div class="text-xs text-orange-700 font-mono bg-orange-50 p-2 rounded">y(t) = x(t) - yₗₚ(t)</div>
+                    </button>
+
+                    <button onclick="setFilter('bandpass')" id="btn-bandpass" class="filter-card w-full p-4 rounded-xl bg-white border text-left shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-lg text-purple-900">带通 BPF</span>
+                            <span class="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-bold">带</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-2">仅允许特定频带通过</p>
+                        <div class="text-xs text-purple-700 font-mono bg-purple-50 p-2 rounded">二阶系统响应</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 参数控制 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    参数设置
+                </h2>
+
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-700">截止频率 fc</label>
+                        <span id="disp-fc" class="value-display text-blue-600 text-lg">1.0 Hz</span>
+                    </div>
+                    <input type="range" id="slider-fc" min="0.1" max="5.0" step="0.1" value="1.0" oninput="updateParam('fc', this.value)">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>0.1Hz</span>
+                        <span>5Hz</span>
+                    </div>
+                    <div class="mt-2 text-sm text-slate-600 bg-slate-50 p-2 rounded">
+                        时间常数 τ = <span id="disp-tau" class="font-mono font-bold text-slate-800">0.159</span> s
+                    </div>
+                </div>
+
+                <div id="control-q" class="mb-6 hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-700">品质因数 Q</label>
+                        <span id="disp-q" class="value-display text-purple-600 text-lg">5.0</span>
+                    </div>
+                    <input type="range" id="slider-q" min="1" max="20" step="0.5" value="5" oninput="updateParam('q', this.value)">
+                </div>
+
+                <div id="control-fsig" class="mb-6 hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-700">信号频率 fsig</label>
+                        <span id="disp-fsig" class="value-display text-purple-600 text-lg">0.5 Hz</span>
+                    </div>
+                    <input type="range" id="slider-fsig" min="0.1" max="3.0" step="0.1" value="0.5" oninput="updateParam('fsig', this.value)">
+                </div>
+            </div>
+
+            <!-- 播放控制 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <button onclick="togglePlay()" id="btn-play" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg shadow-blue-200">
+                    <svg id="icon-play" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                    <span id="text-play">开始演示</span>
+                </button>
+                <button onclick="reset()" class="w-full mt-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    重置
+                </button>
+            </div>
+        </div>
+
+        <!-- 右侧波形显示区 -->
+        <div class="lg:col-span-9 space-y-6">
+            
+            <!-- 信号类型选择 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">输入信号类型</h3>
+                <div class="grid grid-cols-4 gap-3">
+                    <button onclick="setSignal('step')" id="btn-signal-step" class="signal-btn active py-3 px-4 rounded-lg bg-slate-200 text-slate-700 font-semibold text-center">
+                        阶跃信号<br><span class="text-xs opacity-75">Step</span>
+                    </button>
+                    <button onclick="setSignal('sine')" id="btn-signal-sine" class="signal-btn py-3 px-4 rounded-lg bg-slate-200 text-slate-700 font-semibold text-center">
+                        正弦波<br><span class="text-xs opacity-75">Sine</span>
+                    </button>
+                    <button onclick="setSignal('square')" id="btn-signal-square" class="signal-btn py-3 px-4 rounded-lg bg-slate-200 text-slate-700 font-semibold text-center">
+                        方波<br><span class="text-xs opacity-75">Square</span>
+                    </button>
+                    <button onclick="setSignal('sweep')" id="btn-signal-sweep" class="signal-btn py-3 px-4 rounded-lg bg-slate-200 text-slate-700 font-semibold text-center">
+                        频率扫描<br><span class="text-xs opacity-75">Sweep</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主波形显示 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-green-500 live-indicator"></span>
+                        时域波形对比
+                    </h3>
+                    <div class="flex gap-6 text-sm font-medium">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-1 bg-blue-500 rounded-full"></div>
+                            <span class="text-slate-700">输入信号 Vin(t)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-1 bg-red-500 rounded-full"></div>
+                            <span class="text-slate-700">输出信号 Vout(t)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="canvas-bg p-4 relative">
+                    <canvas id="waveCanvas" width="1000" height="400" class="w-full h-auto block"></canvas>
+                    
+                    <!-- 实时数值显示 -->
+                    <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-lg shadow-lg border border-slate-200 min-w-[150px]">
+                        <div class="text-xs text-slate-500 mb-1">时间</div>
+                        <div id="live-time" class="text-lg font-mono font-bold text-slate-800 mb-3">0.00 s</div>
+                        
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span class="text-xs text-slate-500">输入</span>
+                            <span id="live-input" class="text-sm font-mono font-bold text-blue-600 ml-auto">0.00 V</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span class="text-xs text-slate-500">输出</span>
+                            <span id="live-output" class="text-sm font-mono font-bold text-red-600 ml-auto">0.00 V</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-2 px-4 text-sm text-slate-500 font-mono">
+                    <span>0s</span>
+                    <span>2s</span>
+                    <span>4s</span>
+                    <span>6s</span>
+                    <span>8s</span>
+                    <span>10s</span>
+                </div>
+            </div>
+
+            <!-- 频率响应示意图 -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-xl font-bold mb-4 text-slate-800">幅频特性 |H(jω)|</h3>
+                <div class="canvas-bg p-4">
+                    <canvas id="freqCanvas" width="1000" height="200" class="w-full h-auto block"></canvas>
+                </div>
+                <div class="flex justify-between mt-2 px-4 text-sm text-slate-500 font-mono">
+                    <span>0 Hz</span>
+                    <span>1 Hz</span>
+                    <span>2 Hz</span>
+                    <span>3 Hz</span>
+                    <span>4 Hz</span>
+                    <span>5 Hz</span>
+                </div>
+            </div>
+
+            <!-- 原理解释 -->
+            <div class="glass-panel rounded-2xl p-6 bg-gradient-to-br from-blue-50/50 to-white">
+                <h3 class="text-xl font-bold mb-3 text-slate-800" id="theory-title">低通滤波器原理</h3>
+                <p class="text-slate-700 leading-relaxed mb-4" id="theory-text">
+                    低通滤波器允许低于截止频率的信号通过，而衰减高频信号。在时域中，这表现为对输入信号的"平滑"处理。
+                    当输入发生阶跃变化时，输出按指数规律缓慢上升，时间常数 τ = RC = 1/(2πfc)。经过5τ时间后，输出达到稳态值的99.3%。
+                </p>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">微分方程</div>
+                        <div id="formula-diff" class="text-sm font-mono text-slate-800 font-semibold">τ(dy/dt) + y = x(t)</div>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">阶跃响应</div>
+                        <div id="formula-step" class="text-sm font-mono text-slate-800 font-semibold">y(t) = 1 - e^(-t/τ)</div>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">截止频率</div>
+                        <div class="text-sm font-mono text-slate-800 font-semibold">fc = 1/(2πτ)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let state = {
+            filter: 'lowpass',  // lowpass, highpass, bandpass
+            signal: 'step',     // step, sine, square, sweep
+            fc: 1.0,           // 截止频率 Hz
+            q: 5.0,            // 品质因数
+            fsig: 0.5,         // 信号频率
+            isPlaying: false,
+            time: 0,           // 当前动画时间 0-10s
+            speed: 0.05        // 动画速度
+        };
+
+        // 滤波器状态变量（用于实时计算）
+        let filterState = {
+            y: 0,      // 一阶系统状态
+            y1: 0,     // 二阶系统状态1
+            y2: 0      // 二阶系统状态2
+        };
+
+        // Canvas
+        const waveCanvas = document.getElementById('waveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        const freqCanvas = document.getElementById('freqCanvas');
+        const freqCtx = freqCanvas.getContext('2d');
+
+        // 初始化
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            drawStatic();
+            drawFreqResponse();
+            updateTheory();
+        }
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            [waveCanvas, freqCanvas].forEach(canvas => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                const width = rect.width - 32; // padding
+                const height = canvas.id === 'waveCanvas' ? 400 : 200;
+                
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                canvas.dims = { width, height };
+            });
+        }
+
+        // 设置滤波器
+        function setFilter(type) {
+            state.filter = type;
+            
+            // 更新UI
+            document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`btn-${type}`).classList.add('active');
+            
+            // 显示/隐藏Q控制
+            document.getElementById('control-q').classList.toggle('hidden', type !== 'bandpass');
+            
+            reset();
+            updateTheory();
+        }
+
+        // 设置信号
+        function setSignal(type) {
+            state.signal = type;
+            
+            // 更新UI
+            document.querySelectorAll('.signal-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`btn-signal-${type}`).classList.add('active');
+            
+            // 显示/隐藏频率控制
+            const showFreq = type === 'sine' || type === 'square';
+            document.getElementById('control-fsig').classList.toggle('hidden', !showFreq);
+            
+            reset();
+        }
+
+        // 更新参数
+        function updateParam(param, value) {
+            state[param] = parseFloat(value);
+            
+            if (param === 'fc') {
+                document.getElementById('disp-fc').textContent = value + ' Hz';
+                const tau = 1 / (2 * Math.PI * parseFloat(value));
+                document.getElementById('disp-tau').textContent = tau.toFixed(3);
+            } else if (param === 'q') {
+                document.getElementById('disp-q').textContent = value;
+            } else if (param === 'fsig') {
+                document.getElementById('disp-fsig').textContent = value + ' Hz';
+            }
+            
+            if (!state.isPlaying) {
+                drawStatic();
+                drawFreqResponse();
+            }
+        }
+
+        // 生成输入信号
+        function getInput(t) {
+            switch(state.signal) {
+                case 'step':
+                    return t > 1 ? 1 : 0;  // 1秒时阶跃
+                case 'sine':
+                    return Math.sin(2 * Math.PI * state.fsig * t);
+                case 'square':
+                    return Math.sin(2 * Math.PI * state.fsig * t) > 0 ? 1 : -1;
+                case 'sweep':
+                    // 频率从0.1到3Hz线性扫描
+                    const f = 0.1 + (t / 10) * 2.9;
+                    return Math.sin(2 * Math.PI * f * t / 2); // 使用平均频率计算相位
+                default:
+                    return 0;
+            }
+        }
+
+        // 计算滤波器输出（使用微分方程数值解）
+        function calculateOutput(input, dt) {
+            const wc = 2 * Math.PI * state.fc;
+            const tau = 1 / wc;
+            
+            if (state.filter === 'lowpass') {
+                // 一阶低通：dy/dt = (x - y)/tau
+                // 使用欧拉法：y[n+1] = y[n] + dt * (x - y)/tau
+                filterState.y = filterState.y + dt * (input - filterState.y) / tau;
+                return filterState.y;
+                
+            } else if (state.filter === 'highpass') {
+                // 一阶高通：输出 = 输入 - 低通输出
+                filterState.y = filterState.y + dt * (input - filterState.y) / tau;
+                return input - filterState.y;
+                
+            } else {
+                // 带通：二阶系统
+                // 使用状态空间法实现
+                const wn = wc;
+                const zeta = 1 / (2 * state.q);
+                
+                // dy1/dt = y2
+                // dy2/dt = -2*zeta*wn*y2 - wn^2*y1 + 2*zeta*wn*input
+                const dy1 = filterState.y2;
+                const dy2 = -2 * zeta * wn * filterState.y2 - wn * wn * filterState.y1 + 2 * zeta * wn * input;
+                
+                filterState.y1 += dy1 * dt;
+                filterState.y2 += dy2 * dt;
+                
+                return filterState.y2;
+            }
+        }
+
+        // 绘制静态波形（预览）
+        function drawStatic() {
+            const { width, height } = waveCanvas.dims;
+            const ctx = waveCtx;
+            
+            // 清空
+            ctx.fillStyle = '#fafbfc';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 网格
+            drawGrid(ctx, width, height);
+            
+            // 预计算波形数据
+            const data = [];
+            const tMax = 10;
+            const steps = 500;
+            let y = 0, y1 = 0, y2 = 0;
+            
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * tMax;
+                const input = getInput(t);
+                
+                // 重新计算输出（使用临时变量避免影响当前动画状态）
+                const wc = 2 * Math.PI * state.fc;
+                const tau = 1 / wc;
+                
+                let output;
+                if (state.filter === 'lowpass') {
+                    y = y + (tMax/steps) * (input - y) / tau;
+                    output = y;
+                } else if (state.filter === 'highpass') {
+                    y = y + (tMax/steps) * (input - y) / tau;
+                    output = input - y;
+                } else {
+                    const wn = wc;
+                    const zeta = 1 / (2 * state.q);
+                    const dt = tMax/steps;
+                    const dy1 = y2;
+                    const dy2 = -2 * zeta * wn * y2 - wn * wn * y1 + 2 * zeta * wn * input;
+                    y2 += dy2 * dt;
+                    y1 += dy1 * dt;
+                    output = y2;
+                }
+                
+                data.push({ t, input, output });
+            }
+            
+            // 绘制输入（蓝色）
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            data.forEach((p, i) => {
+                const x = (p.t / tMax) * width;
+                const y = height/2 - (p.input * height * 0.4);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // 绘制输出（红色）
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            data.forEach((p, i) => {
+                const x = (p.t / tMax) * width;
+                const y = height/2 - (p.output * height * 0.4);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // 绘制当前时间线（如果正在播放）
+            if (state.isPlaying) {
+                const x = (state.time / tMax) * width;
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // 绘制网格
+        function drawGrid(ctx, width, height) {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            // 垂直线
+            for (let i = 0; i <= 10; i++) {
+                const x = (i / 10) * width;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            
+            // 水平线（0轴）
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, height/2);
+            ctx.lineTo(width, height/2);
+            ctx.stroke();
+        }
+
+        // 绘制频率响应
+        function drawFreqResponse() {
+            const { width, height } = freqCanvas.dims;
+            const ctx = freqCtx;
+            
+            ctx.fillStyle = '#fafbfc';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 网格
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const x = (i / 5) * width;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            
+            // 绘制曲线
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            const fMax = 5;
+            for (let i = 0; i <= 200; i++) {
+                const f = (i / 200) * fMax;
+                const s = f / state.fc;
+                let mag;
+                
+                if (state.filter === 'lowpass') {
+                    mag = 1 / Math.sqrt(1 + s*s);
+                } else if (state.filter === 'highpass') {
+                    mag = s / Math.sqrt(1 + s*s);
+                } else {
+                    // 带通
+                    const q = state.q;
+                    mag = 1 / Math.sqrt(1 + q*q*Math.pow(s - 1/s, 2));
+                }
+                
+                const x = (f / fMax) * width;
+                const y = height - 20 - (mag * (height - 40));
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 标记当前截止频率
+            const fcX = (state.fc / fMax) * width;
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(fcX, 0);
+            ctx.lineTo(fcX, height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 标签
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('fc', fcX + 5, 20);
+        }
+
+        // 动画循环
+        function animate() {
+            if (!state.isPlaying) return;
+            
+            state.time += state.speed;
+            if (state.time > 10) {
+                state.time = 0;
+                filterState.y = 0;
+                filterState.y1 = 0;
+                filterState.y2 = 0;
+            }
+            
+            // 计算当前输入输出
+            const input = getInput(state.time);
+            const output = calculateOutput(input, state.speed);
+            
+            // 更新数值显示
+            document.getElementById('live-time').textContent = state.time.toFixed(2) + ' s';
+            document.getElementById('live-input').textContent = input.toFixed(2) + ' V';
+            document.getElementById('live-output').textContent = output.toFixed(2) + ' V';
+            
+            // 重绘
+            drawStatic();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // 控制
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            
+            const btn = document.getElementById('btn-play');
+            const icon = document.getElementById('icon-play');
+            const text = document.getElementById('text-play');
+            
+            if (state.isPlaying) {
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+                text.textContent = '暂停演示';
+                icon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>';
+                animate();
+            } else {
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+                text.textContent = '继续演示';
+                icon.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>';
+            }
+        }
+
+        function reset() {
+            state.time = 0;
+            filterState.y = 0;
+            filterState.y1 = 0;
+            filterState.y2 = 0;
+            document.getElementById('live-time').textContent = '0.00 s';
+            document.getElementById('live-input').textContent = '0.00 V';
+            document.getElementById('live-output').textContent = '0.00 V';
+            drawStatic();
+            drawFreqResponse();
+        }
+
+        // 更新理论说明
+        function updateTheory() {
+            const titles = {
+                lowpass: '低通滤波器原理 (RC电路)',
+                highpass: '高通滤波器原理 (RC电路)',
+                bandpass: '带通滤波器原理 (二阶系统)'
+            };
+            
+            const texts = {
+                lowpass: '低通滤波器允许低于截止频率的信号通过。时域中表现为对信号的"平滑"处理。当输入阶跃变化时，输出按指数规律上升，时间常数 τ = RC。经过5τ后达到稳态值的99.3%。电容阻碍电压突变，使高频分量衰减。',
+                
+                highpass: '高通滤波器允许高于截止频率的信号通过。时域特性表现为"隔直通交"：对阶跃输入的初始响应为瞬时跳变，随后指数衰减至零（阻隔直流）。输出与输入的变化率成正比，突出信号的边缘和突变。',
+                
+                bandpass: '带通滤波器仅允许特定频带内的信号通过。由低通和高通级联或LC谐振实现。阶跃响应呈现阻尼振荡特性，最终趋于零。品质因数Q决定带宽（BW=fc/Q），Q越高选择性越好，但建立时间越长。'
+            };
+            
+            const diffs = {
+                lowpass: 'τ(dy/dt) + y = x(t)',
+                highpass: 'τ(dy/dt) + y = τ(dx/dt)',
+                bandpass: 'd²y/dt² + (ωn/Q)dy/dt + ωn²y = (ωn/Q)dx/dt'
+            };
+            
+            const steps = {
+                lowpass: 'y(t) = 1 - e^(-t/τ)',
+                highpass: 'y(t) = e^(-t/τ)',
+                bandpass: 'y(t) = A·e^(-ζωnt)sin(ωdt)'
+            };
+            
+            document.getElementById('theory-title').textContent = titles[state.filter];
+            document.getElementById('theory-text').textContent = texts[state.filter];
+            document.getElementById('formula-diff').textContent = diffs[state.filter];
+            document.getElementById('formula-step').textContent = steps[state.filter];
+        }
+
+        // 启动
+        window.onload = init;
+    </script>
+</body>
+</html>
