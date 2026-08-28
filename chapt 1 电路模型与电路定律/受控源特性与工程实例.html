@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受控源传输特性 - 四端元件正确表示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px;
+            color: #0c4a6e;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #0369a1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+            font-weight: 800;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            color: #0284c7;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 12px;
+            padding: 15px 25px;
+            margin-bottom: 25px;
+            max-width: 1400px;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #92400e;
+            font-weight: 600;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1600px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(14, 165, 233, 0.15);
+            border: 3px solid #bae6fd;
+        }
+        
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        canvas {
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.05);
+            border: 3px solid #e0f2fe;
+        }
+        
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            font-size: 1.2rem;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .btn-vcvs { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; }
+        .btn-vccs { background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); color: white; }
+        .btn-ccvs { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; }
+        .btn-cccs { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; }
+        .btn-compare { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; }
+        .btn-reset { background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; }
+        
+        .info-panel {
+            min-width: 420px;
+            max-width: 480px;
+        }
+        
+        .source-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 6px solid #dc2626;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: none;
+        }
+        
+        .source-card.active { display: block; }
+        .source-card.vccs { border-left-color: #ea580c; }
+        .source-card.ccvs { border-left-color: #059669; }
+        .source-card.cccs { border-left-color: #7c3aed; }
+        
+        .source-card h2 {
+            font-size: 1.7rem;
+            margin-bottom: 12px;
+            color: #0c4a6e;
+            font-weight: 700;
+        }
+        
+        .four-terminal-box {
+            background: #ffffff;
+            border: 3px solid #bae6fd;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 12px 0;
+            text-align: center;
+        }
+        
+        .four-terminal-box h3 {
+            font-size: 1.2rem;
+            color: #0369a1;
+            margin-bottom: 10px;
+        }
+        
+        .port-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+        }
+        
+        .port {
+            background: #f1f5f9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e1;
+        }
+        
+        .arrow {
+            font-size: 1.5rem;
+            color: #0284c7;
+        }
+        
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem;
+            color: #0369a1;
+            font-weight: bold;
+            margin: 10px 0;
+            padding: 8px;
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 12px;
+        }
+        
+        .feature-list li {
+            font-size: 1.1rem;
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #334155;
+            line-height: 1.6;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        
+        .feature-list li:last-child { border-bottom: none; }
+        .feature-list li::before {
+            content: '⚡';
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+        }
+        
+        .real-example {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 1.05rem;
+            color: #92400e;
+            font-weight: 600;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 25px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 2px solid #e0f2fe;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .status-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.98);
+            padding: 20px;
+            border-radius: 12px;
+            border: 3px solid #bae6fd;
+            font-size: 1.1rem;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-width: 300px;
+            display: none;
+        }
+        
+        .status-title {
+            font-size: 1.3rem;
+            color: #0369a1;
+            margin-bottom: 12px;
+            text-align: center;
+            border-bottom: 2px solid #e0f2fe;
+            padding-bottom: 8px;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        
+        .status-row:last-child { border-bottom: none; }
+        .status-label { color: #64748b; }
+        .status-value {
+            font-family: 'Courier New', monospace;
+            color: #0369a1;
+            font-size: 1.2rem;
+        }
+        
+        .impedance-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .impedance-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        @media (max-width: 1200px) {
+            h1 { font-size: 2.4rem; }
+            .subtitle { font-size: 1.3rem; }
+            .source-card h2 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>⚡ 受控源传输特性 (Transfer Characteristics)</h1>
+    <p class="subtitle">四端双端口网络 · 输入-输出传输关系 · 非两端伏安特性</p>
+    
+    <div class="warning-box">
+        <strong>⚠️ 关键区别：</strong>受控源是<strong>四端元件（双端口网络）</strong>，有输入端口和输出端口。
+        其特性用<strong>传输特性（输出量 vs 输入量）</strong>表示，而非两端元件的伏安特性（电流 vs 电压）。
+    </div>
+    
+    <div class="main-container">
+        <div class="panel canvas-container">
+            <div style="position: relative;">
+                <canvas id="mainCanvas" width="800" height="650"></canvas>
+                <div class="status-panel" id="statusPanel">
+                    <div class="status-title" id="statusTitle">VCVS</div>
+                    <div class="status-row">
+                        <span class="status-label">输入端口:</span>
+                        <span class="status-value" id="inputPort">V₁ = 0 V</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">输出端口:</span>
+                        <span class="status-value" id="outputPort">V₂ = 0 V</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">传输关系:</span>
+                        <span class="status-value" id="transferRelation">V₂ = 2·V₁</span>
+                    </div>
+                    <div class="impedance-info">
+                        <div class="impedance-row">
+                            <span>输入阻抗 Z₁₁:</span>
+                            <span id="zIn">∞ (开路)</span>
+                        </div>
+                        <div class="impedance-row">
+                            <span>输出阻抗 Z₂₂:</span>
+                            <span id="zOut">0 (理想电压源)</span>
+                        </div>
+                    </div>
+                    <div class="circuit-diagram" style="margin-top: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 5px;">实际器件</div>
+                        <div id="applicationText" style="font-size: 1rem; color: #334155; font-weight: 600;">
+                            运算放大器
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dc2626;">VCVS</div>
+                    <span>电压→电压</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ea580c;">VCCS</div>
+                    <span>电压→电流</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #059669;">CCVS</div>
+                    <span>电流→电压</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #7c3aed;">CCCS</div>
+                    <span>电流→电流</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-vcvs" onclick="showSource('vcvs')">🔴 VCVS</button>
+                <button class="btn-vccs" onclick="showSource('vccs')">🟠 VCCS</button>
+                <button class="btn-ccvs" onclick="showSource('ccvs')">🟢 CCVS</button>
+                <button class="btn-cccs" onclick="showSource('cccs')">🟣 CCCS</button>
+                <button class="btn-compare" onclick="showSource('compare')">⚖️ 全部对比</button>
+                <button class="btn-reset" onclick="resetDemo()">↺ 重置</button>
+            </div>
+        </div>
+        
+        <div class="panel info-panel">
+            <div class="source-card active" id="vcvs-card">
+                <h2>🔴 VCVS - 电压控制电压源</h2>
+                <div class="four-terminal-box">
+                    <h3>四端口网络结构</h3>
+                    <div class="port-diagram">
+                        <div class="port">
+                            <div style="font-weight: bold; color: #dc2626;">输入端口</div>
+                            <div>V₁ (开路)</div>
+                            <div>I₁ = 0</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div style="font-size: 2rem;">μ</div>
+                        <div class="arrow">→</div>
+                        <div class="port">
+                            <div style="font-weight: bold; color: #dc2626;">输出端口</div>
+                            <div>V₂ = μ·V₁</div>
+                            <div>I₂ = 任意</div>
+                        </div>
+                    </div>
+                    <div class="formula">V₂ = μ · V₁</div>
+                </div>
+                <ul class="feature-list">
+                    <li>输入：开路电压 V₁ (I₁ = 0)</li>
+                    <li>输出：受控电压源 V₂</li>
+                    <li>输入阻抗 Z₁₁ = ∞ (开路)</li>
+                    <li>输出阻抗 Z₂₂ = 0 (理想电压源)</li>
+                    <li>传输参数：电压增益 μ (无量纲)</li>
+                </ul>
+                <div class="real-example">
+                    <strong>实际器件：</strong>运算放大器(电压放大)、理想变压器、MOS管共源放大器(小信号)
+                </div>
+            </div>
+            
+            <div class="source-card vccs" id="vccs-card">
+                <h2>🟠 VCCS - 电压控制电流源</h2>
+                <div class="four-terminal-box">
+                    <h3>四端口网络结构</h3>
+                    <div class="port-diagram">
+                        <div class="port">
+                            <div style="font-weight: bold; color: #ea580c;">输入端口</div>
+                            <div>V₁ (开路)</div>
+                            <div>I₁ = 0</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div style="font-size: 2rem;">gₘ</div>
+                        <div class="arrow">→</div>
+                        <div class="port">
+                            <div style="font-weight: bold; color: #ea580c;">输出端口</div>
+                            <div>I₂ = gₘ·V₁</div>
+                            <div>V₂ = 任意</div>
+                        </div>
+                    </div>
+                    <div class="formula">I₂ = gₘ · V₁</div>
+                </div>
+                <ul class="feature-list">
+                    <li>输入：开路电压 V₁ (I₁ = 0)</li>
+                    <li>输出：受控电流源 I₂</li>
+                    <li>输入阻抗 Z₁₁ = ∞ (开路)</li>
+                    <li>输出阻抗 Z₂₂ = ∞ (理想电流源)</li>
+                    <li>传输参数：跨导 gₘ (单位 S)</li>
+                </ul>
+                <div class="real-example">
+                    <strong>实际器件：</strong>场效应管(FET/MOSFET)、真空五极管、OTA运算跨导放大器
+                </div>
+            </div>
+            
+            <div class="source-card ccvs" id="ccvs-card">
+                <h2>🟢 CCVS - 电流控制电压源</h2>
+                <div class="four-terminal-box">
+                    <h3>四端口网络结构</h3>
+                    <div class="port-diagram">
+                        <div class="port">
+                            <div style="font-weight: bold; color: #059669;">输入端口</div>
+                            <div>I₁ (短路)</div>
+                            <div>V₁ = 0</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div style="font-size: 2rem;">rₘ</div>
+                        <div class="arrow">→</div>
+                        <div class="port">
+                            <div style="font-weight: bold; color: #059669;">输出端口</div>
+                            <div>V₂ = rₘ·I₁</div>
+                            <div>I₂ = 任意</div>
+                        </div>
+                    </div>
+                    <div class="formula">V₂ = rₘ · I₁</div>
+                </div>
+                <ul class="feature-list">
+                    <li>输入：短路电流 I₁ (V₁ = 0)</li>
+                    <li>输出：受控电压源 V₂</li>
+                    <li>输入阻抗 Z₁₁ = 0 (短路)</li>
+                    <li>输出阻抗 Z₂₂ = 0 (理想电压源)</li>
+                    <li>传输参数：跨阻 rₘ (单位 Ω)</li>
+                </ul>
+                <div class="real-example">
+                    <strong>实际器件：</strong>电流反馈运放(CFA)、跨阻放大器(TIA)、电流检测+运放
+                </div>
+            </div>
+            
+            <div class="source-card cccs" id="cccs-card">
+                <h2>🟣 CCCS - 电流控制电流源</h2>
+                <div class="four-terminal-box">
+                    <h3>四端口网络结构</h3>
+                    <div class="port-diagram">
+                        <div class="port">
+                            <div style="font-weight: bold; color: #7c3aed;">输入端口</div>
+                            <div>I₁ (短路)</div>
+                            <div>V₁ = 0</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div style="font-size: 2rem;">β</div>
+                        <div class="arrow">→</div>
+                        <div class="port">
+                            <div style="font-weight: bold; color: #7c3aed;">输出端口</div>
+                            <div>I₂ = β·I₁</div>
+                            <div>V₂ = 任意</div>
+                        </div>
+                    </div>
+                    <div class="formula">I₂ = β · I₁</div>
+                </div>
+                <ul class="feature-list">
+                    <li>输入：短路电流 I₁ (V₁ = 0)</li>
+                    <li>输出：受控电流源 I₂</li>
+                    <li>输入阻抗 Z₁₁ = 0 (短路)</li>
+                    <li>输出阻抗 Z₂₂ = ∞ (理想电流源)</li>
+                    <li>传输参数：电流增益 β (无量纲)</li>
+                </ul>
+                <div class="real-example">
+                    <strong>实际器件：</strong>双极型晶体管(BJT)、电流镜(Current Mirror)、电流放大器
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 坐标参数
+        const CX = 400;
+        const CY = 325;
+        
+        // 控制系数
+        const MU = 2;      // VCVS电压增益
+        const GM = 0.002;  // VCCS跨导 2mS
+        const RM = 1000;   // CCVS跨阻 1kΩ
+        const BETA = 2;    // CCCS电流增益
+        
+        // 状态
+        let mode = 'compare';
+        let controlVal = 0;
+        let targetVal = 0;
+        let isAnimating = false;
+        let animId = null;
+        
+        const applications = {
+            'vcvs': '运算放大器电压放大器',
+            'vccs': '场效应管跨导放大器',
+            'ccvs': '电流反馈运放/跨阻放大器',
+            'cccs': '双极型晶体管电流放大器'
+        };
+        
+        function init() {
+            document.querySelectorAll('.source-card').forEach(card => {
+                card.classList.add('active');
+            });
+            drawAll();
+        }
+        
+        function drawAll() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawGrid();
+            drawAxes();
+            drawFourTerminalSymbol();
+            
+            if(mode === 'vcvs') {
+                drawVCVS();
+                drawVCVSPoint(controlVal);
+            } else if(mode === 'vccs') {
+                drawVCCS();
+                drawVCCSPoint(controlVal);
+            } else if(mode === 'ccvs') {
+                drawCCVS();
+                drawCCVSPoint(controlVal);
+            } else if(mode === 'cccs') {
+                drawCCCS();
+                drawCCCSPoint(controlVal);
+            } else {
+                drawVCVS();
+                drawVCCS();
+                drawCCVS();
+                drawCCCS();
+                drawVCVSPoint(controlVal);
+                drawVCCSPoint(controlVal);
+                drawCCVSPoint(controlVal);
+                drawCCCSPoint(controlVal);
+            }
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.lineWidth = 1;
+            for(let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for(let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        function drawAxes() {
+            ctx.strokeStyle = '#0c4a6e';
+            ctx.lineWidth = 3;
+            
+            // X轴 (输入量)
+            ctx.beginPath();
+            ctx.moveTo(80, CY);
+            ctx.lineTo(720, CY);
+            ctx.stroke();
+            
+            // Y轴 (输出量)
+            ctx.beginPath();
+            ctx.moveTo(CX, 580);
+            ctx.lineTo(CX, 70);
+            ctx.stroke();
+            
+            // 箭头
+            ctx.fillStyle = '#0c4a6e';
+            ctx.beginPath();
+            ctx.moveTo(720, CY);
+            ctx.lineTo(710, CY-8);
+            ctx.lineTo(710, CY+8);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(CX, 70);
+            ctx.lineTo(CX-8, 80);
+            ctx.lineTo(CX+8, 80);
+            ctx.fill();
+            
+            // 标签 - 明确标注输入/输出
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#0369a1';
+            ctx.textAlign = 'center';
+            ctx.fillText('输入量 (Input)', 620, CY + 40);
+            
+            ctx.save();
+            ctx.translate(50, CY);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('输出量 (Output)', 0, 0);
+            ctx.restore();
+            
+            // 原点
+            ctx.fillStyle = '#0c4a6e';
+            ctx.beginPath();
+            ctx.arc(CX, CY, 5, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 标题 - 强调传输特性
+            ctx.font = 'bold 22px Microsoft YaHei';
+            ctx.fillStyle = '#0369a1';
+            ctx.fillText('受控源传输特性曲线 (Transfer Characteristics)', CX, 35);
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('四端双端口网络：输出量 vs 输入量', CX, 60);
+        }
+        
+        // 绘制四端元件符号示意图
+        function drawFourTerminalSymbol() {
+            const y = 520;
+            
+            // 绘制方框表示四端网络
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(CX - 200, y - 40, 400, 80);
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#0284c7';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('四端双端口网络 (Two-Port Network)', CX, y - 50);
+            
+            // 输入端口标记
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('输入端口 (Port 1)', CX - 150, y + 55);
+            
+            // 输出端口标记
+            ctx.fillText('输出端口 (Port 2)', CX + 150, y + 55);
+            
+            // 根据模式显示具体符号
+            if(mode === 'vcvs' || mode === 'compare') {
+                drawDiamond(CX - 240, y, '#dc2626', 'VCVS');
+            }
+            if(mode === 'vccs' || mode === 'compare') {
+                drawDiamond(CX - 80, y, '#ea580c', 'VCCS');
+            }
+            if(mode === 'ccvs' || mode === 'compare') {
+                drawDiamond(CX + 80, y, '#059669', 'CCVS');
+            }
+            if(mode === 'cccs' || mode === 'compare') {
+                drawDiamond(CX + 240, y, '#7c3aed', 'CCCS');
+            }
+        }
+        
+        function drawDiamond(x, y, color, label) {
+            const size = 30;
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x - size, y);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label.substring(0,2), x, y);
+            
+            ctx.fillStyle = color;
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(label, x, y + size + 15);
+        }
+        
+        // VCVS: 输入电压 → 输出电压
+        function drawVCVS() {
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // X: V₁ (-3V to +3V), Y: V₂ = 2·V₁
+            for(let v1 = -3; v1 <= 3; v1 += 0.1) {
+                const v2 = MU * v1;
+                const x = CX + v1 * 80;
+                const y = CY - v2 * 40;
+                if(v1 === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 标注
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText('VCVS: V₂=2V₁', CX + 180, CY - 140);
+            ctx.fillText('(电压控制电压源)', CX + 180, CY - 120);
+            ctx.fillText('X轴: V₁(V), Y轴: V₂(V)', CX + 180, CY - 100);
+        }
+        
+        function drawVCVSPoint(v1) {
+            const v2 = MU * v1;
+            const x = CX + v1 * 80;
+            const y = CY - v2 * 40;
+            drawPoint(x, y, '#dc2626', 'V₂=' + v2.toFixed(1) + 'V');
+        }
+        
+        // VCCS: 输入电压 → 输出电流
+        function drawVCCS() {
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // X: V₁ (-3V to +3V), Y: I₂ = gm·V₁ (mA)
+            for(let v1 = -3; v1 <= 3; v1 += 0.1) {
+                const i2 = GM * v1 * 1000; // mA
+                const x = CX + v1 * 80;
+                const y = CY - i2 * 40;
+                if(v1 === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ea580c';
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText('VCCS: I₂=2mS·V₁', CX + 180, CY - 60);
+            ctx.fillText('(电压控制电流源)', CX + 180, CY - 40);
+            ctx.fillText('X轴: V₁(V), Y轴: I₂(mA)', CX + 180, CY - 20);
+        }
+        
+        function drawVCCSPoint(v1) {
+            const i2 = GM * v1 * 1000;
+            const x = CX + v1 * 80;
+            const y = CY - i2 * 40;
+            drawPoint(x, y, '#ea580c', 'I₂=' + i2.toFixed(1) + 'mA');
+        }
+        
+        // CCVS: 输入电流 → 输出电压
+        function drawCCVS() {
+            ctx.strokeStyle = '#059669';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // X: I₁ (-3mA to +3mA), Y: V₂ = rm·I₁
+            for(let i1 = -3; i1 <= 3; i1 += 0.1) {
+                const v2 = (RM * i1 / 1000); // V
+                const x = CX + i1 * 80;
+                const y = CY - v2 * 80;
+                if(i1 === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#059669';
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText('CCVS: V₂=1kΩ·I₁', CX - 280, CY - 140);
+            ctx.fillText('(电流控制电压源)', CX - 280, CY - 120);
+            ctx.fillText('X轴: I₁(mA), Y轴: V₂(V)', CX - 280, CY - 100);
+        }
+        
+        function drawCCVSPoint(i1) {
+            const v2 = (RM * i1 / 1000);
+            const x = CX + i1 * 80;
+            const y = CY - v2 * 80;
+            drawPoint(x, y, '#059669', 'V₂=' + v2.toFixed(1) + 'V');
+        }
+        
+        // CCCS: 输入电流 → 输出电流
+        function drawCCCS() {
+            ctx.strokeStyle = '#7c3aed';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // X: I₁ (-3mA to +3mA), Y: I₂ = β·I₁
+            for(let i1 = -3; i1 <= 3; i1 += 0.1) {
+                const i2 = BETA * i1; // mA
+                const x = CX + i1 * 80;
+                const y = CY - i2 * 40;
+                if(i1 === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#7c3aed';
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText('CCCS: I₂=2·I₁', CX - 280, CY - 60);
+            ctx.fillText('(电流控制电流源)', CX - 280, CY - 40);
+            ctx.fillText('X轴: I₁(mA), Y轴: I₂(mA)', CX - 280, CY - 20);
+        }
+        
+        function drawCCCSPoint(i1) {
+            const i2 = BETA * i1;
+            const x = CX + i1 * 80;
+            const y = CY - i2 * 40;
+            drawPoint(x, y, '#7c3aed', 'I₂=' + i2.toFixed(1) + 'mA');
+        }
+        
+        function drawPoint(x, y, color, label) {
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, 25);
+            grad.addColorStop(0, color + '80');
+            grad.addColorStop(1, color + '00');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.fillStyle = color;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.font = 'bold 12px Arial';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'left';
+            ctx.fillText(label, x + 15, y - 10);
+        }
+        
+        function updateUI() {
+            const panel = document.getElementById('statusPanel');
+            const title = document.getElementById('statusTitle');
+            const inputPort = document.getElementById('inputPort');
+            const outputPort = document.getElementById('outputPort');
+            const transferRelation = document.getElementById('transferRelation');
+            const zIn = document.getElementById('zIn');
+            const zOut = document.getElementById('zOut');
+            const app = document.getElementById('applicationText');
+            
+            panel.style.display = 'block';
+            
+            if(mode === 'vcvs') {
+                title.textContent = 'VCVS - 电压控制电压源';
+                title.style.color = '#dc2626';
+                inputPort.textContent = 'V₁ = ' + controlVal.toFixed(1) + ' V (I₁=0)';
+                const v2 = MU * controlVal;
+                outputPort.textContent = 'V₂ = ' + v2.toFixed(1) + ' V';
+                transferRelation.textContent = 'V₂ = ' + MU + '·V₁';
+                zIn.textContent = '∞ (开路输入)';
+                zOut.textContent = '0 (理想电压源输出)';
+                app.textContent = applications['vcvs'];
+            } else if(mode === 'vccs') {
+                title.textContent = 'VCCS - 电压控制电流源';
+                title.style.color = '#ea580c';
+                inputPort.textContent = 'V₁ = ' + controlVal.toFixed(1) + ' V (I₁=0)';
+                const i2 = GM * controlVal * 1000;
+                outputPort.textContent = 'I₂ = ' + i2.toFixed(1) + ' mA';
+                transferRelation.textContent = 'I₂ = ' + (GM*1000) + 'mS·V₁';
+                zIn.textContent = '∞ (开路输入)';
+                zOut.textContent = '∞ (理想电流源输出)';
+                app.textContent = applications['vccs'];
+            } else if(mode === 'ccvs') {
+                title.textContent = 'CCVS - 电流控制电压源';
+                title.style.color = '#059669';
+                inputPort.textContent = 'I₁ = ' + controlVal.toFixed(1) + ' mA (V₁=0)';
+                const v2 = (RM * controlVal / 1000);
+                outputPort.textContent = 'V₂ = ' + v2.toFixed(1) + ' V';
+                transferRelation.textContent = 'V₂ = ' + (RM/1000) + 'kΩ·I₁';
+                zIn.textContent = '0 (短路输入)';
+                zOut.textContent = '0 (理想电压源输出)';
+                app.textContent = applications['ccvs'];
+            } else if(mode === 'cccs') {
+                title.textContent = 'CCCS - 电流控制电流源';
+                title.style.color = '#7c3aed';
+                inputPort.textContent = 'I₁ = ' + controlVal.toFixed(1) + ' mA (V₁=0)';
+                const i2 = BETA * controlVal;
+                outputPort.textContent = 'I₂ = ' + i2.toFixed(1) + ' mA';
+                transferRelation.textContent = 'I₂ = ' + BETA + '·I₁';
+                zIn.textContent = '0 (短路输入)';
+                zOut.textContent = '∞ (理想电流源输出)';
+                app.textContent = applications['cccs'];
+            }
+        }
+        
+        function animate() {
+            if(!isAnimating) return;
+            
+            const diff = targetVal - controlVal;
+            if(Math.abs(diff) < 0.05) {
+                controlVal = targetVal;
+                if(targetVal >= 2.5) {
+                    targetVal = -2.5;
+                } else if(targetVal <= -2.5) {
+                    targetVal = 0;
+                    isAnimating = false;
+                }
+            } else {
+                controlVal += diff * 0.05;
+            }
+            
+            drawAll();
+            updateUI();
+            
+            if(isAnimating || Math.abs(diff) > 0.01) {
+                animId = requestAnimationFrame(animate);
+            }
+        }
+        
+        function showSource(m) {
+            mode = m;
+            controlVal = 0;
+            targetVal = 2.5;
+            isAnimating = true;
+            
+            document.querySelectorAll('.source-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            if(m !== 'compare') {
+                document.getElementById(m + '-card').classList.add('active');
+            } else {
+                document.querySelectorAll('.source-card').forEach(card => {
+                    card.classList.add('active');
+                });
+            }
+            
+            if(animId) cancelAnimationFrame(animId);
+            animate();
+        }
+        
+        function resetDemo() {
+            isAnimating = false;
+            if(animId) cancelAnimationFrame(animId);
+            controlVal = 0;
+            targetVal = 0;
+            mode = 'compare';
+            
+            document.getElementById('statusPanel').style.display = 'none';
+            document.querySelectorAll('.source-card').forEach(card => {
+                card.classList.add('active');
+            });
+            
+            drawAll();
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

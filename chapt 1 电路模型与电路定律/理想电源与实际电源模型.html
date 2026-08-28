@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电源特性全景交互演示 - 双面板独立控制</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+        
+        .circuit-line {
+            stroke: #475569;
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .component-fill {
+            fill: #f8fafc;
+            stroke: #475569;
+            stroke-width: 2;
+        }
+        
+        .curve {
+            fill: none;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+        
+        .operating-point {
+            fill: #fff;
+            stroke-width: 3;
+            r: 8;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+            transition: all 0.3s ease;
+        }
+        
+        .slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid currentColor;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .instance-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .instance-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        
+        .instance-card.active {
+            border-color: currentColor;
+            background: rgba(0,0,0,0.03);
+            transform: scale(1.02);
+        }
+        
+        .mode-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .mode-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+        
+        .math-text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .pulse-ring {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 text-slate-800">
+
+    <!-- Header -->
+    <header class="max-w-[1600px] mx-auto mb-6 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent">
+            电源特性全景交互演示
+        </h1>
+        <p class="text-xl text-slate-600">电压源与电流源独立控制面板 | 每种电源都有4种类型</p>
+    </header>
+
+    <main class="max-w-[1600px] mx-auto comparison-grid">
+        
+        <!-- Left: Voltage Source Panel with 4 Modes -->
+        <section class="glass-panel rounded-2xl p-6 md:p-8 border-t-4 border-red-500">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-3xl font-bold text-red-600 flex items-center gap-3">
+                    <span class="w-4 h-4 rounded-full bg-red-600 pulse-ring"></span>
+                    电压源系列
+                </h2>
+            </div>
+
+            <!-- Voltage Mode Selector -->
+            <div class="flex gap-2 mb-6 flex-wrap">
+                <button onclick="setVoltageMode('dc')" id="v-btn-dc" class="mode-btn active px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-bold">直流</button>
+                <button onclick="setVoltageMode('ac')" id="v-btn-ac" class="mode-btn px-4 py-2 rounded-lg bg-purple-500 text-white text-sm font-bold">交流</button>
+                <button onclick="setVoltageMode('signal')" id="v-btn-signal" class="mode-btn px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-bold">信号</button>
+                <button onclick="setVoltageMode('practical')" id="v-btn-practical" class="mode-btn px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-bold">实际</button>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-2 mb-4 text-center">
+                <span id="v-formula" class="text-xl font-mono text-red-700 font-bold">V = 常数</span>
+            </div>
+
+            <!-- Graph -->
+            <div class="bg-white rounded-xl shadow-inner p-4 mb-6" style="height: 350px;">
+                <svg id="v-graph" class="w-full h-full" viewBox="0 0 500 350" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="v-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#v-grid)" opacity="0.5"/>
+                    
+                    <line x1="60" y1="300" x2="480" y2="300" stroke="#334155" stroke-width="2"/>
+                    <line x1="60" y1="300" x2="60" y2="40" stroke="#334155" stroke-width="2"/>
+                    <polygon points="480,300 470,295 470,305" fill="#334155"/>
+                    <polygon points="60,40 55,50 65,50" fill="#334155"/>
+                    
+                    <text x="460" y="330" class="text-sm fill-slate-600 font-bold">I (A)</text>
+                    <text x="40" y="45" class="text-sm fill-slate-600 font-bold">V (V)</text>
+                    
+                    <path id="v-curve" d="M 60,120 L 460,120" class="curve" stroke="#dc2626" fill="none"/>
+                    <circle id="v-point" cx="250" cy="120" r="8" fill="#dc2626" stroke="white" stroke-width="3" class="operating-point"/>
+                    <text id="v-label" x="380" y="110" class="text-sm fill-red-600 font-bold">理想电压源</text>
+                </svg>
+            </div>
+
+            <!-- Dynamic Controls -->
+            <div id="v-controls-dc" class="space-y-4">
+                <div class="bg-red-50 rounded-xl p-4 border-2 border-red-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-red-800">源电压 V<sub>s</sub></label>
+                        <span id="v-dc-val" class="text-2xl font-bold text-red-600 math-text">12.0 V</span>
+                    </div>
+                    <input type="range" id="v-dc-slider" min="0" max="24" step="0.5" value="12" class="slider-thumb w-full text-red-600">
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-slate-700">负载电阻 R<sub>L</sub></label>
+                        <span id="v-r-val" class="text-2xl font-bold text-slate-600 math-text">6.0 Ω</span>
+                    </div>
+                    <input type="range" id="v-r-slider" min="0.5" max="20" step="0.5" value="6" class="slider-thumb w-full text-slate-600">
+                </div>
+            </div>
+
+            <div id="v-controls-ac" class="space-y-4 hidden">
+                <div class="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-purple-800">峰值电压 V<sub>p</sub></label>
+                        <span id="v-ac-val" class="text-2xl font-bold text-purple-600 math-text">311 V</span>
+                    </div>
+                    <input type="range" id="v-ac-slider" min="10" max="400" step="10" value="311" class="slider-thumb w-full text-purple-600">
+                </div>
+                <div class="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-purple-800">频率 f</label>
+                        <span id="v-f-val" class="text-2xl font-bold text-purple-600 math-text">50 Hz</span>
+                    </div>
+                    <input type="range" id="v-f-slider" min="1" max="100" step="1" value="50" class="slider-thumb w-full text-purple-600">
+                </div>
+            </div>
+
+            <div id="v-controls-signal" class="space-y-4 hidden">
+                <div class="bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200">
+                    <label class="font-bold text-emerald-800 block mb-2">波形</label>
+                    <select id="v-wave-type" class="w-full p-2 rounded border-2 border-emerald-300 bg-white text-emerald-700 font-bold">
+                        <option value="sine">正弦波</option>
+                        <option value="square">方波</option>
+                        <option value="triangle">三角波</option>
+                    </select>
+                </div>
+                <div class="bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-emerald-800">振幅</label>
+                        <span id="v-amp-val" class="text-2xl font-bold text-emerald-600 math-text">5 V</span>
+                    </div>
+                    <input type="range" id="v-amp-slider" min="1" max="10" step="0.5" value="5" class="slider-thumb w-full text-emerald-600">
+                </div>
+            </div>
+
+            <div id="v-controls-practical" class="space-y-4 hidden">
+                <div class="bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-orange-800">开路电压 V<sub>oc</sub></label>
+                        <span id="v-oc-val" class="text-2xl font-bold text-orange-600 math-text">12.0 V</span>
+                    </div>
+                    <input type="range" id="v-oc-slider" min="1" max="24" step="0.5" value="12" class="slider-thumb w-full text-orange-600">
+                </div>
+                <div class="bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-orange-800">内阻 R<sub>int</sub></label>
+                        <span id="v-rint-val" class="text-2xl font-bold text-orange-600 math-text">2.0 Ω</span>
+                    </div>
+                    <input type="range" id="v-rint-slider" min="0" max="10" step="0.1" value="2" class="slider-thumb w-full text-orange-600">
+                </div>
+            </div>
+
+            <!-- Instance Cards -->
+            <div class="mt-4 grid grid-cols-3 gap-2" id="v-cards">
+                <!-- Dynamic content -->
+            </div>
+
+            <!-- Circuit -->
+            <div class="mt-4 bg-white rounded-xl p-4 border-2 border-slate-200">
+                <svg viewBox="0 0 300 100" class="w-full h-24">
+                    <circle cx="50" cy="50" r="20" fill="white" stroke="#dc2626" stroke-width="2"/>
+                    <text x="50" y="55" text-anchor="middle" fill="#dc2626" font-weight="bold">V</text>
+                    <line x1="70" y1="50" x2="150" y2="50" stroke="#475569" stroke-width="2"/>
+                    <line x1="50" y1="70" x2="50" y2="85" stroke="#475569" stroke-width="2"/>
+                    <line x1="50" y1="85" x2="200" y2="85" stroke="#475569" stroke-width="2"/>
+                    <line x1="200" y1="85" x2="200" y2="50" stroke="#475569" stroke-width="2"/>
+                    <rect x="150" y="40" width="50" height="20" fill="white" stroke="#475569" stroke-width="2"/>
+                    <text x="175" y="35" text-anchor="middle" font-size="12" fill="#475569">R<sub>L</sub></text>
+                </svg>
+                <div class="text-center mt-2 text-lg math-text" id="v-equation">
+                    I = V/R = <span class="text-red-600 font-bold">2.00 A</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Current Source Panel with 4 Modes -->
+        <section class="glass-panel rounded-2xl p-6 md:p-8 border-t-4 border-blue-500">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-3xl font-bold text-blue-600 flex items-center gap-3">
+                    <span class="w-4 h-4 rounded-full bg-blue-600 pulse-ring"></span>
+                    电流源系列
+                </h2>
+            </div>
+
+            <!-- Current Mode Selector -->
+            <div class="flex gap-2 mb-6 flex-wrap">
+                <button onclick="setCurrentMode('dc')" id="i-btn-dc" class="mode-btn active px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-bold">直流</button>
+                <button onclick="setCurrentMode('ac')" id="i-btn-ac" class="mode-btn px-4 py-2 rounded-lg bg-pink-500 text-white text-sm font-bold">交流</button>
+                <button onclick="setCurrentMode('signal')" id="i-btn-signal" class="mode-btn px-4 py-2 rounded-lg bg-cyan-500 text-white text-sm font-bold">信号</button>
+                <button onclick="setCurrentMode('practical')" id="i-btn-practical" class="mode-btn px-4 py-2 rounded-lg bg-lime-500 text-white text-sm font-bold">实际</button>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-2 mb-4 text-center">
+                <span id="i-formula" class="text-xl font-mono text-blue-700 font-bold">I = 常数</span>
+            </div>
+
+            <!-- Graph - Note: Axes swapped! X=Voltage, Y=Current -->
+            <div class="bg-white rounded-xl shadow-inner p-4 mb-6" style="height: 350px;">
+                <svg id="i-graph" class="w-full h-full" viewBox="0 0 500 350" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="i-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#i-grid)" opacity="0.5"/>
+                    
+                    <!-- Axes: X=Voltage, Y=Current (Swapped from voltage source) -->
+                    <line x1="60" y1="300" x2="480" y2="300" stroke="#334155" stroke-width="2"/>
+                    <line x1="60" y1="300" x2="60" y2="40" stroke="#334155" stroke-width="2"/>
+                    <polygon points="480,300 470,295 470,305" fill="#334155"/>
+                    <polygon points="60,40 55,50 65,50" fill="#334155"/>
+                    
+                    <text x="460" y="330" class="text-sm fill-slate-600 font-bold">V (V)</text>
+                    <text x="40" y="45" class="text-sm fill-slate-600 font-bold">I (A)</text>
+                    
+                    <path id="i-curve" d="M 200,50 L 200,300" class="curve" stroke="#2563eb" fill="none"/>
+                    <circle id="i-point" cx="200" cy="175" r="8" fill="#2563eb" stroke="white" stroke-width="3" class="operating-point"/>
+                    <text id="i-label" x="220" y="70" class="text-sm fill-blue-600 font-bold">理想电流源</text>
+                </svg>
+            </div>
+
+            <!-- Dynamic Controls -->
+            <div id="i-controls-dc" class="space-y-4">
+                <div class="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-blue-800">源电流 I<sub>s</sub></label>
+                        <span id="i-dc-val" class="text-2xl font-bold text-blue-600 math-text">1.50 A</span>
+                    </div>
+                    <input type="range" id="i-dc-slider" min="0.1" max="5" step="0.1" value="1.5" class="slider-thumb w-full text-blue-600">
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-slate-700">负载电阻 R<sub>L</sub></label>
+                        <span id="i-r-val" class="text-2xl font-bold text-slate-600 math-text">10.0 Ω</span>
+                    </div>
+                    <input type="range" id="i-r-slider" min="1" max="50" step="1" value="10" class="slider-thumb w-full text-slate-600">
+                </div>
+            </div>
+
+            <div id="i-controls-ac" class="space-y-4 hidden">
+                <div class="bg-pink-50 rounded-xl p-4 border-2 border-pink-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-pink-800">峰值电流 I<sub>p</sub></label>
+                        <span id="i-ac-val" class="text-2xl font-bold text-pink-600 math-text">2.0 A</span>
+                    </div>
+                    <input type="range" id="i-ac-slider" min="0.1" max="5" step="0.1" value="2" class="slider-thumb w-full text-pink-600">
+                </div>
+                <div class="bg-pink-50 rounded-xl p-4 border-2 border-pink-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-pink-800">频率 f</label>
+                        <span id="i-f-val" class="text-2xl font-bold text-pink-600 math-text">50 Hz</span>
+                    </div>
+                    <input type="range" id="i-f-slider" min="1" max="100" step="1" value="50" class="slider-thumb w-full text-pink-600">
+                </div>
+            </div>
+
+            <div id="i-controls-signal" class="space-y-4 hidden">
+                <div class="bg-cyan-50 rounded-xl p-4 border-2 border-cyan-200">
+                    <label class="font-bold text-cyan-800 block mb-2">电流波形</label>
+                    <select id="i-wave-type" class="w-full p-2 rounded border-2 border-cyan-300 bg-white text-cyan-700 font-bold">
+                        <option value="sine">正弦电流</option>
+                        <option value="square">方波电流</option>
+                        <option value="pulse">脉冲电流</option>
+                    </select>
+                </div>
+                <div class="bg-cyan-50 rounded-xl p-4 border-2 border-cyan-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-cyan-800">电流振幅</label>
+                        <span id="i-amp-val" class="text-2xl font-bold text-cyan-600 math-text">1.0 A</span>
+                    </div>
+                    <input type="range" id="i-amp-slider" min="0.1" max="3" step="0.1" value="1" class="slider-thumb w-full text-cyan-600">
+                </div>
+            </div>
+
+            <div id="i-controls-practical" class="space-y-4 hidden">
+                <div class="bg-lime-50 rounded-xl p-4 border-2 border-lime-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-lime-800">短路电流 I<sub>sc</sub></label>
+                        <span id="i-sc-val" class="text-2xl font-bold text-lime-600 math-text">2.0 A</span>
+                    </div>
+                    <input type="range" id="i-sc-slider" min="0.1" max="5" step="0.1" value="2" class="slider-thumb w-full text-lime-600">
+                </div>
+                <div class="bg-lime-50 rounded-xl p-4 border-2 border-lime-200">
+                    <div class="flex justify-between mb-2">
+                        <label class="font-bold text-lime-800">并联内阻 R<sub>int</sub></label>
+                        <span id="i-rint-val" class="text-2xl font-bold text-lime-600 math-text">1000 Ω</span>
+                    </div>
+                    <input type="range" id="i-rint-slider" min="10" max="10000" step="10" value="1000" class="slider-thumb w-full text-lime-600">
+                    <div class="text-xs text-lime-600 mt-1">理想电流源内阻为∞</div>
+                </div>
+            </div>
+
+            <!-- Instance Cards -->
+            <div class="mt-4 grid grid-cols-3 gap-2" id="i-cards">
+                <!-- Dynamic content -->
+            </div>
+
+            <!-- Circuit -->
+            <div class="mt-4 bg-white rounded-xl p-4 border-2 border-slate-200">
+                <svg viewBox="0 0 300 100" class="w-full h-24">
+                    <circle cx="50" cy="50" r="20" fill="white" stroke="#2563eb" stroke-width="2"/>
+                    <line x1="42" y1="50" x2="58" y2="50" stroke="#2563eb" stroke-width="2"/>
+                    <polygon points="50,45 50,55" fill="#2563eb"/>
+                    <line x1="70" y1="50" x2="150" y2="50" stroke="#475569" stroke-width="2"/>
+                    <line x1="50" y1="70" x2="50" y2="85" stroke="#475569" stroke-width="2"/>
+                    <line x1="50" y1="85" x2="200" y2="85" stroke="#475569" stroke-width="2"/>
+                    <line x1="200" y1="85" x2="200" y2="50" stroke="#475569" stroke-width="2"/>
+                    <rect x="150" y="40" width="50" height="20" fill="white" stroke="#475569" stroke-width="2"/>
+                    <text x="175" y="35" text-anchor="middle" font-size="12" fill="#475569">R<sub>L</sub></text>
+                    <text x="120" y="40" text-anchor="middle" font-size="10" fill="#475569">+ V -</text>
+                </svg>
+                <div class="text-center mt-2 text-lg math-text" id="i-equation">
+                    V = I×R = <span class="text-blue-600 font-bold">15.0 V</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Comparison Summary -->
+    <section class="max-w-[1600px] mx-auto mt-6 glass-panel rounded-2xl p-6">
+        <h2 class="text-2xl font-bold mb-4 text-center text-slate-800">电压源 vs 电流源 对偶关系</h2>
+        <div class="grid md:grid-cols-2 gap-6 text-lg">
+            <div class="p-4 bg-red-50 rounded-xl border-l-4 border-red-500">
+                <h3 class="font-bold text-red-700 mb-2">电压源特性</h3>
+                <ul class="space-y-1 text-slate-700">
+                    <li>• 直流：V=常数，水平线，R=0</li>
+                    <li>• 交流：v(t)=V<sub>p</sub>sin(ωt)</li>
+                    <li>• 信号：任意电压波形 v(t)</li>
+                    <li>• 实际：V=V<sub>oc</sub>-IR<sub>int</sub></li>
+                </ul>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-500">
+                <h3 class="font-bold text-blue-700 mb-2">电流源特性</h3>
+                <ul class="space-y-1 text-slate-700">
+                    <li>• 直流：I=常数，垂直线，R=∞</li>
+                    <li>• 交流：i(t)=I<sub>p</sub>sin(ωt)</li>
+                    <li>• 信号：任意电流波形 i(t)</li>
+                    <li>• 实际：I=I<sub>sc</sub>-V/R<sub>int</sub></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // State
+        let vMode = 'dc';
+        let iMode = 'dc';
+
+        // Voltage Mode Switching
+        function setVoltageMode(mode) {
+            vMode = mode;
+            
+            // Update buttons
+            document.querySelectorAll('[id^="v-btn-"]').forEach(btn => {
+                btn.classList.remove('active', 'ring-4', 'ring-offset-2');
+            });
+            document.getElementById(`v-btn-${mode}`).classList.add('active', 'ring-4', 'ring-offset-2', 
+                mode === 'dc' ? 'ring-red-300' : 
+                mode === 'ac' ? 'ring-purple-300' : 
+                mode === 'signal' ? 'ring-emerald-300' : 'ring-orange-300');
+            
+            // Update formula
+            const formulas = {
+                'dc': 'V = 常数',
+                'ac': 'v(t) = V<sub>p</sub>sin(ωt)',
+                'signal': 'v(t) = f(t)',
+                'practical': 'V = V<sub>oc</sub> - IR<sub>int</sub>'
+            };
+            document.getElementById('v-formula').innerHTML = formulas[mode];
+            
+            // Show/hide controls
+            document.querySelectorAll('[id^="v-controls-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`v-controls-${mode}`).classList.remove('hidden');
+            
+            // Update cards
+            updateVCards(mode);
+            
+            // Update graph
+            updateVGraph();
+        }
+
+        // Current Mode Switching
+        function setCurrentMode(mode) {
+            iMode = mode;
+            
+            // Update buttons
+            document.querySelectorAll('[id^="i-btn-"]').forEach(btn => {
+                btn.classList.remove('active', 'ring-4', 'ring-offset-2');
+            });
+            document.getElementById(`i-btn-${mode}`).classList.add('active', 'ring-4', 'ring-offset-2',
+                mode === 'dc' ? 'ring-blue-300' : 
+                mode === 'ac' ? 'ring-pink-300' : 
+                mode === 'signal' ? 'ring-cyan-300' : 'ring-lime-300');
+            
+            // Update formula
+            const formulas = {
+                'dc': 'I = 常数',
+                'ac': 'i(t) = I<sub>p</sub>sin(ωt)',
+                'signal': 'i(t) = f(t)',
+                'practical': 'I = I<sub>sc</sub> - V/R<sub>int</sub>'
+            };
+            document.getElementById('i-formula').innerHTML = formulas[mode];
+            
+            // Show/hide controls
+            document.querySelectorAll('[id^="i-controls-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`i-controls-${mode}`).classList.remove('hidden');
+            
+            // Update cards
+            updateICards(mode);
+            
+            // Update graph
+            updateIGraph();
+        }
+
+        function updateVCards(mode) {
+            const cards = {
+                'dc': [
+                    {icon: '🔋', name: '锂电池', color: 'red'},
+                    {icon: '🧪', name: '实验室电源', color: 'slate'},
+                    {icon: '🔌', name: 'USB-C PD', color: 'slate'}
+                ],
+                'ac': [
+                    {icon: '🏠', name: '市电220V', color: 'purple'},
+                    {icon: '🎵', name: '音频输出', color: 'slate'},
+                    {icon: '📡', name: '射频电源', color: 'slate'}
+                ],
+                'signal': [
+                    {icon: '📟', name: '函数发生器', color: 'emerald'},
+                    {icon: '🔢', name: 'DAC输出', color: 'slate'},
+                    {icon: '⚡', name: 'PWM调制', color: 'slate'}
+                ],
+                'practical': [
+                    {icon: '🔋', name: '9V电池', color: 'orange'},
+                    {icon: '🪫', name: '老化电源', color: 'slate'},
+                    {icon: '⚡', name: '变压器', color: 'slate'}
+                ]
+            };
+            
+            const container = document.getElementById('v-cards');
+            container.innerHTML = cards[mode].map((c, i) => `
+                <button class="instance-card ${i===0?'active':''} bg-white p-3 rounded-xl text-center border-2 border-${c.color}-200" 
+                        style="color: ${c.color === 'red' ? '#dc2626' : c.color === 'purple' ? '#7c3aed' : c.color === 'emerald' ? '#059669' : c.color === 'orange' ? '#ea580c' : '#475569'}"
+                        onclick="this.parentElement.querySelectorAll('.instance-card').forEach(x=>x.classList.remove('active'));this.classList.add('active')">
+                    <div class="text-2xl mb-1">${c.icon}</div>
+                    <div class="font-bold text-sm">${c.name}</div>
+                </button>
+            `).join('');
+        }
+
+        function updateICards(mode) {
+            const cards = {
+                'dc': [
+                    {icon: '💡', name: 'LED驱动', color: 'blue'},
+                    {icon: '☀️', name: '光伏电池', color: 'slate'},
+                    {icon: '🔋', name: 'CC充电', color: 'slate'}
+                ],
+                'ac': [
+                    {icon: '🏭', name: '感应加热', color: 'pink'},
+                    {icon: '⚡', name: '交流焊接', color: 'slate'},
+                    {icon: '🏥', name: '医疗刺激', color: 'slate'}
+                ],
+                'signal': [
+                    {icon: '❤️', name: 'ECG模拟', color: 'cyan'},
+                    {icon: '📊', name: '4-20mA环', color: 'slate'},
+                    {icon: '🔬', name: '电化学', color: 'slate'}
+                ],
+                'practical': [
+                    {icon: '🔧', name: '晶体管源', color: 'lime'},
+                    {icon: '⚙️', name: 'Howland泵', color: 'slate'},
+                    {icon: '☀️', name: '实际光伏', color: 'slate'}
+                ]
+            };
+            
+            const container = document.getElementById('i-cards');
+            container.innerHTML = cards[mode].map((c, i) => `
+                <button class="instance-card ${i===0?'active':''} bg-white p-3 rounded-xl text-center border-2 border-${c.color}-200"
+                        style="color: ${c.color === 'blue' ? '#2563eb' : c.color === 'pink' ? '#db2777' : c.color === 'cyan' ? '#0891b2' : c.color === 'lime' ? '#65a30d' : '#475569'}"
+                        onclick="this.parentElement.querySelectorAll('.instance-card').forEach(x=>x.classList.remove('active'));this.classList.add('active')">
+                    <div class="text-2xl mb-1">${c.icon}</div>
+                    <div class="font-bold text-sm">${c.name}</div>
+                </button>
+            `).join('');
+        }
+
+        // Update Voltage Graph
+        function updateVGraph() {
+            const mode = vMode;
+            const curve = document.getElementById('v-curve');
+            const point = document.getElementById('v-point');
+            const label = document.getElementById('v-label');
+            
+            if(mode === 'dc') {
+                const V = parseFloat(document.getElementById('v-dc-slider').value);
+                const R = parseFloat(document.getElementById('v-r-slider').value);
+                const I = V/R;
+                
+                document.getElementById('v-dc-val').textContent = V.toFixed(1) + ' V';
+                document.getElementById('v-r-val').textContent = R.toFixed(1) + ' Ω';
+                document.getElementById('v-equation').innerHTML = `I = V/R = <span class="text-red-600 font-bold">${I.toFixed(2)} A</span>`;
+                
+                // Horizontal line
+                const y = 300 - (V/25)*260;
+                curve.setAttribute('d', `M 60,${y} L 460,${y}`);
+                curve.setAttribute('stroke', '#dc2626');
+                
+                const x = 60 + (I/5)*400;
+                point.setAttribute('cx', Math.min(x, 460));
+                point.setAttribute('cy', y);
+                point.setAttribute('fill', '#dc2626');
+                
+                label.textContent = '理想电压源 (水平线)';
+                label.setAttribute('fill', '#dc2626');
+                
+            } else if(mode === 'ac') {
+                const Vp = parseFloat(document.getElementById('v-ac-slider').value);
+                const f = parseFloat(document.getElementById('v-f-slider').value);
+                
+                document.getElementById('v-ac-val').textContent = Vp + ' V';
+                document.getElementById('v-f-val').textContent = f + ' Hz';
+                document.getElementById('v-equation').innerHTML = `V<sub>rms</sub> = ${(Vp/Math.sqrt(2)).toFixed(0)} V`;
+                
+                // Sine wave
+                let path = 'M 60,175 ';
+                const amp = (Vp/400)*120;
+                const freq = f/50;
+                
+                for(let x = 60; x <= 460; x += 3) {
+                    const t = (x-60)/100 * freq * 2 * Math.PI;
+                    const y = 175 - amp * Math.sin(t);
+                    path += `L ${x},${y} `;
+                }
+                
+                curve.setAttribute('d', path);
+                curve.setAttribute('stroke', '#7c3aed');
+                point.setAttribute('fill', '#7c3aed');
+                point.setAttribute('cx', 60 + 100/freq);
+                point.setAttribute('cy', 175 - amp);
+                
+                label.textContent = '交流电压源 (正弦波)';
+                label.setAttribute('fill', '#7c3aed');
+                
+            } else if(mode === 'signal') {
+                const type = document.getElementById('v-wave-type').value;
+                const amp = parseFloat(document.getElementById('v-amp-slider').value);
+                
+                document.getElementById('v-amp-val').textContent = amp + ' V';
+                
+                // Generate waveform
+                let path = 'M 60,175 ';
+                const amplitude = (amp/10)*100;
+                
+                for(let x = 60; x <= 460; x += 2) {
+                    const t = ((x-60)%200)/200 * 2 * Math.PI;
+                    let y = 175;
+                    
+                    switch(type) {
+                        case 'sine': y -= amplitude * Math.sin(t); break;
+                        case 'square': y -= amplitude * (Math.sin(t) > 0 ? 1 : -1); break;
+                        case 'triangle': y -= amplitude * (2/Math.PI) * Math.asin(Math.sin(t)); break;
+                    }
+                    path += `L ${x},${y} `;
+                }
+                
+                curve.setAttribute('d', path);
+                curve.setAttribute('stroke', '#059669');
+                point.setAttribute('fill', '#059669');
+                
+                const labels = {'sine': '正弦', 'square': '方波', 'triangle': '三角波'};
+                label.textContent = `电压信号源 (${labels[type]})`;
+                label.setAttribute('fill', '#059669');
+                
+            } else if(mode === 'practical') {
+                const Voc = parseFloat(document.getElementById('v-oc-slider').value);
+                const Rint = parseFloat(document.getElementById('v-rint-slider').value);
+                
+                document.getElementById('v-oc-val').textContent = Voc.toFixed(1) + ' V';
+                document.getElementById('v-rint-val').textContent = Rint.toFixed(1) + ' Ω';
+                
+                const Isc = Voc/(Rint+0.001);
+                document.getElementById('v-equation').innerHTML = `I<sub>sc</sub> = <span class="text-orange-600 font-bold">${Isc.toFixed(1)} A</span>`;
+                
+                // Sloped line
+                const y1 = 300 - (Voc/25)*260;
+                const x2 = 60 + (Isc/5)*400;
+                
+                curve.setAttribute('d', `M 60,${y1} L ${Math.min(x2, 460)},300`);
+                curve.setAttribute('stroke', '#ea580c');
+                point.setAttribute('fill', '#ea580c');
+                
+                label.textContent = '实际电压源 (斜线)';
+                label.setAttribute('fill', '#ea580c');
+            }
+        }
+
+        // Update Current Graph
+        function updateIGraph() {
+            const mode = iMode;
+            const curve = document.getElementById('i-curve');
+            const point = document.getElementById('i-point');
+            const label = document.getElementById('i-label');
+            
+            if(mode === 'dc') {
+                const I = parseFloat(document.getElementById('i-dc-slider').value);
+                const R = parseFloat(document.getElementById('i-r-slider').value);
+                const V = I*R;
+                
+                document.getElementById('i-dc-val').textContent = I.toFixed(2) + ' A';
+                document.getElementById('i-r-val').textContent = R.toFixed(1) + ' Ω';
+                document.getElementById('i-equation').innerHTML = `V = I×R = <span class="text-blue-600 font-bold">${V.toFixed(1)} V</span>`;
+                
+                // Vertical line (current source characteristic!)
+                const x = 60 + (I/5)*400;
+                curve.setAttribute('d', `M ${x},50 L ${x},300`);
+                curve.setAttribute('stroke', '#2563eb');
+                
+                const y = 300 - (V/50)*260;
+                point.setAttribute('cx', x);
+                point.setAttribute('cy', Math.max(y, 50));
+                point.setAttribute('fill', '#2563eb');
+                
+                label.textContent = '理想电流源 (垂直线)';
+                label.setAttribute('fill', '#2563eb');
+                
+            } else if(mode === 'ac') {
+                const Ip = parseFloat(document.getElementById('i-ac-slider').value);
+                const f = parseFloat(document.getElementById('i-f-slider').value);
+                
+                document.getElementById('i-ac-val').textContent = Ip.toFixed(1) + ' A';
+                document.getElementById('i-f-val').textContent = f + ' Hz';
+                document.getElementById('i-equation').innerHTML = `I<sub>rms</sub> = ${(Ip/Math.sqrt(2)).toFixed(2)} A`;
+                
+                // Sine wave (current vs time, but axes are V-I, so we show I vs V with V varying)
+                // For AC current source, we show the time waveform
+                let path = 'M 60,175 ';
+                const amp = (Ip/5)*130; // Scale for Y axis (current)
+                const freq = f/50;
+                
+                for(let x = 60; x <= 460; x += 3) {
+                    const t = (x-60)/100 * freq * 2 * Math.PI;
+                    // X represents time (not voltage), Y represents current
+                    const y = 175 - amp * Math.sin(t);
+                    path += `L ${x},${y} `;
+                }
+                
+                curve.setAttribute('d', path);
+                curve.setAttribute('stroke', '#db2777');
+                point.setAttribute('fill', '#db2777');
+                point.setAttribute('cx', 60 + 100/freq);
+                point.setAttribute('cy', 175 - amp);
+                
+                label.textContent = '交流电流源 (正弦波)';
+                label.setAttribute('fill', '#db2777');
+                
+            } else if(mode === 'signal') {
+                const type = document.getElementById('i-wave-type').value;
+                const amp = parseFloat(document.getElementById('i-amp-slider').value);
+                
+                document.getElementById('i-amp-val').textContent = amp.toFixed(1) + ' A';
+                
+                // Generate current waveform
+                let path = 'M 60,175 ';
+                const amplitude = (amp/3)*130;
+                
+                for(let x = 60; x <= 460; x += 2) {
+                    const t = ((x-60)%200)/200 * 2 * Math.PI;
+                    let y = 175;
+                    
+                    switch(type) {
+                        case 'sine': y -= amplitude * Math.sin(t); break;
+                        case 'square': y -= amplitude * (Math.sin(t) > 0 ? 1 : -1); break;
+                        case 'pulse': 
+                            const duty = 0.3;
+                            const phase = (t/(2*Math.PI)+1)%1;
+                            y -= amplitude * (phase < duty ? 1 : 0);
+                            break;
+                    }
+                    path += `L ${x},${y} `;
+                }
+                
+                curve.setAttribute('d', path);
+                curve.setAttribute('stroke', '#0891b2');
+                point.setAttribute('fill', '#0891b2');
+                
+                const labels = {'sine': '正弦', 'square': '方波', 'pulse': '脉冲'};
+                label.textContent = `电流信号源 (${labels[type]})`;
+                label.setAttribute('fill', '#0891b2');
+                
+            } else if(mode === 'practical') {
+                const Isc = parseFloat(document.getElementById('i-sc-slider').value);
+                const Rint = parseFloat(document.getElementById('i-rint-slider').value);
+                
+                document.getElementById('i-sc-val').textContent = Isc.toFixed(1) + ' A';
+                document.getElementById('i-rint-val').textContent = Rint + ' Ω';
+                
+                const Vmax = Isc * Rint;
+                document.getElementById('i-equation').innerHTML = `V<sub>max</sub> = <span class="text-lime-600 font-bold">${Vmax.toFixed(0)} V</span>`;
+                
+                // Slightly sloped vertical line
+                const xBase = 60 + (Isc/5)*400;
+                const xTop = 60 + ((Isc - 50/Rint)/5)*400;
+                
+                curve.setAttribute('d', `M ${Math.max(xTop, 60)},50 L ${xBase},300`);
+                curve.setAttribute('stroke', '#65a30d');
+                point.setAttribute('fill', '#65a30d');
+                
+                label.textContent = '实际电流源 (微斜线)';
+                label.setAttribute('fill', '#65a30d');
+            }
+        }
+
+        // Event Listeners
+        function setupListeners() {
+            // Voltage
+            document.getElementById('v-dc-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-r-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-ac-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-f-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-wave-type').addEventListener('change', updateVGraph);
+            document.getElementById('v-amp-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-oc-slider').addEventListener('input', updateVGraph);
+            document.getElementById('v-rint-slider').addEventListener('input', updateVGraph);
+            
+            // Current
+            document.getElementById('i-dc-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-r-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-ac-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-f-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-wave-type').addEventListener('change', updateIGraph);
+            document.getElementById('i-amp-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-sc-slider').addEventListener('input', updateIGraph);
+            document.getElementById('i-rint-slider').addEventListener('input', updateIGraph);
+        }
+
+        // Initialize
+        setupListeners();
+        setVoltageMode('dc');
+        setCurrentMode('dc');
+    </script>
+</body>
+</html>

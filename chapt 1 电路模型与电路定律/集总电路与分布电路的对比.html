@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>集总电路 vs 分布电路 · 交互式对比</title>
+<style>
+  :root{
+    --bg1:#eef4ff; --bg2:#fdf6ff; --card:#ffffffcc; --ink:#1f2937;
+    --prim:#2563eb; --acc:#7c3aed; --warn:#d97706; --ok:#059669; --line:#dbe4f0;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink); line-height:1.7;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2) 60%,#effff7);
+  }
+  header{
+    text-align:center; padding:42px 20px 18px;
+  }
+  header h1{font-size:2.4rem; margin:0 0 10px; background:linear-gradient(90deg,var(--prim),var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  header p{font-size:1.1rem; color:#4b5563; max-width:900px; margin:0 auto;}
+  main{max-width:1180px; margin:0 auto; padding:18px 20px 60px; display:flex; flex-direction:column; gap:26px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:26px 30px; box-shadow:0 6px 24px #1f293714; backdrop-filter:blur(4px);}
+  .card h2{font-size:1.6rem; margin:0 0 14px; color:var(--prim); display:flex; align-items:center; gap:10px;}
+  .card h2 .tag{font-size:.85rem; background:#e0e7ff; color:var(--prim); padding:3px 10px; border-radius:99px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr;}}
+  .box{border:1px solid var(--line); border-radius:14px; padding:20px; background:#fff;}
+  .box h3{font-size:1.25rem; margin:0 0 8px;}
+  .box p,.box li{font-size:1.02rem;}
+  .lumped{border-top:5px solid var(--prim);}
+  .distr{border-top:5px solid var(--acc);}
+  svg{width:100%; height:auto; display:block;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:8px 0 14px;}
+  .ctrl label{font-size:1rem; font-weight:600;}
+  input[type=range]{flex:1; min-width:180px; accent-color:var(--prim);}
+  .read{font-size:1.05rem; color:var(--acc); font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:1rem; margin-top:8px;}
+  th,td{padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;}
+  th{background:#eef4ff; color:var(--prim); font-weight:700;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block; font-size:.85rem; padding:2px 9px; border-radius:99px; font-weight:700;}
+  .p-l{background:#dbeafe; color:var(--prim);} .p-d{background:#ede9fe; color:var(--acc);}
+  .p-w{background:#fef3c7; color:var(--warn);}
+  canvas{width:100% !important; height:340px !important; display:block;}
+  .chart-wrap{position:relative; height:360px;}
+  #errBox{color:#b91c1c; font-size:.95rem; min-height:1.2em;}
+  .note{font-size:.95rem; color:#4b5563; background:#f8fafc; border-left:4px solid var(--acc); padding:10px 14px; border-radius:8px; margin-top:10px;}
+  ul{margin:6px 0 0; padding-left:20px;}
+  .footer{text-align:center; color:#6b7280; font-size:.9rem; padding:10px;}
+  .legend{font-size:.9rem; color:#374151;}
+  .switch{display:flex; gap:10px; flex-wrap:wrap;}
+  .switch button{font-size:1rem; padding:8px 16px; border-radius:10px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:600;}
+  .switch button.on{background:var(--prim); color:#fff; border-color:var(--prim);}
+  .eq{font-size:1.15rem; font-family:"Cambria Math",serif; color:#111827; background:#f1f5ff; padding:6px 12px; border-radius:8px; display:inline-block; margin:4px 0;}
+</style>
+</head>
+<body>
+<header>
+  <h1>集总电路 vs 分布电路</h1>
+  <p>电路理论的分析对象到底是什么？为什么低频可以用"集总参数"，而高频/长线必须改用"分布参数"？拖动滑块改变信号频率与传输线长度，观察两种建模的适用边界与工程应用对比。</p>
+</header>
+<main>
+
+  <!-- 1. 核心概念 -->
+  <section class="card">
+    <h2>一、两种电路模型的根本区别 <span class="tag">分析对象</span></h2>
+    <div class="grid2">
+      <div class="box lumped">
+        <h3>🟦 集总（Lumped）电路</h3>
+        <p>把实际元件抽象为<strong>理想 R / L / C</strong>，假定电磁过程在<strong>空间上瞬时完成</strong>：元件尺寸 ≪ 信号波长（<span class="eq">ℓ ≪ λ</span>），可以忽略元件内部与连线上的波传播延迟。</p>
+        <ul>
+          <li>分析对象：由<strong>理想集总元件</strong>构成的网络</li>
+          <li>基本定律：KCL / KVL + 元件 VCR（欧姆、电感、电容关系）</li>
+          <li>方程：<strong>常微分方程（ODE）</strong></li>
+          <li>典型：电阻分压、RC 滤波、低频放大电路</li>
+        </ul>
+      </div>
+      <div class="box distr">
+        <h3>🟪 分布（Distributed）电路</h3>
+        <p>当导线/结构尺寸与波长可比（<span class="eq">ℓ ~ λ</span> 或更高频），连线本身表现出<strong>分布 R、L、C、G</strong>，电压电流随位置 <em>x</em> 和时间 <em>t</em> 变化，必须考虑<strong>波的传播</strong>。</p>
+        <ul>
+          <li>分析对象：<strong>尺寸不可忽略</strong>的传输线、波导、天线、封装互连</li>
+          <li>基本定律：基尔霍夫定律<strong>仅在微元 dx 上成立</strong>，全局失效，改用<strong>传输线方程</strong></li>
+          <li>方程：<strong>偏微分方程（电报方程 / 波动方程）</strong></li>
+          <li>典型：射频馈线、PCB 高速信号线、电力输电线</li>
+        </ul>
+        <div class="note" style="margin-top:12px"><strong>📐 分布模型从何而来（电报方程推导）：</strong>把传输线切成无穷多个长度为 Δz 的<strong>集总微元段</strong>，每段含串联 RΔz、LΔz 与并联 GΔz、CΔz（见右图）。对微元段分别列 KVL 与 KCL：<br>
+        <span class="eq">KVL:&nbsp; v(z,t)−v(z+Δz,t)=RΔz·i(z,t)+LΔz·∂i/∂t</span><br>
+        <span class="eq">KCL:&nbsp; i(z,t)−i(z+Δz,t)=GΔz·v(z+Δz,t)+CΔz·∂v/∂t</span><br>
+        两边除以 Δz 并令 Δz→0，即得<strong>电报方程</strong>：<span class="eq">∂v/∂z=−Ri−L∂i/∂t</span>，<span class="eq">∂i/∂z=−Gv−C∂v/∂t</span>。两式联立、消去一个变量，得到<strong>一维波动方程</strong> <span class="eq">∂²v/∂z²=L C·∂²v/∂t²</span>（无损近似），波速 <span class="eq">v=1/√(LC)</span>。👉 可见：分布模型并非另起炉灶，而是"<strong>集总微元 + 极限</strong>"的自然推广——这正是电路理论分析对象从"集总"升级到"分布"的数学桥梁[citation:4][citation:8][citation:16]。</div>
+      </div>
+    </div>
+    <div class="note"><strong>一句话：</strong>电路理论的分析对象是<strong>实际物理系统的理想化电路模型</strong>。建模的第一问不是"用什么公式"，而是"<strong>能否把参数集总化</strong>"——这取决于 <em>几何尺寸 / 信号波长</em> 的比值。</div>
+  </section>
+
+  <!-- 2. 电路图对比 -->
+  <section class="card">
+    <h2>二、模型结构对比 <span class="tag">图示</span></h2>
+    <div class="grid2">
+      <div class="box lumped">
+        <h3>集总模型：元件" lumped "于一点</h3>
+        <svg viewBox="0 0 460 200">
+          <line x1="40" y1="100" x2="120" y2="100" stroke="#2563eb" stroke-width="3"/>
+          <polyline points="120,100 140,70 160,130 180,70 200,130 220,100" fill="none" stroke="#2563eb" stroke-width="3"/>
+          <line x1="220" y1="100" x2="300" y2="100" stroke="#2563eb" stroke-width="3"/>
+          <line x1="300" y1="80" x2="300" y2="120" stroke="#2563eb" stroke-width="3"/>
+          <line x1="308" y1="80" x2="308" y2="120" stroke="#2563eb" stroke-width="3"/>
+          <line x1="308" y1="100" x2="420" y2="100" stroke="#2563eb" stroke-width="3"/>
+          <line x1="420" y1="100" x2="420" y2="170" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="40" y1="100" x2="40" y2="170" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="40" y1="170" x2="420" y2="170" stroke="#94a3b8" stroke-width="2"/>
+          <text x="160" y="60" text-anchor="middle" font-size="20" fill="#2563eb" font-weight="700">R</text>
+          <text x="304" y="70" text-anchor="middle" font-size="20" fill="#2563eb" font-weight="700">C</text>
+          <text x="230" y="90" text-anchor="middle" font-size="16" fill="#1f2937">u(t)</text>
+          <text x="80" y="140" text-anchor="middle" font-size="15" fill="#6b7280">源 → R → C → 回源（单回路）</text>
+        </svg>
+      </div>
+      <div class="box distr">
+        <h3>分布模型：参数沿长度分布</h3>
+        <svg viewBox="0 0 460 200">
+          <line x1="40" y1="70" x2="420" y2="70" stroke="#7c3aed" stroke-width="3"/>
+          <line x1="40" y1="130" x2="420" y2="130" stroke="#7c3aed" stroke-width="3"/>
+          <line x1="40" y1="70" x2="40" y2="130" stroke="#7c3aed" stroke-width="3"/>
+          <line x1="420" y1="70" x2="420" y2="130" stroke="#7c3aed" stroke-width="3"/>
+          <g stroke="#a78bfa" stroke-width="1.5" fill="none">
+            <line x1="100" y1="70" x2="100" y2="130"/><line x1="160" y1="70" x2="160" y2="130"/>
+            <line x1="220" y1="70" x2="220" y2="130"/><line x1="280" y1="70" x2="280" y2="130"/>
+            <line x1="340" y1="70" x2="340" y2="130"/><line x1="400" y1="70" x2="400" y2="130"/>
+          </g>
+          <g font-size="13" fill="#7c3aed" font-weight="700" text-anchor="middle">
+            <text x="130" y="60">R'</text><text x="190" y="60">L'</text><text x="250" y="60">C'</text><text x="310" y="60">G'</text>
+          </g>
+          <text x="230" y="100" text-anchor="middle" font-size="15" fill="#1f2937">u(x,t)  i(x,t)</text>
+          <text x="230" y="165" text-anchor="middle" font-size="15" fill="#6b7280">参数沿 x 连续分布 · 传输线（每段 Δz→dx 取极限）</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 交互：适用边界 -->
+  <section class="card">
+    <h2>三、交互：集总 / 分布的适用边界 <span class="tag">ℓ / λ 判据</span></h2>
+    <p style="font-size:1.02rem">调整<strong>信号频率 f</strong> 与<strong>结构长度 ℓ</strong>，观察 ℓ/λ 比值落在哪个区域。经验判据（rule of thumb，非硬边界）：<span class="eq">ℓ &lt; λ/10</span> 可较安全用集总模型；ℓ 接近或超过 λ/10~λ/4 宜改用分布模型[citation:1][citation:6][citation:10]。</p>
+    <div class="ctrl">
+      <label for="freq">频率 f</label>
+      <input id="freq" type="range" min="0" max="3000" step="10" value="50">
+      <span class="read" id="freqVal">50 MHz</span>
+      <label for="len" style="margin-left:18px">长度 ℓ</label>
+      <input id="len" type="range" min="1" max="5000" step="10" value="200">
+      <span class="read" id="lenVal">200 mm</span>
+    </div>
+    <div class="chart-wrap"><canvas id="cvBoundary" width="900" height="360"></canvas></div>
+    <div id="verdict" class="note"></div>
+    <div class="note"><strong>公式：</strong>自由空间波长 <span class="eq">λ = c/f</span>（c≈3×10⁸ m/s）。例如 f=1 GHz → λ=300 mm；一条 200 mm 的 PCB 走线已达 0.67λ，显然不能用集总模型。</div>
+  </section>
+
+  <!-- 4. 对比表 + 工程应用 -->
+  <section class="card">
+    <h2>四、对比表与工程实际应用 <span class="tag">应用</span></h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>维度</th><th>集总电路</th><th>分布电路</th></tr></thead>
+      <tbody>
+        <tr><td>参数</td><td>R/L/C 集中于元件</td><td>R'/L'/C'/G' 沿长度分布</td></tr>
+        <tr><td>变量</td><td>u(t), i(t) 仅随时间</td><td>u(x,t), i(x,t) 随位置+时间</td></tr>
+        <tr><td>方程</td><td>常微分方程（ODE）</td><td>偏微分方程（电报/波动方程）</td></tr>
+        <tr><td>KCL/KVL</td><td>全局成立</td><td>仅在微元（dx）上成立</td></tr>
+        <tr><td>典型频域</td><td>低频 / 音频 / 电源 / 模拟小信号</td><td>射频 / 微波 / 高速数字 / 电力线</td></tr>
+        <tr><td>工程实例</td><td>电阻分压、RC 滤波、运放电路、电源稳压</td><td>同轴/微带馈线、PCB 高速走线、天线、输电线</td></tr>
+        <tr><td>关键现象</td><td>充放电、稳态/暂态、频率响应</td><td>反射、驻波、特性阻抗、时延、串扰</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="box lumped">
+        <h3>🟦 集总模型 · 工程应用</h3>
+        <ul>
+          <li><strong>电源与模拟电路</strong>：线性/开关电源、RC 低通滤波、运放放大与反馈网络。</li>
+          <li><strong>低频信号处理</strong>：音频放大、传感器信号调理（Hz~kHz 级，λ 以百公里计，ℓ≪λ）。</li>
+          <li><strong>集成电路小信号模型</strong>：MOS/双极晶体管的 r、gₘ、C 集总等效。</li>
+        </ul>
+      </div>
+      <div class="box distr">
+        <h3>🟪 分布模型 · 工程应用</h3>
+        <ul>
+          <li><strong>射频与微波</strong>：天线馈线、同轴/波导、阻抗匹配与 Smith 圆图设计。</li>
+          <li><strong>高速数字 PCB</strong>：DDR、SerDes 走线按传输线处理，控阻抗 50Ω、端接防反射。</li>
+          <li><strong>电力输电线</strong>：长距离架空/电缆线的波过程、行波保护与故障定位。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px"><strong>📏 数字 PCB 的实用判据（上升时间准则）：</strong>对数字信号，"尺寸 vs 波长"可等价换成"<strong>走线传播延迟 vs 信号上升时间</strong>"。业界常用准则（Analog Devices MT-097）：当 PCB 走线的<strong>单向传播延迟 ≥ ½ 信号上升时间</strong>时，应按传输线端接处理[citation:7][citation:15]。FR-4（εᵣ≈4.4）微带线波速约 0.48c≈144 mm/ns，故<br>
+    <span class="eq">临界长度 L_crit ≈ t_r · c /(2·√εᵣ)　（t_r 为信号上升时间）</span><br>
+    <strong>算例：</strong>上升时间 t_r=1 ns 的信号在 FR-4 上，L_crit≈1×3e8/(2×√4.4)≈1×144/2≈<strong>72 mm</strong>——超过约 7 cm 的走线就须按传输线建模/端接；而 t_r=0.2 ns 的高速 GPIO，L_crit 仅约 <strong>14 mm</strong>，几乎"随手一走"就进入分布区。👉 这正是现代高速数字设计中"集总→分布"最贴近学生的切身体会。</div>
+    </div>
+  </section>
+
+  <!-- 5. 电压沿线分布动画 -->
+  <section class="card">
+    <h2>五、分布电路的"波"特征 <span class="tag">u(x,t) 快照</span></h2>
+    <p style="font-size:1.02rem">在分布模型中，电压是位置 x 的函数。下图为某一时刻沿线的电压分布（驻波/行波示意）。切换模型可对比"集总（沿线均匀）"与"分布（空间变化）"的本质差异。</p>
+    <div class="switch" style="margin:10px 0">
+      <button id="btnL" class="on">集总：u 与 x 无关</button>
+      <button id="btnD">分布：u(x) 空间变化</button>
+    </div>
+    <div class="chart-wrap"><canvas id="cvWave" width="900" height="360"></canvas></div>
+    <div class="note" id="waveNote">集总模型：电压在整个回路同一时刻只有一个值 u(t)，不随位置 x 变化。</div>
+  </section>
+
+  <div class="footer">电路理论的分析对象 = 实际系统的<strong>理想化电路模型</strong>；集总/分布的选择，取决于尺寸与波长的相对大小。</div>
+</main>
+<div id="errBox" style="text-align:center;padding:6px"></div>
+
+<script>
+(function(){
+  var errBox=document.getElementById('errBox');
+  function fail(msg){if(errBox)errBox.textContent=msg;console.error(msg);}
+
+  // ---- 边界图（ℓ/λ 判据） ----
+  var cvB=document.getElementById('cvBoundary');
+  var ctxB=cvB?cvB.getContext('2d'):null;
+  var freqEl=document.getElementById('freq'), lenEl=document.getElementById('len');
+  var freqVal=document.getElementById('freqVal'), lenVal=document.getElementById('lenVal');
+  var verdict=document.getElementById('verdict');
+
+  function drawBoundary(){
+    if(!ctxB){fail('边界图：canvas 上下文不可用');return;}
+    var W=cvB.width, H=cvB.height, pad=46;
+    ctxB.clearRect(0,0,W,H);
+    var f=+freqEl.value, len=+lenEl.value; // MHz, mm
+    freqVal.textContent=f+' MHz'; lenVal.textContent=len+' mm';
+    var lam=(3e8)/(f*1e6)*1000; // mm
+    var ratio=len/lam;
+    // axes
+    ctxB.strokeStyle='#475569'; ctxB.lineWidth=1.5;
+    ctxB.beginPath();ctxB.moveTo(pad,pad);ctxB.lineTo(pad,H-pad);ctxB.lineTo(W-pad,H-pad);ctxB.stroke();
+    ctxB.fillStyle='#1f2937'; ctxB.font='15px sans-serif';
+    ctxB.fillText('λ (mm)',pad-30,pad-8);
+    ctxB.fillText('ℓ (mm)',W-pad-30,H-pad+22);
+    // 数据范围
+    var maxL=Math.max(lam*1.4, len*1.4, 100);
+    function sx(v){return pad+(v/maxL)*(W-2*pad);}
+    // λ 标线 + 刻度
+    var xs=sx(lam);
+    ctxB.strokeStyle='#7c3aed'; ctxB.setLineDash([6,5]); ctxB.beginPath();
+    ctxB.moveTo(xs,pad);ctxB.lineTo(xs,H-pad);ctxB.stroke();ctxB.setLineDash([]);
+    ctxB.fillStyle='#7c3aed';ctxB.fillText('λ='+lam.toFixed(0)+'mm',xs-18,pad+14);
+    // ℓ 点
+    var xl=sx(len), yPt=(pad+H-pad)/2;
+    ctxB.beginPath();ctxB.arc(xl,yPt,9,0,Math.PI*2);ctxB.fillStyle='#2563eb';ctxB.fill();
+    ctxB.fillStyle='#1f2937';ctxB.fillText('ℓ='+len+'mm',xl+12,yPt-10);
+    // 区域着色（ℓ<λ/10 绿，λ/10~λ/4 黄，>λ/4 红沿 x）
+    var xL10=sx(lam/10), xL4=sx(lam/4);
+    ctxB.fillStyle='#d1fae5';ctxB.fillRect(pad,yPt+30,xL10-pad,22);
+    ctxB.fillStyle='#fef3c7';ctxB.fillRect(xL10,yPt+30,xL4-xL10,22);
+    ctxB.fillStyle='#fee2e2';ctxB.fillRect(xL4,yPt+30,W-pad-xL4,22);
+    ctxB.fillStyle='#065f46';ctxB.fillText('集总区 ℓ<λ/10',pad+4,yPt+46);
+    ctxB.fillStyle='#92400e';ctxB.fillText('过渡',xL10+4,yPt+46);
+    ctxB.fillStyle='#991b1b';ctxB.fillText('分布区 ℓ>λ/4',xL4+4,yPt+46);
+    // 判据结论（经验法则，非硬边界）
+    var zone,color;
+    if(ratio<0.1){zone='集总模型通常适用（ℓ<λ/10）';color='#059669';}
+    else if(ratio<0.25){zone='过渡区，建议按分布模型校核（λ/10≤ℓ<λ/4）';color='#d97706';}
+    else{zone='建议采用分布（传输线）模型（ℓ≥λ/4）';color='#dc2626';}
+    verdict.innerHTML='当前 <span class="eq">ℓ/λ = '+ratio.toFixed(3)+'</span> → <strong style="color:'+color+'">'+zone+'</strong>';
+  }
+
+  // ---- 沿线电压分布图 ----
+  var cvW=document.getElementById('cvWave');
+  var ctxW=cvW?cvW.getContext('2d'):null;
+  var mode='L';
+  function drawWave(){
+    if(!ctxW){fail('波图：canvas 上下文不可用');return;}
+    var W=cvW.width,H=cvW.height,pad=40;
+    ctxW.clearRect(0,0,W,H);
+    ctxW.strokeStyle='#475569';ctxW.lineWidth=1.5;
+    ctxW.beginPath();ctxW.moveTo(pad,H/2);ctxW.lineTo(W-pad,H/2);ctxW.stroke();
+    ctxW.fillStyle='#1f2937';ctxW.font='15px sans-serif';
+    ctxW.fillText('x (位置)',W-pad-50,H/2+22);ctxW.fillText('u',pad-22,H/2-90);
+    var N=160;
+    ctxW.beginPath();
+    for(var i=0;i<=N;i++){
+      var x=pad+i*(W-2*pad)/N;
+      var xi=i/N;
+      var y;
+      if(mode==='L'){y=H/2-90;} // 集总：沿线均匀
+      else{y=H/2-90*Math.cos(2*Math.PI*xi)*Math.exp(-1.2*xi);} // 分布：驻波+衰减
+      if(i===0)ctxW.moveTo(x,y);else ctxW.lineTo(x,y);
+    }
+    ctxW.strokeStyle=mode==='L'?'#2563eb':'#7c3aed';ctxW.lineWidth=3;ctxW.stroke();
+    ctxW.fillStyle=mode==='L'?'#2563eb':'#7c3aed';
+    ctxW.fillText(mode==='L'?'u(t) 沿线相同':'u(x,t) 随位置变化（驻波/行波）',pad+10,H/2-110);
+  }
+  document.getElementById('btnL').addEventListener('click',function(){
+    mode='L';this.classList.add('on');document.getElementById('btnD').classList.remove('on');
+    document.getElementById('waveNote').textContent='集总模型：电压在整个回路同一时刻只有一个值 u(t)，不随位置 x 变化。';
+    drawWave();
+  });
+  document.getElementById('btnD').addEventListener('click',function(){
+    mode='D';this.classList.add('on');document.getElementById('btnL').classList.remove('on');
+    document.getElementById('waveNote').textContent='分布模型：电压/电流是位置 x 的函数，出现驻波、反射、时延等波过程，必须用传输线/波动方程分析。';
+    drawWave();
+  });
+
+  function init(){
+    try{drawBoundary();}catch(e){fail('边界图错误：'+e.message);}
+    try{drawWave();}catch(e){fail('波图错误：'+e.message);}
+  }
+  freqEl.addEventListener('input',drawBoundary);
+  lenEl.addEventListener('input',drawBoundary);
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+  else{init();}
+  window.addEventListener('load',init);
+})();
+</script>
+</body>
+</html>

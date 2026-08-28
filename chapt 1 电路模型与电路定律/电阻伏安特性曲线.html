@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四象限伏安特性曲线对比</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px;
+            color: #1e293b;
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 10px;
+            color: #0f172a;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+            font-weight: 800;
+        }
+        
+        .subtitle {
+            font-size: 1.6rem;
+            color: #475569;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1600px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            border: 3px solid #cbd5e1;
+        }
+        
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        canvas {
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.05);
+            border: 3px solid #e2e8f0;
+        }
+        
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            font-size: 1.3rem;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .btn-positive {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .btn-negative {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+        }
+        
+        .btn-diode {
+            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+            color: white;
+        }
+        
+        .btn-compare {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .info-panel {
+            min-width: 420px;
+            max-width: 480px;
+        }
+        
+        .component-box {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 20px;
+            border-left: 6px solid #3b82f6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .component-box.negative {
+            border-left-color: #dc2626;
+        }
+        
+        .component-box.diode {
+            border-left-color: #7c3aed;
+        }
+        
+        .component-box h2 {
+            font-size: 1.9rem;
+            margin-bottom: 12px;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        
+        .formula {
+            background: #ffffff;
+            border: 3px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 12px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem;
+            color: #1e40af;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .component-box.negative .formula {
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        
+        .component-box.diode .formula {
+            color: #5b21b6;
+            border-color: #c4b5fd;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 12px;
+        }
+        
+        .feature-list li {
+            font-size: 1.2rem;
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #334155;
+            line-height: 1.6;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list li::before {
+            content: '●';
+            position: absolute;
+            left: 0;
+            font-size: 1rem;
+        }
+        
+        .component-box li::before { color: #3b82f6; }
+        .component-box.negative li::before { color: #dc2626; }
+        .component-box.diode li::before { color: #7c3aed; }
+        
+        .legend {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        
+        .legend-line {
+            width: 35px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .quadrant-label {
+            position: absolute;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #64748b;
+            background: rgba(255,255,255,0.9);
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .current-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.98);
+            padding: 18px;
+            border-radius: 12px;
+            border: 3px solid #cbd5e1;
+            font-size: 1.1rem;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-width: 220px;
+            display: none;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .status-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .status-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 1200px) {
+            h1 { font-size: 2.6rem; }
+            .subtitle { font-size: 1.4rem; }
+            .component-box h2 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 四象限伏安特性曲线</h1>
+    <p class="subtitle">正电阻 vs 负电阻 vs 二极管 · 全范围电气特性对比</p>
+    
+    <div class="main-container">
+        <div class="panel canvas-container">
+            <div style="position: relative;">
+                <canvas id="mainCanvas" width="800" height="700"></canvas>
+                <div class="quadrant-label" style="top: 80px; right: 80px;">第一象限 (+V,+I)</div>
+                <div class="quadrant-label" style="top: 80px; left: 80px;">第二象限 (-V,+I)</div>
+                <div class="quadrant-label" style="bottom: 120px; left: 80px;">第三象限 (-V,-I)</div>
+                <div class="quadrant-label" style="bottom: 120px; right: 80px;">第四象限 (+V,-I)</div>
+                
+                <div class="current-status" id="currentStatus">
+                    <div class="status-row">
+                        <span>电压 V:</span>
+                        <span class="status-value" id="voltageVal">0.0 V</span>
+                    </div>
+                    <div class="status-row" id="positiveRow">
+                        <span style="color: #3b82f6;">正电阻电流:</span>
+                        <span class="status-value" id="positiveCurrent">0.0 mA</span>
+                    </div>
+                    <div class="status-row" id="negativeRow">
+                        <span style="color: #dc2626;">负电阻电流:</span>
+                        <span class="status-value" id="negativeCurrent">0.0 mA</span>
+                    </div>
+                    <div class="status-row" id="diodeRow">
+                        <span style="color: #7c3aed;">二极管电流:</span>
+                        <span class="status-value" id="diodeCurrent">0.0 mA</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #3b82f6;"></div>
+                    <span>正电阻 R=+1kΩ (斜率>0)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #dc2626;"></div>
+                    <span>负电阻 R=-1kΩ (斜率<0)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #7c3aed;"></div>
+                    <span>二极管 (单向非线性)</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-positive" onclick="showMode('positive')">🔵 正电阻</button>
+                <button class="btn-negative" onclick="showMode('negative')">🔴 负电阻</button>
+                <button class="btn-diode" onclick="showMode('diode')">🟣 二极管</button>
+                <button class="btn-compare" onclick="showMode('compare')">⚖️ 三合一对比</button>
+                <button class="btn-reset" onclick="resetDemo()">↺ 重置</button>
+            </div>
+        </div>
+        
+        <div class="panel info-panel">
+            <div class="component-box" id="positiveBox">
+                <h2>🔵 正电阻 (Passive Resistor)</h2>
+                <div class="formula">R = +1kΩ > 0</div>
+                <ul class="feature-list">
+                    <li>四象限斜率均为正值</li>
+                    <li>第一、三象限：V·I > 0，吸收功率（耗能）</li>
+                    <li>第二、四象限：V·I < 0，释放功率（供能）</li>
+                    <li>无源器件，总耗能 ≥ 0</li>
+                    <li>实例：普通金属电阻、碳膜电阻</li>
+                </ul>
+            </div>
+            
+            <div class="component-box negative" id="negativeBox">
+                <h2>🔴 负电阻 (Active Resistor)</h2>
+                <div class="formula">R = -1kΩ < 0</div>
+                <ul class="feature-list">
+                    <li>四象限斜率均为负值</li>
+                    <li>第一、三象限：V·I < 0，释放功率（供能）</li>
+                    <li>第二、四象限：V·I > 0，吸收功率（耗能）</li>
+                    <li>有源器件，需外部电源维持</li>
+                    <li>实例：隧道二极管、运放负阻电路</li>
+                </ul>
+            </div>
+            
+            <div class="component-box diode" id="diodeBox">
+                <h2>🟣 二极管 (Rectifier)</h2>
+                <div class="formula">I = I<sub>s</sub>(e<sup>V/nV<sub>T</sup></sup> - 1)</div>
+                <ul class="feature-list">
+                    <li>第一象限指数增长（正向导通）</li>
+                    <li>第三象限近似零（反向截止）</li>
+                    <li>第二、四象限电流趋近于零</li>
+                    <li>单向导电，整流特性</li>
+                    <li>阈值电压 ~0.7V（硅材料）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 坐标参数
+        const CX = 400;
+        const CY = 350;
+        const SCALE = 80; // 每单位80像素
+        
+        // 物理参数
+        const R_POSITIVE = 1000;  // +1kΩ
+        const R_NEGATIVE = -1000; // -1kΩ
+        
+        // 状态
+        let mode = 'compare';
+        let voltage = 0;
+        let targetV = 0;
+        let isAnimating = false;
+        let animId = null;
+        
+        function V2X(v) { return CX + v * SCALE; }
+        function I2Y(i) { return CY - i * SCALE; }
+        
+        // 计算电流
+        function calcPositive(v) {
+            return (v / R_POSITIVE) * 1000; // mA
+        }
+        
+        function calcNegative(v) {
+            return (v / R_NEGATIVE) * 1000; // mA
+        }
+        
+        function calcDiode(v) {
+            const IS = 1e-12;
+            const VT = 0.026;
+            const N = 1;
+            let i = IS * (Math.exp(Math.abs(v) / (N * VT)) - 1);
+            if(v < 0) i = -i * 0.001; // 微小反向电流
+            return i * 1000; // mA
+        }
+        
+        // 初始化
+        function init() {
+            drawAll();
+        }
+        
+        function drawAll() {
+            // 清空
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制四象限背景
+            drawQuadrants();
+            
+            // 绘制网格
+            drawGrid();
+            
+            // 绘制坐标轴
+            drawAxes();
+            
+            // 根据模式绘制曲线
+            if(mode === 'positive') {
+                drawPositiveFull();
+                drawPoint(voltage, calcPositive(voltage), '#3b82f6');
+            } else if(mode === 'negative') {
+                drawNegativeFull();
+                drawPoint(voltage, calcNegative(voltage), '#dc2626');
+            } else if(mode === 'diode') {
+                drawDiodeFull();
+                drawPoint(voltage, calcDiode(voltage), '#7c3aed');
+            } else {
+                drawPositiveFull();
+                drawNegativeFull();
+                drawDiodeFull();
+                drawPoint(voltage, calcPositive(voltage), '#3b82f6');
+                drawPoint(voltage, calcNegative(voltage), '#dc2626');
+                drawPoint(voltage, calcDiode(voltage), '#7c3aed');
+            }
+            
+            // 绘制组件符号
+            drawSymbols();
+        }
+        
+        function drawQuadrants() {
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.03)';
+            ctx.fillRect(CX, 50, 350, 300); // Q1
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.03)';
+            ctx.fillRect(50, 50, 350, 300); // Q2
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.03)';
+            ctx.fillRect(50, 350, 350, 300); // Q3
+            ctx.fillStyle = 'rgba(139, 92, 246, 0.03)';
+            ctx.fillRect(CX, 350, 350, 300); // Q4
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            for(let v = -3; v <= 3; v += 0.5) {
+                const x = V2X(v);
+                ctx.beginPath();
+                ctx.moveTo(x, 50);
+                ctx.lineTo(x, 650);
+                ctx.stroke();
+            }
+            
+            for(let i = -4; i <= 4; i += 0.5) {
+                const y = I2Y(i);
+                ctx.beginPath();
+                ctx.moveTo(50, y);
+                ctx.lineTo(750, y);
+                ctx.stroke();
+            }
+        }
+        
+        function drawAxes() {
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(50, CY);
+            ctx.lineTo(750, CY);
+            ctx.stroke();
+            
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(CX, 50);
+            ctx.lineTo(CX, 650);
+            ctx.stroke();
+            
+            // 箭头
+            ctx.fillStyle = '#0f172a';
+            // 右箭头
+            ctx.beginPath();
+            ctx.moveTo(750, CY);
+            ctx.lineTo(740, CY-8);
+            ctx.lineTo(740, CY+8);
+            ctx.fill();
+            // 左箭头
+            ctx.beginPath();
+            ctx.moveTo(50, CY);
+            ctx.lineTo(60, CY-8);
+            ctx.lineTo(60, CY+8);
+            ctx.fill();
+            // 上箭头
+            ctx.beginPath();
+            ctx.moveTo(CX, 50);
+            ctx.lineTo(CX-8, 60);
+            ctx.lineTo(CX+8, 60);
+            ctx.fill();
+            // 下箭头
+            ctx.beginPath();
+            ctx.moveTo(CX, 650);
+            ctx.lineTo(CX-8, 640);
+            ctx.lineTo(CX+8, 640);
+            ctx.fill();
+            
+            // 标签
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.fillText('电压 V (V)', 680, CY + 40);
+            
+            ctx.save();
+            ctx.translate(40, CY);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('电流 I (mA)', 0, 0);
+            ctx.restore();
+            
+            // 刻度
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#475569';
+            
+            // X轴刻度
+            for(let v = -3; v <= 3; v++) {
+                if(v === 0) continue;
+                const x = V2X(v);
+                ctx.beginPath();
+                ctx.moveTo(x, CY-6);
+                ctx.lineTo(x, CY+6);
+                ctx.stroke();
+                ctx.fillText(v + 'V', x, CY + 28);
+            }
+            
+            // Y轴刻度
+            ctx.textAlign = 'right';
+            for(let i = -4; i <= 4; i++) {
+                if(i === 0) continue;
+                const y = I2Y(i);
+                ctx.beginPath();
+                ctx.moveTo(CX-6, y);
+                ctx.lineTo(CX+6, y);
+                ctx.stroke();
+                ctx.fillText(i, CX - 12, y + 5);
+            }
+            
+            // 原点
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(CX, CY, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillText('0', CX - 15, CY + 25);
+            
+            // 标题
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.fillText('四象限伏安特性曲线 (Four-Quadrant I-V Characteristics)', CX, 35);
+        }
+        
+        function drawPositiveFull() {
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // 四个象限的直线 (正斜率)
+            for(let v = -3; v <= 3; v += 0.1) {
+                const i = calcPositive(v);
+                const x = V2X(v);
+                const y = I2Y(i);
+                if(v === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 标记
+            ctx.fillStyle = '#3b82f6';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('R=+1kΩ', V2X(2.2), I2Y(2.5));
+        }
+        
+        function drawNegativeFull() {
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            
+            // 四个象限的直线 (负斜率)
+            for(let v = -3; v <= 3; v += 0.1) {
+                const i = calcNegative(v);
+                const x = V2X(v);
+                const y = I2Y(i);
+                if(v === -3) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 标记
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('R=-1kΩ', V2X(2.2), I2Y(-2.5));
+        }
+        
+        function drawDiodeFull() {
+            ctx.strokeStyle = '#7c3aed';
+            ctx.lineWidth = 4;
+            
+            // 第一象限：正向导通
+            ctx.beginPath();
+            for(let v = 0; v <= 3; v += 0.05) {
+                const i = calcDiode(v);
+                if(i > 4) break;
+                const x = V2X(v);
+                const y = I2Y(i);
+                if(v === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 第三象限：反向截止 (微小电流)
+            ctx.beginPath();
+            for(let v = 0; v >= -3; v -= 0.05) {
+                const i = calcDiode(v);
+                const x = V2X(v);
+                const y = I2Y(i);
+                if(v === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // 标记
+            ctx.fillStyle = '#7c3aed';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('Diode', V2X(2), I2Y(3.2));
+        }
+        
+        function drawPoint(v, i, color) {
+            const x = V2X(v);
+            const y = I2Y(i);
+            
+            // 发光
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, 25);
+            grad.addColorStop(0, color + '99');
+            grad.addColorStop(1, color + '00');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 点
+            ctx.fillStyle = color;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // 虚线到轴
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, CY);
+            ctx.moveTo(x, y);
+            ctx.lineTo(CX, y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+        }
+        
+        function drawSymbols() {
+            const y = 620;
+            
+            if(mode === 'positive' || mode === 'compare') {
+                // 正电阻符号
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(CX - 200, y);
+                ctx.lineTo(CX - 180, y);
+                ctx.lineTo(CX - 175, y - 12);
+                ctx.lineTo(CX - 165, y + 12);
+                ctx.lineTo(CX - 155, y - 12);
+                ctx.lineTo(CX - 145, y + 12);
+                ctx.lineTo(CX - 135, y - 12);
+                ctx.lineTo(CX - 125, y);
+                ctx.lineTo(CX - 105, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#3b82f6';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('+1kΩ', CX - 155, y + 28);
+            }
+            
+            if(mode === 'negative' || mode === 'compare') {
+                // 负电阻符号 (带箭头表示有源)
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 3;
+                const x = mode === 'compare' ? CX : CX;
+                
+                ctx.beginPath();
+                ctx.moveTo(x - 50, y);
+                ctx.lineTo(x - 30, y);
+                ctx.lineTo(x - 25, y - 12);
+                ctx.lineTo(x - 15, y + 12);
+                ctx.lineTo(x - 5, y - 12);
+                ctx.lineTo(x + 5, y + 12);
+                ctx.lineTo(x + 15, y - 12);
+                ctx.lineTo(x + 20, y);
+                ctx.lineTo(x + 40, y);
+                ctx.stroke();
+                
+                // 箭头表示有源特性
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath();
+                ctx.moveTo(x + 35, y - 10);
+                ctx.lineTo(x + 45, y);
+                ctx.lineTo(x + 35, y + 10);
+                ctx.fill();
+                
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('-1kΩ', x, y + 28);
+            }
+            
+            if(mode === 'diode' || mode === 'compare') {
+                // 二极管符号
+                ctx.strokeStyle = '#7c3aed';
+                ctx.lineWidth = 3;
+                const x = mode === 'compare' ? CX + 200 : CX;
+                
+                ctx.beginPath();
+                ctx.moveTo(x - 30, y);
+                ctx.lineTo(x - 10, y);
+                ctx.moveTo(x + 30, y);
+                ctx.lineTo(x + 10, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#7c3aed';
+                ctx.beginPath();
+                ctx.moveTo(x - 10, y - 15);
+                ctx.lineTo(x - 10, y + 15);
+                ctx.lineTo(x + 10, y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(x + 10, y - 15);
+                ctx.lineTo(x + 10, y + 15);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#7c3aed';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('Diode', x, y + 28);
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('voltageVal').textContent = voltage.toFixed(2) + ' V';
+            document.getElementById('positiveCurrent').textContent = calcPositive(voltage).toFixed(2) + ' mA';
+            document.getElementById('negativeCurrent').textContent = calcNegative(voltage).toFixed(2) + ' mA';
+            document.getElementById('diodeCurrent').textContent = calcDiode(voltage).toFixed(3) + ' mA';
+            
+            // 显示/隐藏行
+            document.getElementById('positiveRow').style.display = (mode === 'positive' || mode === 'compare') ? 'flex' : 'none';
+            document.getElementById('negativeRow').style.display = (mode === 'negative' || mode === 'compare') ? 'flex' : 'none';
+            document.getElementById('diodeRow').style.display = (mode === 'diode' || mode === 'compare') ? 'flex' : 'none';
+        }
+        
+        function animate() {
+            if(!isAnimating) return;
+            
+            const diff = targetV - voltage;
+            if(Math.abs(diff) < 0.02) {
+                voltage = targetV;
+                if(targetV >= 3) {
+                    targetV = -3;
+                } else if(targetV <= -3) {
+                    targetV = 0;
+                    isAnimating = false;
+                }
+            } else {
+                voltage += diff * 0.03;
+            }
+            
+            drawAll();
+            updateUI();
+            
+            if(isAnimating || Math.abs(diff) > 0.01) {
+                animId = requestAnimationFrame(animate);
+            }
+        }
+        
+        function showMode(m) {
+            mode = m;
+            voltage = 0;
+            targetV = 3;
+            isAnimating = true;
+            
+            document.getElementById('currentStatus').style.display = 'block';
+            
+            // 高亮对应信息框
+            document.getElementById('positiveBox').style.opacity = (m === 'positive' || m === 'compare') ? '1' : '0.3';
+            document.getElementById('negativeBox').style.opacity = (m === 'negative' || m === 'compare') ? '1' : '0.3';
+            document.getElementById('diodeBox').style.opacity = (m === 'diode' || m === 'compare') ? '1' : '0.3';
+            
+            if(animId) cancelAnimationFrame(animId);
+            animate();
+        }
+        
+        function resetDemo() {
+            isAnimating = false;
+            if(animId) cancelAnimationFrame(animId);
+            voltage = 0;
+            targetV = 0;
+            mode = 'compare';
+            document.getElementById('currentStatus').style.display = 'none';
+            document.getElementById('positiveBox').style.opacity = '1';
+            document.getElementById('negativeBox').style.opacity = '1';
+            document.getElementById('diodeBox').style.opacity = '1';
+            drawAll();
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

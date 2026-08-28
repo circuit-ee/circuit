@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电磁场理论与电路理论的统一 · 交互式 H5</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{font-size:18px;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    background:linear-gradient(135deg,#eef2ff 0%,#f5f7ff 45%,#eaf6ff 100%);
+    color:#1f2937;line-height:1.7;min-height:100vh;padding:28px 16px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header.hero{
+    background:linear-gradient(135deg,#4338ca,#2563eb 60%,#0ea5e9);
+    color:#fff;border-radius:20px;padding:34px 30px;box-shadow:0 12px 40px rgba(67,56,202,.22);
+  }
+  header.hero h1{font-size:2.1rem;line-height:1.25;margin-bottom:12px;}
+  header.hero p{font-size:1.08rem;opacity:.96;}
+  .lead-tag{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
+    border-radius:999px;padding:5px 14px;font-size:.95rem;margin-top:14px;}
+  .card{background:#fff;border-radius:16px;padding:26px 26px;margin-top:22px;box-shadow:0 6px 22px rgba(30,41,59,.07);}
+  .card h2{font-size:1.55rem;color:#1e3a8a;margin-bottom:14px;border-left:6px solid #6366f1;padding-left:12px;}
+  .card h3{font-size:1.18rem;color:#2563eb;margin:16px 0 8px;}
+  .sub{color:#64748b;font-size:.98rem;margin-bottom:12px;}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;}
+  .box{border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#f8fafc;}
+  .box h4{font-size:1.05rem;color:#1e40af;margin-bottom:6px;}
+  canvas{display:block;width:100%;background:#0b1020;border-radius:10px;}
+  .ctrl{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px;}
+  .ctrl label{font-size:.98rem;color:#334155;}
+  .ctrl input[type=range]{flex:1;min-width:160px;accent-color:#6366f1;}
+  .read{font-weight:700;color:#4338ca;font-size:1.02rem;min-width:90px;text-align:right;}
+  table{width:100%;border-collapse:collapse;font-size:.96rem;margin-top:8px;}
+  th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:#eef2ff;color:#1e3a8a;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .formula{background:#eef2ff;border-left:5px solid #6366f1;padding:12px 16px;border-radius:8px;
+    font-size:1.08rem;color:#1e293b;margin:10px 0;font-family:"Cambria Math",serif;}
+  .note{font-size:.92rem;color:#475569;background:#fff7ed;border-left:5px solid #f59e0b;padding:10px 14px;border-radius:8px;margin-top:10px;}
+  .pill{display:inline-block;border-radius:999px;padding:3px 11px;font-size:.85rem;font-weight:700;color:#fff;background:#6366f1;margin:2px 4px;}
+  .pill.b{background:#0ea5e9;} .pill.g{background:#10b981;} .pill.r{background:#ef4444;}
+  #errBox{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:12px 14px;margin-top:16px;font-size:.96rem;white-space:pre-wrap;}
+  .scn{position:relative;}
+  .scn .lbl{position:absolute;top:8px;left:12px;color:#c7d2fe;font-size:.9rem;font-weight:700;pointer-events:none;}
+  details{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-top:12px;}
+  details summary{cursor:pointer;font-weight:700;color:#1e3a8a;font-size:1.02rem;}
+  @media(max-width:640px){
+    header.hero h1{font-size:1.6rem;} .card h2{font-size:1.3rem;} html{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <h1>电磁场理论与电路理论的统一</h1>
+  <p>从 Maxwell 方程组到 KCL / KVL：电路理论是电磁场理论在"低频 · 集总 · 准静态"近似下的自然推论。</p>
+  <span class="lead-tag">面向电气工程及其自动化 / 自动化专业 · 浅色 · 大字号 · 交互式</span>
+</header>
+
+<div id="errBox"></div>
+
+<!-- ============ 1. 核心立意 ============ -->
+<section class="card">
+  <h2>一、一句话主线：场是根，路是近似模型</h2>
+  <p>大学物理的电磁场理论（Maxwell 方程组）描述的是电磁作用在<b>时空中的连续分布</b>；电路理论描述的是器件端子间的<b>集中变量（电压、电流）</b>。二者并非两套独立体系：</p>
+  <div class="formula" style="text-align:center;">
+    电磁场（Maxwell） <span class="pill">↓ 体积/面积分 + 定理</span> 边界条件 <span class="pill">↓ 低频·集总·准静态</span> 电路（KCL / KVL / 元件关系）
+  </div>
+  <p class="sub">本页用可交互的三维场可视化，把"电荷→电场 E → 电势差→电压""电流→磁场 B → 环路磁通→KVL"的来龙去脉直观呈现，并给出 KCL/KVL 由场方程导出的严格推导。</p>
+</section>
+
+<!-- ============ 2. 3D 场可视化（纯 Canvas 自绘，无 WebGL/Three 依赖） ============ -->
+<section class="card">
+  <h2>二、交互 · 三维场可视化（电荷的 E 场 &amp; 电流环的 B 场）</h2>
+  <p class="sub">下方两个画布用纯 Canvas 2D 投影绘制三维场线/箭头（无 WebGL 依赖，任何浏览器均可运行）。拖动滑块改变场源强度，观察场线如何随源变化。</p>
+  <div class="grid2">
+    <div class="scn">
+      <canvas id="cvE" width="760" height="420" aria-label="电荷电场E三维示意"></canvas>
+      <span class="lbl">电场 E（红）· 正电荷径向向外</span>
+    </div>
+    <div class="scn">
+      <canvas id="cvB" width="760" height="420" aria-label="电流环磁场B三维示意"></canvas>
+      <span class="lbl">磁场 B（蓝）· 电流环环绕</span>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label for="rE">E 场源强 Q/ε₀ 比例</label>
+    <input id="rE" type="range" min="1" max="100" value="55">
+    <span class="read" id="rEVal">0.55</span>
+    <label for="rB" style="margin-left:18px;">B 场源强 μ₀I 比例</label>
+    <input id="rB" type="range" min="1" max="100" value="60">
+    <span class="read" id="rBVal">0.60</span>
+  </div>
+  <div class="note"><b>读图提示：</b>左图为<b>正点电荷</b>激发的电场 E（径向箭头，越远越疏），电场线积分定义电势差 → 引出<b>电压</b>；右图为<b>载流圆环</b>激发的磁场 B（环绕电流的闭合磁力线），磁通变化引入<b>感应电动势</b> → 引出<b>KVL 中的感应项</b>。这就是"场量"到"路量"的几何直观。</div>
+</section>
+
+<!-- ============ 3. 关联与区别 ============ -->
+<section class="card">
+  <h2>三、关联与区别：一张表看懂</h2>
+  <div style="overflow-x:auto;"><table>
+    <tr><th style="width:16%;">维度</th><th>电磁场理论</th><th>电路理论</th></tr>
+    <tr><td>研究对象</td><td>电磁场 E(x,t)、B(x,t) 的时空分布</td><td>器件端子电压 u(t)、电流 i(t) 等集总变量</td></tr>
+    <tr><td>基本方程</td><td>Maxwell 方程组（4 个偏微分方程）</td><td>KCL、KVL + 元件伏安关系（代数/常微分方程）</td></tr>
+    <tr><td>变量性质</td><td>空间连续分布的场矢量</td><td>沿支路/节点的集中标量或常微分方程变量</td></tr>
+    <tr><td>尺度条件</td><td>任意尺度，含辐射/波传播</td><td>几何尺寸 ℓ ≪ 波长 λ（集总参数近似）</td></tr>
+    <tr><td>能量视角</td><td>能量密度 w=½(E·D+B·H)，坡印廷矢量 S=E×H</td><td>功率 p=ui，储能 ½Cu²/½Li²，耗能 i²R</td></tr>
+    <tr><td>典型课程承接</td><td>大学物理电磁学 → 电磁场与电磁波</td><td>电路（邱关源）→ 模电/电机学/电力电子/信号与系统</td></tr>
+  </table></div>
+  <h3>桥接三步骤</h3>
+  <div class="grid2">
+    <div class="box"><h4>① Maxwell → 边界条件</h4><p>对麦克斯韦方程在介质界面、导体表面作积分，得到电场/磁场的切向/法向连续或跳变条件，把连续场"裁切"到器件几何边界上。</p></div>
+    <div class="box"><h4>② 边界条件 → 低频集总近似</h4><p>当工作波长 λ=c/f 远大于器件尺寸 ℓ（ℓ/λ≪1），推迟效应可忽略，场在器件内近似均匀，可用端子量代表内部状态。此时位移电流 ∂D/∂t 相对传导电流可忽略（准静态近似），场方程退化为静电/静磁型。</p></div>
+    <div class="box"><h4>③ 集总近似 → 电路定律</h4><p>对节点邻域体积分电荷守恒得 KCL；对回路面积分法拉第定律（准静态）得 KVL。忽略位移电流后，场方程"退化"为电路代数/常微分方程组。</p></div>
+  </div>
+</section>
+
+<!-- ============ 4. 统一推导：KCL / KVL 从场方程导出 ============ -->
+<section class="card">
+  <h2>四、核心 · KCL 与 KVL 的场论推导（统一的关键）</h2>
+  <h3>① KCL：来自电荷守恒</h3>
+  <p>电荷守恒的微分/积分形式：</p>
+  <div class="formula">∇·J + ∂ρ/∂t = 0 　　⟺　　 −∮ₛ J·dS = d/dt ∫ᵥ ρ dV = dq/dt</div>
+  <p>对包围电路<b>节点 N</b>的一个小体积 V 应用高斯散度定理：</p>
+  <div class="formula">∮ₛ J·dS = ∫ᵥ ∇·J dV = − dq_N/dt</div>
+  <p>在<b>集总、低频、节点无净电荷积累</b>（dq_N/dt≈0）的稳态/似稳条件下，流出节点各支路的电流代数和为零：</p>
+  <div class="formula">∑ₖ iₖ = 0 　　←　 KCL（基尔霍夫电流定律）</div>
+
+  <h3>② KVL：来自法拉第电磁感应定律</h3>
+  <p>法拉第定律（微分/积分形式）：</p>
+  <div class="formula">∇×E = −∂B/∂t 　　⟺　　 ∮ₗ E·dl = − d/dt ∫ₛ B·dS = − dΦ/dt</div>
+  <p>对电路<b>回路 l</b>应用斯托克斯定理。在<b>准静态（ℓ≪λ）</b>下，回路所围的总磁通变化可忽略，沿回路 ∮E·dl≈0，从而各段电压降（电场线积分）代数和为零：</p>
+  <div class="formula">∮ₗ E·dl = 0 　　⟺　　 ∑ₘ uₘ = 0 　　←　 KVL（基尔霍夫电压定律）</div>
+  <div class="note"><b>统一的适用条件（重要）：</b>KCL 要求节点电荷不显著积累（似稳）；KVL 要求回路所围时变磁通可忽略（准静态，ℓ≪λ）。含电感/互感耦合的回路，感应电动势作为独立电源项进入 KVL，方程形式仍然成立——这正是"场→路"统一的体现。一旦尺寸与波长可比（分布参数/高速、射频、传输线），∂B/∂t 项不可忽略，电路理论升级为"分布参数/传输线理论"——这是电磁场与电路理论统一的边界。</div>
+  <details>
+    <summary>展开：电压、电流等"路量"如何从"场量"定义？</summary>
+    <p style="margin-top:8px;"><b>电压（电势差）：</b>u_AB = −∫_A^B E·dl（电场沿路径的线积分）。在静电/似稳条件下路径无关，故可定义为两端点间的集中标量。</p>
+    <p><b>电流：</b>i = ∮_S J·dS（电流密度 J 穿过截面的通量），把连续分布的 J 积分为一个集中量。</p>
+    <p><b>电阻/电容/电感：</b>均由几何尺寸与材料电磁参数（σ、ε、μ）通过解拉普拉斯/泊松方程得到——R=ℓ/(σA)、C=εA/d、L 由磁能 ½Li²=½∫B·H dV 定义。即<b>每个集总元件参数都是某电磁边值问题的解</b>。</p>
+  </details>
+</section>
+
+<!-- ============ 5. 集总 vs 分布 与场线形态 ============ -->
+<section class="card">
+  <h2>五、集总与分布的划分：场线形态的分水岭</h2>
+  <div class="grid2">
+    <div class="box"><h4><span class="pill g">集总 ℓ≪λ</span></h4>
+      <p>场线被"约束"在元件内部/附近，辐射可忽略；电场线两端落在同一器件极板间，磁场线环绕局部电流回路。可用集中 u、i 描述，KCL/KVL 严格成立。</p>
+    </div>
+    <div class="box"><h4><span class="pill r">分布 ℓ~λ</span></h4>
+      <p>场线伸展到空间、辐射显著；电压/电流随位置变化，需以传输线（R'/L'/C'/G' 分布参数）描述，方程由 ODE 升级为 PDE（电报方程/波动方程）。</p>
+    </div>
+  </div>
+  <div class="formula" style="text-align:center;">
+    划分判据（工程经验法则，非硬边界）：ℓ/λ &lt; 0.1（经验上集总）　·　ℓ/λ ~ 0.25（过渡）　·　ℓ/λ ≥ 0.25（建议分布/传输线模型）
+  </div>
+  <p class="sub">下图用同一对滑块切换"集总/分布"两种场线形态（左：局域约束场线；右：伸展辐射场线），直观看到：<b>集总与分布的划分，本质是"场线是否被约束在器件尺度内"</b>。</p>
+  <div class="grid2">
+    <div class="scn">
+      <canvas id="cvL" width="760" height="300" aria-label="集总局域场线"></canvas>
+      <span class="lbl">集总：场线局域约束</span>
+    </div>
+    <div class="scn">
+      <canvas id="cvD" width="760" height="300" aria-label="分布辐射场线"></canvas>
+      <span class="lbl">分布：场线伸展辐射</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. 教学层级映射 ============ -->
+<section class="card">
+  <h2>六、教学层级映射：两门课在培养体系中的位置</h2>
+  <div style="overflow-x:auto;"><table>
+    <tr><th>层级</th><th>课程</th><th>核心内容</th><th>与"路"的关系</th></tr>
+    <tr><td>根</td><td>大学物理（电磁学）</td><td>库仑/高斯/安培/法拉第定律，Maxwell 方程组雏形</td><td>给出 E、B、电荷、电流的基本定义</td></tr>
+    <tr><td>干</td><td>电磁场与电磁波</td><td>Maxwell 方程组、边界条件、波的传播/辐射、波导/天线</td><td>场的严格求解，是电路的"上位理论"</td></tr>
+    <tr><td>枝叶</td><td>电路（邱关源）</td><td>KCL/KVL、电阻/动态/正弦/三相/二端口/均匀传输线</td><td>场在集总·准静态下的简化工程模型</td></tr>
+    <tr><td>应用</td><td>各专业课程</td><td>模电、电机学、电力电子、电力系统分析、信号与系统</td><td>在电路模型上叠加器件/系统特性</td></tr>
+  </table></div>
+  <div class="note"><b>学习建议：</b>把"场→路"的统一关系牢记，可避免把 KCL/KVL 误当"与物理无关的电路公理"——它们是电荷守恒与法拉第定律在特定尺度下的积分推论。遇到高速/射频/长线问题时，自然回到场的视角（分布参数、传输线、S 参数），知识体系就不会断裂。</div>
+</section>
+
+<footer class="card" style="text-align:center;color:#64748b;font-size:.95rem;">
+  电磁场理论与电路理论的统一 · 交互式 H5 　 | 　 浅色 · 大字号 · 面向电气工程及其自动化 / 自动化专业
+</footer>
+</div>
+
+<script>
+(function(){
+  function err(msg){var b=document.getElementById('errBox');if(!b)return;console.error(msg);b.style.display='block';b.textContent+=(b.textContent?'\n':'')+msg;}
+  function $(id){return document.getElementById(id);}
+
+  // ---------- 3D 投影（纯 Canvas 2D，自绘伪 3D） ----------
+  function rotY(p,a){var c=Math.cos(a),s=Math.sin(a);return [c*p[0]+s*p[2],p[1],-s*p[0]+c*p[2]];}
+  function rotX(p,a){var c=Math.cos(a),s=Math.sin(a);return [p[0],c*p[1]-s*p[2],s*p[1]+c*p[2]];}
+  function proj(p,w,h){var f=2.2,d=5;var z=p[2]+d;return [w/2+p[0]*f*w/Math.max(z,0.5)/4,h/2-p[1]*f*h/Math.max(z,0.5)/4];}
+
+  function drawArrow(ctx,pt,dir,len,color){
+    var p=proj(pt,ctx.canvas.width,ctx.canvas.height);
+    var e=[pt[0]+dir[0]*len,pt[1]+dir[1]*len,pt[2]+dir[2]*len];
+    var q=proj(e,ctx.canvas.width,ctx.canvas.height);
+    ctx.strokeStyle=color;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    // arrowhead
+    var ax=dir[0],ay=dir[1];
+    var al=6;
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-ax*al-ay*al*0.5,q[1]-ay*al+ax*al*0.5);
+    ctx.lineTo(q[0]-ax*al+ay*al*0.5,q[1]-ay*al-ax*al*0.5);
+    ctx.closePath();ctx.fill();
+  }
+
+  // 电场 E：正点电荷径向向外（8 个方向 × 3 层）
+  function drawE(ctx,amp){
+    var t=performance.now()*0.0006;
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    // 电荷球
+    var c=proj([0,0,0],ctx.canvas.width,ctx.canvas.height);
+    var grd=ctx.createRadialGradient(c[0],c[1],4,c[0],c[1],26);
+    grd.addColorStop(0,'#fecaca');grd.addColorStop(1,'rgba(254,202,202,0)');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(c[0],c[1],26,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(c[0],c[1],7,0,Math.PI*2);ctx.fill();
+    var dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[0.7,0.7,0],[-0.7,0.7,0]];
+    for(var k=0;k<dirs.length;k++)for(var m=1;m<=3;m++){
+      var d=dirs[k],r=0.55*m*amp;
+      var pt=[d[0]*r,d[1]*r,d[2]*r];
+      pt=rotY(rotX(pt,t),t*0.7);
+      drawArrow(ctx,pt,d,0.42*amp,'rgba(248,113,113,'+(0.55+0.15*m)+')');
+    }
+    ctx.fillStyle='#cbd5e1';ctx.font='12px sans-serif';ctx.fillText('+Q',c[0]-6,c[1]+22);
+  }
+  // 磁场 B：电流环环绕（圆环上取点，方向为环切向）
+  function drawB(ctx,amp){
+    var t=performance.now()*0.0006;
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    var N=24,R=1.15;
+    for(var i=0;i<N;i++){
+      var a=t+i*Math.PI*2/N;
+      var pt=[R*Math.cos(a),0,R*Math.sin(a)];
+      var tg=[-Math.sin(a),0,Math.cos(a)];
+      pt=rotY(rotX(pt,t*0.8),t);
+      var p=proj(pt,ctx.canvas.width,ctx.canvas.height);
+      ctx.strokeStyle='rgba(96,165,250,'+(0.25+0.5*amp)+')';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(p[0],p[1],2.2,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+      drawArrow(ctx,pt,tg,0.38*amp,'rgba(59,130,246,'+(0.5+0.2*amp)+')');
+    }
+    // 环线
+    ctx.strokeStyle='rgba(148,163,184,.55)';ctx.lineWidth=1.5;ctx.beginPath();
+    for(var j=0;j<=60;j++){var a2=t+j*Math.PI*2/60;var pt2=[R*Math.cos(a2),0,R*Math.sin(a2)];pt2=rotY(rotX(pt2,t*0.8),t);var p2=proj(pt2,ctx.canvas.width,ctx.canvas.height);j?ctx.lineTo(p2[0],p2[1]):ctx.moveTo(p2[0],p2[1]);}
+    ctx.stroke();
+    ctx.fillStyle='#cbd5e1';ctx.font='12px sans-serif';ctx.fillText('I',ctx.canvas.width/2-4,ctx.canvas.height/2+24);
+  }
+
+  // 集总 vs 分布场线（2D 风格，伪 3D 投影）
+  function drawLumped(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    var cw=ctx.canvas.width,ch=ctx.canvas.height;
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,cw,ch);
+    // 极板
+    ctx.fillStyle='#34d399';ctx.fillRect(cw/2-90,ch/2-60,8,120);ctx.fillRect(cw/2+82,ch/2-60,8,120);
+    ctx.fillStyle='#cbd5e1';ctx.font='12px sans-serif';ctx.fillText('+',cw/2-94,ch/2-66);ctx.fillText('−',cw/2+92,ch/2-66);
+    // 局域电场线（直连线）
+    for(var i=-2;i<=2;i++){var y=ch/2+i*22;ctx.strokeStyle='rgba(52,211,153,.7)';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cw/2-82,y);ctx.lineTo(cw/2+82,y);ctx.stroke();}
+    ctx.fillStyle='#86efac';ctx.font='13px sans-serif';ctx.fillText('场线局域约束在极板间（ℓ≪λ）',24,ch-18);
+  }
+  function drawDistributed(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    var cw=ctx.canvas.width,ch=ctx.canvas.height;
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,cw,ch);
+    ctx.fillStyle='#f87171';ctx.fillRect(cw/2-90,ch/2-60,8,120);ctx.fillRect(cw/2+82,ch/2-60,8,120);
+    var t=performance.now()*0.001;
+    for(var i=-2;i<=2;i++){var y=ch/2+i*22;ctx.strokeStyle='rgba(248,113,113,'+(0.35+0.35*Math.sin(t+i))+')';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(cw/2-82,y);ctx.lineTo(cw/2+82,y+Math.sin(t+i*0.6)*26);ctx.stroke();}
+    // 辐射波纹
+    for(var r=1;r<=3;r++){ctx.strokeStyle='rgba(248,113,113,'+(0.18/r)+')';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cw/2,ch/2,r*46+Math.sin(t)*6,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='#fca5a5';ctx.font='13px sans-serif';ctx.fillText('场线伸展到空间，辐射显著（ℓ~λ）',24,ch-18);
+  }
+
+  function loop(){
+    try{
+      var e=+$('rE').value/100,b=+$('rB').value/100;
+      $('rEVal').textContent=e.toFixed(2);$('rBVal').textContent=b.toFixed(2);
+      if(ctxE)drawE(ctxE,e);if(ctxB)drawB(ctxB,b);
+      if(ctxL)drawLumped(ctxL);if(ctxD)drawDistributed(ctxD);
+    }catch(e2){err('绘制循环异常：'+e2.message);}
+    requestAnimationFrame(loop);
+  }
+
+  function init(){
+    try{
+      var cE=$('cvE'),cB=$('cvB'),cL=$('cvL'),cD=$('cvD');
+      if(!cE||!cB||!cL||!cD)throw new Error('画布元素缺失');
+      ctxE=cE.getContext('2d');ctxB=cB.getContext('2d');ctxL=cL.getContext('2d');ctxD=cD.getContext('2d');
+      if(!ctxE||!ctxB||!ctxL||!ctxD)throw new Error('Canvas 2D 上下文不可用');
+      $('rE').addEventListener('input',function(){});
+      $('rB').addEventListener('input',function(){});
+      requestAnimationFrame(loop);
+    }catch(e){err('初始化失败：'+e.message);}
+  }
+  var ctxE=null,ctxB=null,ctxL=null,ctxD=null;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+</body>
+</html>

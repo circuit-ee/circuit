@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基尔霍夫定律交互式动画</title>
+    <style>
+        body { 
+            font-family: 'Microsoft YaHei', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,.1); 
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .law-description { 
+            background: #e3f2fd; 
+            padding: 18px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            text-align: center; 
+            font-size: 18px; 
+            line-height: 1.6; 
+            border-left: 4px solid #2196F3;
+        }
+        .mode-selector { 
+            text-align: center; 
+            margin: 25px 0; 
+        }
+        .mode-btn { 
+            margin: 0 15px; 
+            padding: 14px 40px; 
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fff;
+        }
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .mode-btn.active { 
+            background: #4CAF50; 
+            color: #fff;
+            border-color: #4CAF50;
+        }
+        .info-panel { 
+            background: #fff3e0; 
+            padding: 18px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+            border-left: 4px solid #FF9800;
+            font-size: 18px;
+        }
+        .circuit-container { 
+            position: relative; 
+            width: 800px; 
+            height: 600px; 
+            margin: 25px auto; 
+            border: 2px solid #ddd; 
+            background: #fafafa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .node { 
+            position: absolute; 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%; 
+            background: #4CAF50; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #fff; 
+            font-weight: bold;
+            font-size: 22px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            z-index: 10;
+        }
+        .node:hover { 
+            transform: scale(1.15);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+        }
+        .node.selected { 
+            background: #ff6b6b; 
+            box-shadow: 0 0 30px rgba(255,107,107,0.7);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .branch { 
+            position: absolute; 
+            height: 5px; 
+            background: #555;
+            transform-origin: left center; 
+            cursor: pointer;
+            z-index: 1;
+            border-radius: 2px;
+        }
+        .branch:hover {
+            background: #2196F3;
+            height: 7px;
+        }
+        .branch-direction { 
+            position: absolute; 
+            width: 0; 
+            height: 0; 
+            border-style: solid; 
+            border-width: 10px 0 10px 18px; 
+            border-color: transparent transparent transparent #d32f2f;
+            z-index: 5;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .voltage-polarity { 
+            position: absolute; 
+            font-weight: bold; 
+            font-size: 20px; 
+            color: #2196F3; 
+            background: rgba(255,255,255,0.95);
+            border-radius: 50%;
+            width: 30px; 
+            height: 30px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 3px solid #2196F3;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            z-index: 100;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+        .voltage-polarity:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(1.1);
+        }
+        .voltage-polarity.dragging {
+            opacity: 0.8;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+        .current-label { 
+            position: absolute; 
+            font-size: 22px;
+            font-weight: bold;
+            color: #d32f2f;
+            background: rgba(255,255,255,0.98); 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            border: 2px solid #d32f2f;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            z-index: 100;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+        .current-label:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+        }
+        .current-label.dragging {
+            opacity: 0.8;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+        .voltage-label { 
+            position: absolute; 
+            font-size: 20px;
+            font-weight: bold;
+            color: #2196F3;
+            background: rgba(255,255,255,0.98); 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            border: 2px solid #2196F3;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            z-index: 100;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+        .voltage-label:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+        }
+        .voltage-label.dragging {
+            opacity: 0.8;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+        .loop-path {
+            stroke: #ff6b6b;
+            stroke-width: 4;
+            fill: none;
+            stroke-dasharray: 10, 5;
+            animation: dash 1.5s linear infinite;
+            cursor: pointer;
+            pointer-events: stroke;
+        }
+        .loop-path:hover {
+            stroke: #ff4757;
+            stroke-width: 6;
+        }
+        .loop-path.selected {
+            stroke: #ff4757;
+            stroke-width: 6;
+            filter: drop-shadow(0 0 12px rgba(255,71,87,0.6));
+        }
+        @keyframes dash { 
+            to { stroke-dashoffset: -15; } 
+        }
+        .loop-direction-arrow {
+            fill: #ff4757;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+        }
+        .loop-label {
+            font-size: 18px;
+            font-weight: bold;
+            fill: #ff4757;
+            text-anchor: middle;
+        }
+        .controls { 
+            text-align: center; 
+            margin: 25px 0; 
+        }
+        button { 
+            margin: 8px; 
+            padding: 14px 28px; 
+            font-size: 16px;
+            font-weight: bold;
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+        }
+        .primary-btn { 
+            background: #4CAF50; 
+            color: #fff; 
+        }
+        .primary-btn:hover { background: #45a049; }
+        .secondary-btn { 
+            background: #2196F3; 
+            color: #fff; 
+        }
+        .secondary-btn:hover { background: #1976D2; }
+        .warning-btn { 
+            background: #FF9800; 
+            color: #fff; 
+        }
+        .warning-btn:hover { background: #F57C00; }
+        .danger-btn { 
+            background: #f44336; 
+            color: #fff; 
+        }
+        .danger-btn:hover { background: #d32f2f; }
+        .save-btn { 
+            background: #9C27B0; 
+            color: #fff; 
+        }
+        .save-btn:hover { background: #7B1FA2; }
+        .load-btn { 
+            background: #009688; 
+            color: #fff; 
+        }
+        .load-btn:hover { background: #00796B; }
+        .status-msg {
+            display: inline-block;
+            margin-left: 15px;
+            padding: 8px 15px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .status-msg.show {
+            opacity: 1;
+        }
+        .equation-display { 
+            margin: 25px auto; 
+            padding: 30px; 
+            background: #f9f9f9; 
+            border-radius: 10px; 
+            border-left: 5px solid #4CAF50; 
+            font-family: 'Courier New', monospace; 
+            font-size: 20px; 
+            min-height: 160px;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.08);
+        }
+        .equation-form { 
+            margin: 18px 0; 
+            padding: 18px; 
+            background: #fff; 
+            border-radius: 8px; 
+            border-left: 5px solid #ddd;
+            transition: all 0.3s;
+            line-height: 1.8;
+        }
+        .equation-form.active { 
+            border-left-color: #4CAF50; 
+            background: #e8f5e8;
+            transform: translateX(8px);
+        }
+        .equation-form strong {
+            color: #333;
+            display: inline-block;
+            width: 100px;
+            font-size: 20px;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <h1>基尔霍夫定律交互式动画演示</h1>
+        
+        <div class="law-description" id="lawDescription">
+            <strong>基尔霍夫电流定律 (KCL)：</strong> 在任一时刻，流入节点的电流代数和等于零，或表述为流入电流等于流出电流。
+        </div>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('kcl')">基尔霍夫电流定律 (KCL)</button>
+            <button class="mode-btn" onclick="setMode('kvl')">基尔霍夫电压定律 (KVL)</button>
+        </div>
+        
+        <div class="info-panel">
+            <p id="instruction"><strong>操作说明：</strong> 点击节点选择要分析的位置，然后使用下方按钮列写KCL方程。可以变换参考方向观察不同形式。</p>
+        </div>
+        
+        <div class="circuit-container" id="circuitContainer">
+            <svg id="circuitSvg" width="800" height="600" style="position: absolute; top: 0; left: 0; z-index: 2;"></svg>
+        </div>
+        
+        <div class="equation-display" id="equationDisplay">
+            <div class="equation-form" id="form1"><strong>形式1:</strong> <span id="eqForm1">请选择一个节点或回路开始分析</span></div>
+            <div class="equation-form" id="form2"><strong>形式2:</strong> <span id="eqForm2">-</span></div>
+            <div class="equation-form" id="form3"><strong>形式3:</strong> <span id="eqForm3">-</span></div>
+        </div>
+        
+        <div class="controls" id="controls">
+            <button class="primary-btn" onclick="writeKCL(0)">列写KCL方程 (形式1: ΣI入=0)</button>
+            <button class="secondary-btn" onclick="writeKCL(1)">列写KCL方程 (形式2: ΣI出=0)</button>
+            <button class="warning-btn" onclick="writeKCL(2)">列写KCL方程 (形式3: I入=I出)</button>
+            <button class="danger-btn" onclick="resetCircuit()">重置</button>
+            <button class="warning-btn" onclick="changeReferenceDirection()">变换参考方向</button>
+        </div>
+    </div>
+
+    <script>
+        const circuitData = {
+            nodes: [
+                {id: 'A', x: 200, y: 200, name: 'A'},
+                {id: 'B', x: 600, y: 200, name: 'B'},
+                {id: 'C', x: 600, y: 400, name: 'C'},
+                {id: 'D', x: 200, y: 400, name: 'D'},
+                {id: 'E', x: 400, y: 100, name: 'E'},
+                {id: 'F', x: 400, y: 500, name: 'F'}
+            ],
+            branches: [
+                {id: 'AB', from: 'A', to: 'B', current: 'I₁', voltage: 'V₁'},
+                {id: 'BC', from: 'B', to: 'C', current: 'I₂', voltage: 'V₂'},
+                {id: 'CD', from: 'C', to: 'D', current: 'I₃', voltage: 'V₃'},
+                {id: 'DA', from: 'D', to: 'A', current: 'I₄', voltage: 'V₄'},
+                {id: 'AE', from: 'A', to: 'E', current: 'I₅', voltage: 'V₅'},
+                {id: 'EB', from: 'E', to: 'B', current: 'I₆', voltage: 'V₆'},
+                {id: 'DF', from: 'D', to: 'F', current: 'I₇', voltage: 'V₇'},
+                {id: 'FC', from: 'F', to: 'C', current: 'I₈', voltage: 'V₈'}
+            ],
+            loops: [
+                {id: 'Loop1', nodes: ['A', 'B', 'C', 'D'], name: '回路1', direction: 'clockwise'},
+                {id: 'Loop2', nodes: ['A', 'E', 'B'], name: '回路2', direction: 'clockwise'},
+                {id: 'Loop3', nodes: ['D', 'F', 'C'], name: '回路3', direction: 'clockwise'}
+            ]
+        };
+        
+        let selectedNode = null, selectedLoop = null, currentMode = 'kcl';
+        const branchDirections = {};
+
+        function initializeCircuit() {
+            const container = document.getElementById('circuitContainer');
+            
+            // 创建节点
+            circuitData.nodes.forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'node';
+                div.id = `node-${n.id}`;
+                div.style.left = `${n.x - 24}px`;
+                div.style.top = `${n.y - 24}px`;
+                div.textContent = n.name;
+                div.onclick = () => selectNode(n);
+                container.appendChild(div);
+            });
+            
+            // 创建支路
+            circuitData.branches.forEach(br => {
+                const fromN = circuitData.nodes.find(n => n.id === br.from);
+                const toN = circuitData.nodes.find(n => n.id === br.to);
+                const dx = toN.x - fromN.x;
+                const dy = toN.y - fromN.y;
+                const len = Math.hypot(dx, dy);
+                const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                // 支路线
+                const line = document.createElement('div');
+                line.className = 'branch';
+                line.id = `branch-${br.id}`;
+                line.style.left = `${fromN.x}px`;
+                line.style.top = `${fromN.y - 2.5}px`;
+                line.style.width = `${len}px`;
+                line.style.transform = `rotate(${ang}deg)`;
+                container.appendChild(line);
+
+                // 电流箭头（位于支路40%位置，更靠近起点）
+                const arrowPos = 0.4;
+                const arrowX = fromN.x + dx * arrowPos;
+                const arrowY = fromN.y + dy * arrowPos;
+                const arrow = document.createElement('div');
+                arrow.className = 'branch-direction';
+                arrow.id = `arrow-${br.id}`;
+                arrow.style.left = `${arrowX - 9}px`;
+                arrow.style.top = `${arrowY - 10}px`;
+                arrow.style.transform = `rotate(${ang}deg)`;
+                container.appendChild(arrow);
+
+                                // 电流标签位置 - 根据图片布局手动调整
+                const currLab = document.createElement('div');
+                currLab.className = 'current-label';
+                currLab.id = `current-${br.id}`;
+                currLab.textContent = br.current;
+
+                // 根据支路ID设置特定位置（与图片一致）
+                const currentPositions = {
+                    'AB': {x: 400, y: 170},   // I₁ AB中间
+                    'BC': {x: 630, y: 300},   // I₂ BC右侧
+                    'CD': {x: 400, y: 430},   // I₃ CD中间
+                    'DA': {x: 170, y: 300},   // I₄ DA左侧
+                    'AE': {x: 290, y: 140},   // I₅ AE靠近A
+                    'EB': {x: 510, y: 140},   // I₆ EB靠近E
+                    'DF': {x: 290, y: 460},   // I₇ DF靠近D
+                    'FC': {x: 510, y: 460}    // I₈ FC靠近F
+                };
+
+                const currPos = currentPositions[br.id] || {x: fromN.x + dx * 0.5, y: fromN.y + dy * 0.5};
+                currLab.style.left = `${currPos.x}px`;
+                currLab.style.top = `${currPos.y}px`;
+                container.appendChild(currLab);
+                makeDraggable(currLab);
+
+                // 电压标签位置 - 根据图片布局手动调整
+                const volLab = document.createElement('div');
+                volLab.className = 'voltage-label';
+                volLab.id = `voltage-${br.id}`;
+                volLab.textContent = br.voltage;
+
+                // 根据支路ID设置特定位置（与图片一致）
+                const voltagePositions = {
+                    'AB': {x: 480, y: 240},   // V₁ AB右侧
+                    'BC': {x: 720, y: 300},   // V₂ BC右侧
+                    'CD': {x: 480, y: 480},   // V₃ CD下方
+                    'DA': {x: 80, y: 300},    // V₄ DA左侧
+                    'AE': {x: 220, y: 100},   // V₅ AE左上
+                    'EB': {x: 620, y: 100},   // V₆ EB右上
+                    'DF': {x: 220, y: 500},   // V₇ DF左下
+                    'FC': {x: 620, y: 500}    // V₈ FC右下
+                };
+
+                const volPos = voltagePositions[br.id] || {x: fromN.x + dx * 0.3, y: fromN.y + dy * 0.3};
+                volLab.style.left = `${volPos.x}px`;
+                volLab.style.top = `${volPos.y}px`;
+                container.appendChild(volLab);
+                makeDraggable(volLab);
+
+                // 电压极性 + 位置 - 根据图片布局
+                const plus = document.createElement('div');
+                plus.className = 'voltage-polarity';
+                plus.id = `plus-${br.id}`;
+                plus.textContent = '+';
+
+                const plusPositions = {
+                    'AB': {x: 280, y: 170},   // AB左侧
+                    'BC': {x: 720, y: 240},   // BC上侧
+                    'CD': {x: 680, y: 480},   // CD右侧
+                    'DA': {x: 120, y: 240},   // DA上侧
+                    'AE': {x: 180, y: 140},   // AE左侧
+                    'EB': {x: 580, y: 60},    // EB上侧
+                    'DF': {x: 180, y: 460},   // DF左侧
+                    'FC': {x: 580, y: 540}    // FC下侧
+                };
+
+                const plusPos = plusPositions[br.id] || {x: fromN.x - 15, y: fromN.y - 15};
+                plus.style.left = `${plusPos.x}px`;
+                plus.style.top = `${plusPos.y}px`;
+                container.appendChild(plus);
+                makeDraggable(plus);
+
+                // 电压极性 - 位置 - 根据图片布局
+                const minus = document.createElement('div');
+                minus.className = 'voltage-polarity';
+                minus.id = `minus-${br.id}`;
+                minus.textContent = '-';
+
+                const minusPositions = {
+                    'AB': {x: 680, y: 170},   // AB右侧
+                    'BC': {x: 720, y: 360},   // BC下侧
+                    'CD': {x: 280, y: 480},   // CD左侧
+                    'DA': {x: 120, y: 360},   // DA下侧
+                    'AE': {x: 380, y: 60},    // AE上侧
+                    'EB': {x: 680, y: 140},   // EB右侧
+                    'DF': {x: 380, y: 540},   // DF下侧
+                    'FC': {x: 680, y: 460}    // FC右侧
+                };
+
+                const minusPos = minusPositions[br.id] || {x: toN.x - 15, y: toN.y - 15};
+                minus.style.left = `${minusPos.x}px`;
+                minus.style.top = `${minusPos.y}px`;
+                container.appendChild(minus);
+                makeDraggable(minus);
+
+                branchDirections[br.id] = true;
+            });
+            
+            drawLoops();
+        }
+
+        function drawLoops() {
+            const svg = document.getElementById('circuitSvg');
+            svg.innerHTML = '';
+            
+            if (currentMode !== 'kvl') return;
+            
+            circuitData.loops.forEach((loop, index) => {
+                // 计算回路中心点
+                let centerX = 0, centerY = 0;
+                loop.nodes.forEach(nid => {
+                    const n = circuitData.nodes.find(nd => nd.id === nid);
+                    centerX += n.x;
+                    centerY += n.y;
+                });
+                centerX /= loop.nodes.length;
+                centerY /= loop.nodes.length;
+                
+                // 使用较小的偏移量，确保回路在边界内
+                const offset = 12;
+                
+                // 计算偏移后的点
+                const points = [];
+                const nodeCount = loop.nodes.length;
+                
+                for (let i = 0; i < nodeCount; i++) {
+                    const curr = circuitData.nodes.find(nd => nd.id === loop.nodes[i]);
+                    const next = circuitData.nodes.find(nd => nd.id === loop.nodes[(i + 1) % nodeCount]);
+                    const prev = circuitData.nodes.find(nd => nd.id === loop.nodes[(i - 1 + nodeCount) % nodeCount]);
+                    
+                    // 计算入射和出射向量
+                    const dxIn = curr.x - prev.x;
+                    const dyIn = curr.y - prev.y;
+                    const dxOut = next.x - curr.x;
+                    const dyOut = next.y - curr.y;
+                    
+                    // 计算角平分线方向（向外）
+                    const lenIn = Math.hypot(dxIn, dyIn);
+                    const lenOut = Math.hypot(dxOut, dyOut);
+                    
+                    // 归一化
+                    const nxIn = -dyIn / lenIn;
+                    const nyIn = dxIn / lenIn;
+                    const nxOut = -dyOut / lenOut;
+                    const nyOut = dxOut / lenOut;
+                    
+                    // 平均法向量
+                    let nx = (nxIn + nxOut) / 2;
+                    let ny = (nyIn + nyOut) / 2;
+                    const len = Math.hypot(nx, ny);
+                    if (len > 0.001) {
+                        nx /= len;
+                        ny /= len;
+                    }
+                    
+                    // 对于矩形回路，确保方向正确
+                    if (loop.id === 'Loop1') {
+                        // 主回路：根据位置判断
+                        if (curr.y < 300) { // 上边缘
+                            ny = -1; nx = 0;
+                        } else if (curr.y > 300) { // 下边缘
+                            ny = 1; nx = 0;
+                        } else if (curr.x < 400) { // 左边缘
+                            nx = -1; ny = 0;
+                        } else { // 右边缘
+                            nx = 1; ny = 0;
+                        }
+                    }
+                    
+                    const x = curr.x + nx * offset;
+                    const y = curr.y + ny * offset;
+                    points.push({x, y, node: curr});
+                }
+                
+                // 构建路径
+                let d = 'M';
+                points.forEach((p, i) => {
+                    d += (i ? ' L' : '') + `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                });
+                d += ' Z';
+                
+                // 创建回路路径（可点击）
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', d);
+                path.setAttribute('class', 'loop-path');
+                path.setAttribute('id', `loop-${loop.id}`);
+                path.onclick = (e) => {
+                    e.stopPropagation();
+                    selectLoop(loop.id);
+                };
+                svg.appendChild(path);
+                
+                // 计算方向箭头位置（在最长边上）
+                let maxDist = 0;
+                let arrowIdx = 0;
+                for (let i = 0; i < points.length; i++) {
+                    const j = (i + 1) % points.length;
+                    const dist = Math.hypot(points[j].x - points[i].x, points[j].y - points[i].y);
+                    if (dist > maxDist) {
+                        maxDist = dist;
+                        arrowIdx = i;
+                    }
+                }
+                
+                const p1 = points[arrowIdx];
+                const p2 = points[(arrowIdx + 1) % points.length];
+                const arrowX = (p1.x + p2.x) / 2;
+                const arrowY = (p1.y + p2.y) / 2;
+                const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+                
+                // 方向箭头
+                const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                arrow.setAttribute('points', '0,-6 12,0 0,6');
+                arrow.setAttribute('fill', '#ff4757');
+                arrow.setAttribute('class', 'loop-direction-arrow');
+                arrow.setAttribute('transform', `translate(${arrowX}, ${arrowY}) rotate(${angle})`);
+                arrow.style.pointerEvents = 'none';
+                svg.appendChild(arrow);
+                
+                // 回路标签背景
+                const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const labelWidth = 90;
+                const labelHeight = 28;
+                labelBg.setAttribute('x', centerX - labelWidth/2);
+                labelBg.setAttribute('y', centerY - labelHeight/2);
+                labelBg.setAttribute('width', labelWidth);
+                labelBg.setAttribute('height', labelHeight);
+                labelBg.setAttribute('fill', 'rgba(255,255,255,0.95)');
+                labelBg.setAttribute('stroke', '#ff4757');
+                labelBg.setAttribute('stroke-width', '2');
+                labelBg.setAttribute('rx', '14');
+                labelBg.style.cursor = 'pointer';
+                labelBg.onclick = (e) => {
+                    e.stopPropagation();
+                    selectLoop(loop.id);
+                };
+                svg.appendChild(labelBg);
+                
+                // 回路文字
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', centerX);
+                text.setAttribute('y', centerY + 5);
+                text.setAttribute('class', 'loop-label');
+                text.setAttribute('font-size', '15');
+                text.textContent = loop.name;
+                text.style.cursor = 'pointer';
+                text.onclick = (e) => {
+                    e.stopPropagation();
+                    selectLoop(loop.id);
+                };
+                svg.appendChild(text);
+            });
+        }
+
+        function selectNode(n) {
+            if (currentMode !== 'kcl') return;
+            document.querySelectorAll('.node').forEach(nd => nd.classList.remove('selected'));
+            selectedNode = n;
+            selectedLoop = null;
+            document.getElementById(`node-${n.id}`).classList.add('selected');
+            resetEqDisp(`已选择节点 ${n.name}，请选择操作列写KCL方程`);
+        }
+
+        function selectLoop(loopId) {
+            if (currentMode !== 'kvl') return;
+            
+            document.querySelectorAll('.loop-path').forEach(p => p.classList.remove('selected'));
+            document.querySelectorAll('.node').forEach(nd => nd.classList.remove('selected'));
+            
+            selectedLoop = loopId;
+            selectedNode = null;
+            
+            const path = document.getElementById(`loop-${loopId}`);
+            if (path) path.classList.add('selected');
+            
+            const loop = circuitData.loops.find(l => l.id === loopId);
+            resetEqDisp(`已选择${loop.name}，绕行方向：顺时针，请选择操作列写KVL方程`);
+        }
+
+        function resetEqDisp(t1, t2 = '-', t3 = '-') {
+            ['eqForm1', 'eqForm2', 'eqForm3'].forEach((id, i) => {
+                document.getElementById(id).innerHTML = [t1, t2, t3][i];
+            });
+            ['form1', 'form2', 'form3'].forEach((id, i) => {
+                document.getElementById(id).classList.toggle('active', i === 0 && t1 !== '-');
+            });
+        }
+
+        function writeKCL(form) {
+            if (!selectedNode) { 
+                alert('请先选择一个节点！点击绿色节点进行选择。'); 
+                return; 
+            }
+            
+            const conn = circuitData.branches.filter(b => 
+                b.from === selectedNode.id || b.to === selectedNode.id
+            );
+            
+            let eq = '';
+            switch (form) {
+                case 0:
+                    eq = 'ΣI<sub>流入</sub> = 0 : ';
+                    conn.forEach((b, i) => { 
+                        if (i) eq += ' + '; 
+                        const isIn = b.to === selectedNode.id;
+                        const sign = (branchDirections[b.id] && isIn) || (!branchDirections[b.id] && !isIn) ? '' : '-';
+                        eq += sign + b.current; 
+                    });
+                    eq += ' = 0';
+                    break;
+                case 1:
+                    eq = 'ΣI<sub>流出</sub> = 0 : ';
+                    conn.forEach((b, i) => { 
+                        if (i) eq += ' + '; 
+                        const isOut = b.from === selectedNode.id;
+                        const sign = (branchDirections[b.id] && isOut) || (!branchDirections[b.id] && !isOut) ? '' : '-';
+                        eq += sign + b.current; 
+                    });
+                    eq += ' = 0';
+                    break;
+                case 2:
+                    const inC = [], outC = [];
+                    conn.forEach(b => {
+                        const isIn = b.to === selectedNode.id;
+                        const isOut = b.from === selectedNode.id;
+                        const dir = branchDirections[b.id];
+                        if ((dir && isIn) || (!dir && !isIn)) {
+                            inC.push(b.current);
+                        } else if ((dir && isOut) || (!dir && !isOut)) {
+                            outC.push(b.current);
+                        }
+                    });
+                    eq = 'I<sub>流入</sub> = I<sub>流出</sub> : ' + 
+                         (inC.join(' + ') || '0') + ' = ' + (outC.join(' + ') || '0');
+                    break;
+            }
+            
+            document.getElementById(`eqForm${form + 1}`).innerHTML = eq;
+            document.getElementById(`form${form + 1}`).classList.add('active');
+        }
+
+        function writeKVL(form) {
+            if (!selectedLoop) { 
+                alert('请先选择一个回路！点击红色虚线回路进行选择。'); 
+                return; 
+            }
+            
+            const loop = circuitData.loops.find(l => l.id === selectedLoop);
+            const loopBranches = [];
+            
+            for (let i = 0; i < loop.nodes.length; i++) {
+                const from = loop.nodes[i];
+                const to = loop.nodes[(i + 1) % loop.nodes.length];
+                const br = circuitData.branches.find(b => 
+                    (b.from === from && b.to === to) || (b.from === to && b.to === from)
+                );
+                if (br) loopBranches.push({branch: br, direction: br.from === from ? 1 : -1});
+            }
+            
+            let eq = '';
+            
+            switch (form) {
+                case 0:
+                    eq = 'ΣV<sub>降</sub> = 0 (顺时针绕行): ';
+                    loopBranches.forEach((lb, i) => {
+                        if (i) eq += ' + ';
+                        const sign = lb.direction > 0 ? '' : '-';
+                        eq += sign + lb.branch.voltage;
+                    });
+                    eq += ' = 0';
+                    break;
+                case 1:
+                    eq = 'ΣV<sub>升</sub> = 0 (顺时针绕行): ';
+                    loopBranches.forEach((lb, i) => {
+                        if (i) eq += ' + ';
+                        const sign = lb.direction > 0 ? '-' : '';
+                        eq += sign + lb.branch.voltage;
+                    });
+                    eq += ' = 0';
+                    break;
+                case 2:
+                    const rises = [], drops = [];
+                    loopBranches.forEach(lb => {
+                        if (lb.direction > 0) drops.push(lb.branch.voltage);
+                        else rises.push(lb.branch.voltage);
+                    });
+                    eq = 'ΣV<sub>升</sub> = ΣV<sub>降</sub> : ' + 
+                         (rises.join(' + ') || '0') + ' = ' + (drops.join(' + ') || '0');
+                    break;
+            }
+            
+            document.getElementById(`eqForm${form + 1}`).innerHTML = eq;
+            document.getElementById(`form${form + 1}`).classList.add('active');
+        }
+
+        function changeReferenceDirection() {
+            if (!selectedNode) { 
+                alert('请先选择一个节点！'); 
+                return; 
+            }
+            
+            circuitData.branches.filter(b => 
+                b.from === selectedNode.id || b.to === selectedNode.id
+            ).forEach(b => {
+                if (Math.random() > 0.3) {
+                    branchDirections[b.id] = !branchDirections[b.id];
+                    const arr = document.getElementById(`arrow-${b.id}`);
+                    const currentTransform = arr.style.transform;
+                    const baseAngle = currentTransform.match(/rotate\(([-\d.]+)deg\)/)?.[1] || '0';
+                    const newAngle = parseFloat(baseAngle) + 180;
+                    arr.style.transform = `rotate(${newAngle}deg)`;
+                    
+                    const lab = document.getElementById(`current-${b.id}`);
+                    lab.style.color = branchDirections[b.id] ? '#333' : '#d32f2f';
+                }
+            });
+            
+            resetEqDisp('参考方向已更新，请重新列写方程');
+        }
+
+        function resetCircuit() {
+            selectedNode = null;
+            selectedLoop = null;
+            document.querySelectorAll('.node').forEach(nd => nd.classList.remove('selected'));
+            document.querySelectorAll('.loop-path').forEach(p => p.classList.remove('selected'));
+            document.getElementById('circuitSvg').innerHTML = '';
+            if (currentMode === 'kvl') drawLoops();
+            resetEqDisp(currentMode === 'kcl' ? '请选择一个节点开始分析' : '请选择一个回路开始分析');
+        }
+
+        function setMode(m) {
+            currentMode = m;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const ctrl = document.getElementById('controls');
+            const inst = document.getElementById('instruction');
+            const law = document.getElementById('lawDescription');
+            
+            if (m === 'kcl') {
+                ctrl.innerHTML = `
+                    <button class="primary-btn" onclick="writeKCL(0)">列写KCL方程 (形式1: ΣI入=0)</button>
+                    <button class="secondary-btn" onclick="writeKCL(1)">列写KCL方程 (形式2: ΣI出=0)</button>
+                    <button class="warning-btn" onclick="writeKCL(2)">列写KCL方程 (形式3: I入=I出)</button>
+                    <button class="danger-btn" onclick="resetCircuit()">重置</button>
+                    <button class="warning-btn" onclick="changeReferenceDirection()">变换参考方向</button>
+                    <button class="save-btn" onclick="savePositions()">保存位置</button>
+                    <button class="load-btn" onclick="loadPositions()">恢复位置</button>
+                    <span class="status-msg" id="statusMsg">位置已保存</span>`;
+                inst.innerHTML = '<strong>操作说明：</strong> 点击<strong>绿色节点</strong>选择要分析的位置，然后使用下方按钮列写KCL方程。可以变换参考方向观察不同形式。';
+                law.innerHTML = '<strong>基尔霍夫电流定律 (KCL)：</strong> 在任一时刻，流入节点的电流代数和等于零，或表述为流入电流等于流出电流。';
+            } else {
+                ctrl.innerHTML = `
+                    <button class="primary-btn" onclick="writeKVL(0)">列写KVL方程 (形式1: ΣV降=0)</button>
+                    <button class="secondary-btn" onclick="writeKVL(1)">列写KVL方程 (形式2: ΣV升=0)</button>
+                    <button class="warning-btn" onclick="writeKVL(2)">列写KVL方程 (形式3: ΣV升=ΣV降)</button>
+                    <button class="danger-btn" onclick="resetCircuit()">重置</button>
+                    <button class="save-btn" onclick="savePositions()">保存位置</button>
+                    <button class="load-btn" onclick="loadPositions()">恢复位置</button>
+                    <span class="status-msg" id="statusMsg">位置已保存</span>`;
+                inst.innerHTML = '<strong>操作说明：</strong> 点击<strong>红色虚线回路</strong>选择要分析的回路（带有绕行方向箭头），然后列写KVL方程。';
+                law.innerHTML = '<strong>基尔霍夫电压定律 (KVL)：</strong> 在任一时刻，沿任一回路绕行一周，各元件电压的代数和等于零，或表述为电压降总和等于电压升总和。';
+            }
+            
+            resetCircuit();
+        }
+
+        
+        // 拖拽功能实现
+        let draggedElement = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function makeDraggable(element) {
+            element.addEventListener('mousedown', startDrag);
+            element.addEventListener('touchstart', startDragTouch, {passive: false});
+        }
+
+        function startDrag(e) {
+            if (e.button !== 0) return; // 只响应左键
+            e.preventDefault();
+            e.stopPropagation();
+
+            draggedElement = e.target;
+            draggedElement.classList.add('dragging');
+
+            const rect = draggedElement.getBoundingClientRect();
+            const containerRect = document.getElementById('circuitContainer').getBoundingClientRect();
+
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function startDragTouch(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            draggedElement = e.target;
+            draggedElement.classList.add('dragging');
+
+            const rect = draggedElement.getBoundingClientRect();
+            const containerRect = document.getElementById('circuitContainer').getBoundingClientRect();
+
+            dragOffsetX = e.touches[0].clientX - rect.left;
+            dragOffsetY = e.touches[0].clientY - rect.top;
+
+            document.addEventListener('touchmove', dragTouch, {passive: false});
+            document.addEventListener('touchend', endDragTouch);
+        }
+
+        function drag(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const containerRect = document.getElementById('circuitContainer').getBoundingClientRect();
+
+            let newX = e.clientX - containerRect.left - dragOffsetX;
+            let newY = e.clientY - containerRect.top - dragOffsetY;
+
+            // 限制在容器内
+            newX = Math.max(0, Math.min(newX, containerRect.width - draggedElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, containerRect.height - draggedElement.offsetHeight));
+
+            draggedElement.style.left = newX + 'px';
+            draggedElement.style.top = newY + 'px';
+        }
+
+        function dragTouch(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const containerRect = document.getElementById('circuitContainer').getBoundingClientRect();
+
+            let newX = e.touches[0].clientX - containerRect.left - dragOffsetX;
+            let newY = e.touches[0].clientY - containerRect.top - dragOffsetY;
+
+            newX = Math.max(0, Math.min(newX, containerRect.width - draggedElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, containerRect.height - draggedElement.offsetHeight));
+
+            draggedElement.style.left = newX + 'px';
+            draggedElement.style.top = newY + 'px';
+        }
+
+        function endDrag() {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+            }
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', endDrag);
+        }
+
+        function endDragTouch() {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+            }
+            document.removeEventListener('touchmove', dragTouch);
+            document.removeEventListener('touchend', endDragTouch);
+        }
+
+        function endDragTouch() {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+            }
+            document.removeEventListener('touchmove', dragTouch);
+            document.removeEventListener('touchend', endDragTouch);
+        }
+
+        // 保存所有标签位置到localStorage
+        function savePositions() {
+            const positions = {};
+
+            // 保存电流标签位置
+            document.querySelectorAll('.current-label').forEach(el => {
+                positions[el.id] = {
+                    left: el.style.left,
+                    top: el.style.top
+                };
+            });
+
+            // 保存电压标签位置
+            document.querySelectorAll('.voltage-label').forEach(el => {
+                positions[el.id] = {
+                    left: el.style.left,
+                    top: el.style.top
+                };
+            });
+
+            // 保存电压极性符号位置
+            document.querySelectorAll('.voltage-polarity').forEach((el, index) => {
+                // 为没有id的极性符号生成唯一id
+                if (!el.id) {
+                    el.id = `polarity-${index}`;
+                }
+                positions[el.id] = {
+                    left: el.style.left,
+                    top: el.style.top
+                };
+            });
+
+            localStorage.setItem('circuitLabelPositions', JSON.stringify(positions));
+            showStatus('位置已保存到浏览器');
+        }
+
+        // 从localStorage加载位置
+        function loadPositions() {
+            const saved = localStorage.getItem('circuitLabelPositions');
+            if (!saved) {
+                showStatus('没有保存的位置');
+                return;
+            }
+
+            try {
+                const positions = JSON.parse(saved);
+
+                // 应用保存的位置
+                Object.keys(positions).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && positions[id]) {
+                        el.style.left = positions[id].left;
+                        el.style.top = positions[id].top;
+                    }
+                });
+
+                showStatus('位置已恢复');
+            } catch (e) {
+                console.error('加载位置失败:', e);
+                showStatus('恢复失败');
+            }
+        }
+
+        // 自动加载位置（页面加载时）
+        function autoLoadPositions() {
+            const saved = localStorage.getItem('circuitLabelPositions');
+            if (saved) {
+                try {
+                    const positions = JSON.parse(saved);
+
+                    // 延迟一点执行，确保DOM完全就绪
+                    setTimeout(() => {
+                        Object.keys(positions).forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && positions[id]) {
+                                el.style.left = positions[id].left;
+                                el.style.top = positions[id].top;
+                            }
+                        });
+                        console.log('位置已自动恢复');
+                    }, 100);
+                } catch (e) {
+                    console.error('自动加载位置失败:', e);
+                }
+            }
+        }
+
+        // 显示状态消息
+        function showStatus(msg) {
+            const statusEl = document.getElementById('statusMsg');
+            if (statusEl) {
+                statusEl.textContent = msg;
+                statusEl.classList.add('show');
+                setTimeout(() => {
+                    statusEl.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        window.onload = () => {
+            initializeCircuit();
+            // 为所有电流和电压标签添加拖拽功能
+            document.querySelectorAll('.current-label, .voltage-label').forEach(label => {
+                makeDraggable(label);
+            });
+            // 自动加载保存的位置
+            autoLoadPositions();
+        };
+
+    </script>
+</body>
+</html>

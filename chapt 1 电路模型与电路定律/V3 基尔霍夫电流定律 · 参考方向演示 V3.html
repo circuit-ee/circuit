@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>基尔霍夫电流定律 · 3D 水流动态演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #eef2ff; color: #1e293b;
+    user-select: none; -webkit-user-select: none;
+  }
+  #app { position: relative; width: 100vw; height: 100vh; }
+  #scene { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .panel {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 18px 20px;
+    box-shadow: 0 10px 40px rgba(79, 70, 229, 0.1);
+    z-index: 10;
+  }
+
+  /* ===== Title bar ===== */
+  #title-bar { top: 18px; left: 18px; max-width: 380px; }
+  #title-bar h1 { font-size: 22px; font-weight: 700; color: #4338ca; margin-bottom: 6px; letter-spacing: 0.3px; }
+  #title-bar p { font-size: 14px; line-height: 1.6; color: #475569; }
+
+  /* ===== Right sidebar (KCL + Branch editor) ===== */
+  #right-sidebar {
+    position: absolute;
+    top: 18px; right: 18px; bottom: 76px;
+    width: 310px;
+    display: flex; flex-direction: column; gap: 12px;
+    z-index: 10;
+  }
+
+  /* ===== KCL stats panel ===== */
+  #kcl-panel { position: relative; top: auto; right: auto; width: auto; flex-shrink: 0; }
+  .panel-title {
+    font-size: 13px; color: #6366f1;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 12px; font-weight: 700;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  }
+  .stat-row:last-of-type { border-bottom: none; }
+  .stat-label { font-size: 15px; color: #475569; font-weight: 500; }
+  .stat-value {
+    font-size: 26px; font-weight: 700;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  #kcl-status {
+    margin-top: 12px; padding: 12px 10px;
+    border-radius: 10px; text-align: center;
+    font-size: 17px; font-weight: 700; letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+  }
+  .kcl-ok {
+    background: rgba(22, 163, 74, 0.12); color: #15803d;
+    border: 1.5px solid rgba(22, 163, 74, 0.35);
+  }
+  .kcl-bad {
+    background: rgba(220, 38, 38, 0.12); color: #b91c1c;
+    border: 1.5px solid rgba(220, 38, 38, 0.35);
+  }
+  .hint { font-size: 13px; color: #94a3b8; margin-top: 10px; text-align: center; line-height: 1.4; }
+
+  /* ===== Branch editor ===== */
+  #branch-panel {
+    position: relative; top: auto; bottom: auto; left: auto; right: auto;
+    width: auto; max-width: none; margin: 0;
+    max-height: none; flex: 1; overflow-y: auto;
+  }
+  #branch-panel::-webkit-scrollbar { width: 6px; }
+  #branch-panel::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 3px; }
+  #branch-panel::-webkit-scrollbar-track { background: transparent; }
+
+  .branch-card {
+    background: rgba(241, 245, 249, 0.7);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .branch-card.ref-in  { border-left: 4px solid #16a34a; }
+  .branch-card.ref-out { border-left: 4px solid #ea580c; }
+  .branch-card:hover { border-color: rgba(99, 102, 241, 0.35); }
+
+  .branch-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 10px;
+  }
+  .branch-label { font-size: 17px; font-weight: 700; color: #1e293b; }
+
+  .dir-toggle {
+    display: inline-flex;
+    border: 1.5px solid rgba(99, 102, 241, 0.25);
+    border-radius: 8px; overflow: hidden;
+  }
+  .dir-toggle button {
+    padding: 6px 14px; background: transparent; border: none;
+    color: #94a3b8; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: all 0.15s;
+  }
+  .dir-toggle button.on-in  { background: rgba(22, 163, 74, 0.2); color: #15803d; }
+  .dir-toggle button.on-out { background: rgba(234, 88, 12, 0.2); color: #c2410c; }
+
+  .btn-remove {
+    padding: 6px 11px; background: rgba(220, 38, 38, 0.08);
+    color: #dc2626; border: 1.5px solid rgba(220, 38, 38, 0.22);
+    border-radius: 6px; cursor: pointer; font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn-remove:hover { background: rgba(220, 38, 38, 0.2); }
+
+  .ctrl-row {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px;
+  }
+  .ctrl-label {
+    font-size: 14px; color: #475569; font-weight: 500;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ctrl-label .v {
+    font-family: "SF Mono", Menlo, monospace; font-weight: 700; font-size: 16px;
+  }
+  .ctrl-label .v.pos { color: #15803d; }
+  .ctrl-label .v.neg { color: #dc2626; }
+  .ctrl-label .v.zero { color: #64748b; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: linear-gradient(to right, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.15));
+    border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    background: #4f46e5; border-radius: 50%;
+    cursor: pointer; border: 3px solid #c7d2fe;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    background: #4f46e5; border-radius: 50%;
+    cursor: pointer; border: 3px solid #c7d2fe;
+  }
+
+  .actual-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: #475569;
+    padding-top: 6px; border-top: 1px dashed rgba(99, 102, 241, 0.15);
+  }
+  .actual-badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 12px; font-weight: 700; font-size: 13px;
+  }
+  .actual-in  { background: rgba(22, 163, 74, 0.15); color: #15803d; }
+  .actual-out { background: rgba(234, 88, 12, 0.15); color: #c2410c; }
+  .actual-match { color: #15803d; font-size: 13px; font-weight: 600; }
+  .actual-flip  { color: #dc2626; font-size: 13px; font-weight: 600; }
+
+  /* ===== Toolbar ===== */
+  #toolbar {
+    position: absolute; bottom: 18px; left: 18px; right: 18px;
+    display: flex; gap: 12px; justify-content: center;
+    z-index: 10;
+  }
+  .btn {
+    padding: 12px 26px;
+    border: 1.5px solid rgba(99, 102, 241, 0.35);
+    background: rgba(255, 255, 255, 0.9);
+    color: #4338ca; border-radius: 12px;
+    cursor: pointer; font-size: 17px; font-weight: 600;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.12);
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #eef2ff; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .empty-hint {
+    text-align: center; color: #64748b;
+    font-size: 15px; padding: 24px; line-height: 1.6;
+  }
+
+  /* ===== Loading ===== */
+  #loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #eef2ff; color: #6366f1;
+    font-size: 16px; z-index: 100;
+    flex-direction: column; gap: 14px;
+  }
+  .spinner {
+    width: 38px; height: 38px;
+    border: 4px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 700px) {
+    #title-bar { max-width: calc(100vw - 36px); }
+    #title-bar h1 { font-size: 18px; }
+    #title-bar p { font-size: 12px; }
+    #right-sidebar { width: calc(100vw - 36px); max-width: 280px; bottom: 70px; }
+    .stat-value { font-size: 22px; }
+    .btn { padding: 10px 20px; font-size: 15px; }
+    .branch-label { font-size: 15px; }
+  }
+  @media (max-height: 640px) {
+    #right-sidebar { bottom: 64px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div class="panel" id="title-bar">
+    <h1>⚡ 基尔霍夫电流定律 (KCL)</h1>
+    <p>用水流理解电流：流入节点的总流量 = 流出节点的总流量。<b>参考方向可任意假定</b>——电流为正表示与参考方向一致，为负表示相反。</p>
+  </div>
+
+  <div id="right-sidebar">
+    <div class="panel" id="kcl-panel">
+      <div class="panel-title">节点流量统计</div>
+      <div class="stat-row">
+        <span class="stat-label">流入 Σ I_in</span>
+        <span class="stat-value" id="sum-in" style="color:#15803d">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">流出 Σ I_out</span>
+        <span class="stat-value" id="sum-out" style="color:#c2410c">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">差值 ΔI</span>
+        <span class="stat-value" id="sum-diff">0.00</span>
+      </div>
+      <div id="kcl-status" class="kcl-ok">KCL 守恒 ✓</div>
+      <div class="hint">拖拽旋转 · 滚轮/双指缩放</div>
+    </div>
+
+    <div class="panel" id="branch-panel">
+      <div class="panel-title">支路编辑（参考方向 + 电流值）</div>
+      <div id="branch-list"></div>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button class="btn" id="btn-add">+ 新增支路</button>
+    <button class="btn" id="btn-reset">重置</button>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>正在加载 3D 引擎…</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ====== 常量 ======
+  const NODE_RADIUS  = 1.4;
+  const PIPE_RADIUS  = 0.32;
+  const PIPE_LENGTH  = 4.4;
+  const MAX_BRANCHES = 8;
+  const TOLERANCE    = 0.05;
+
+  // ====== 状态 ======
+  let scene, camera, renderer, nodeMesh, haloMesh, nodeGlow;
+  let branches = [];
+  let nextBranchId = 1;
+
+  let camTheta  = Math.PI * 0.3;
+  let camPhi    = Math.PI * 0.38;
+  let camRadius = 13;
+
+  // ====== 工具函数：判断实际方向 ======
+  // 参考方向 + 电流正负 → 实际方向
+  // 'in'  + I>0 → 实际流入
+  // 'in'  + I<0 → 实际流出
+  // 'out' + I>0 → 实际流出
+  // 'out' + I<0 → 实际流入
+  function getActualDirection(branch) {
+    if (branch.flow >= 0) return branch.direction;
+    return branch.direction === 'in' ? 'out' : 'in';
+  }
+
+  function getSumIn() {
+    return branches.reduce((s, b) => {
+      return s + (getActualDirection(b) === 'in' ? Math.abs(b.flow) : 0);
+    }, 0);
+  }
+  function getSumOut() {
+    return branches.reduce((s, b) => {
+      return s + (getActualDirection(b) === 'out' ? Math.abs(b.flow) : 0);
+    }, 0);
+  }
+
+  // ====== 初始化 ======
+  function init() {
+    const canvas = document.getElementById('scene');
+
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xeef2ff, 0.028);
+
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    updateCamera();
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0xeef2ff, 1);
+
+    // ===== 灯光 =====
+    scene.add(new THREE.AmbientLight(0x6366f1, 0.45));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(6, 12, 8);
+    scene.add(dirLight);
+    const fillLight = new THREE.DirectionalLight(0xa5b4fc, 0.6);
+    fillLight.position.set(-8, 5, -6);
+    scene.add(fillLight);
+    const nodePoint = new THREE.PointLight(0x6366f1, 2.5, 16);
+    nodePoint.position.set(0, 0.5, 0);
+    scene.add(nodePoint);
+
+    // ===== 地面 =====
+    const grid = new THREE.GridHelper(30, 30, 0xc7d2fe, 0xe0e7ff);
+    grid.position.y = -2.8;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.6;
+    scene.add(grid);
+
+    const floorGeo = new THREE.PlaneGeometry(30, 30);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc, transparent: true, opacity: 0.7,
+      side: THREE.DoubleSide, roughness: 0.95
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.8;
+    scene.add(floor);
+
+    // ===== 中心节点 =====
+    const nodeGeo = new THREE.SphereGeometry(NODE_RADIUS, 48, 48);
+    const nodeMat = new THREE.MeshStandardMaterial({
+      color: 0x4f46e5,
+      emissive: 0x312e81,
+      emissiveIntensity: 0.5,
+      metalness: 0.5,
+      roughness: 0.3
+    });
+    nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+    scene.add(nodeMesh);
+
+    const haloGeo = new THREE.SphereGeometry(NODE_RADIUS * 1.5, 36, 36);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0x818cf8, transparent: true, opacity: 0.18,
+      side: THREE.BackSide
+    });
+    haloMesh = new THREE.Mesh(haloGeo, haloMat);
+    scene.add(haloMesh);
+
+    const glowGeo = new THREE.SphereGeometry(NODE_RADIUS * 1.15, 36, 36);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xa5b4fc, transparent: true, opacity: 0.12,
+      side: THREE.BackSide
+    });
+    nodeGlow = new THREE.Mesh(glowGeo, glowMat);
+    scene.add(nodeGlow);
+
+    // ===== 初始支路 =====
+    addBranch({ direction: 'in',  flow:  3.0, angle: Math.PI });
+    addBranch({ direction: 'in',  flow:  2.0, angle: -Math.PI / 3 });
+    addBranch({ direction: 'out', flow:  5.0, angle: Math.PI / 3 });
+
+    setupControls();
+    window.addEventListener('resize', onResize);
+
+    const loading = document.getElementById('loading');
+    loading.style.transition = 'opacity 0.3s';
+    loading.style.opacity = '0';
+    setTimeout(() => loading.style.display = 'none', 300);
+
+    updateUI();
+    animate();
+  }
+
+  // ====== 相机 ======
+  function updateCamera() {
+    camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+    camera.position.y = camRadius * Math.cos(camPhi);
+    camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+    camera.lookAt(0, 0, 0);
+  }
+
+  // ====== 交互控制 ======
+  function setupControls() {
+    const canvas = renderer.domElement;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let pinchDist = 0;
+
+    canvas.addEventListener('mousedown', e => {
+      isDragging = true; lastX = e.clientX; lastY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      camTheta -= dx * 0.008;
+      camPhi -= dy * 0.008;
+      camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+      updateCamera();
+    });
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      canvas.style.cursor = 'grab';
+    });
+    canvas.style.cursor = 'grab';
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      camRadius += e.deltaY * 0.012;
+      camRadius = Math.max(6, Math.min(28, camRadius));
+      updateCamera();
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        pinchDist = touchDist(e);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (e.touches.length === 1 && isDragging) {
+        const dx = e.touches[0].clientX - lastX;
+        const dy = e.touches[0].clientY - lastY;
+        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+        camTheta -= dx * 0.008;
+        camPhi -= dy * 0.008;
+        camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+        updateCamera();
+      } else if (e.touches.length === 2) {
+        const d = touchDist(e);
+        camRadius += (pinchDist - d) * 0.04;
+        camRadius = Math.max(6, Math.min(28, camRadius));
+        pinchDist = d;
+        updateCamera();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      isDragging = false; pinchDist = 0;
+    });
+
+    function touchDist(e) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+  }
+
+  // ====== 支路管理 ======
+  function addBranch(opts = {}) {
+    if (branches.length >= MAX_BRANCHES) return null;
+    const branch = {
+      id: nextBranchId++,
+      angle: opts.angle !== undefined ? opts.angle : Math.random() * Math.PI * 2,
+      direction: opts.direction || 'out',  // 参考方向
+      flow: opts.flow !== undefined ? opts.flow : 2.0,  // 电流值，可正可负
+      pipeMesh: null,
+      endCap: null,
+      refArrow: null,
+      particles: []
+    };
+    buildBranchMesh(branch);
+    branches.push(branch);
+    return branch;
+  }
+
+  function buildBranchMesh(branch) {
+    // ===== 清理旧网格 =====
+    [branch.pipeMesh, branch.endCap, branch.refArrow].forEach(m => {
+      if (m) {
+        scene.remove(m);
+        m.geometry.dispose();
+        m.material.dispose();
+      }
+    });
+    branch.pipeMesh = null;
+    branch.endCap = null;
+    branch.refArrow = null;
+
+    branch.particles.forEach(p => {
+      scene.remove(p);
+      p.geometry.dispose();
+      p.material.dispose();
+    });
+    branch.particles = [];
+
+    // ===== 几何参数 =====
+    const dir = new THREE.Vector3(Math.cos(branch.angle), 0, Math.sin(branch.angle));
+    // 参考方向颜色：流入=绿，流出=橙
+    const refColor = branch.direction === 'in' ? 0x16a34a : 0xea580c;
+    const isNegative = branch.flow < 0;
+    const isZero = Math.abs(branch.flow) < 0.01;
+    const pipeStart = NODE_RADIUS * 0.9;
+    const pipeEnd = pipeStart + PIPE_LENGTH;
+
+    // ===== 管道（透明圆柱） =====
+    const pipeGeo = new THREE.CylinderGeometry(PIPE_RADIUS, PIPE_RADIUS, PIPE_LENGTH, 32, 1, true);
+    const pipeMat = new THREE.MeshStandardMaterial({
+      color: refColor,
+      emissive: refColor,
+      emissiveIntensity: 0.15,
+      transparent: true,
+      opacity: isNegative ? 0.18 : 0.32,  // 反向时更淡
+      side: THREE.DoubleSide,
+      roughness: 0.35,
+      metalness: 0.1
+    });
+    const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    pipe.quaternion.copy(q);
+    pipe.position.copy(dir.clone().multiplyScalar(pipeStart + PIPE_LENGTH / 2));
+    scene.add(pipe);
+    branch.pipeMesh = pipe;
+
+    // ===== 末端圆环 =====
+    const capGeo = new THREE.TorusGeometry(PIPE_RADIUS, 0.05, 10, 32);
+    const capMat = new THREE.MeshStandardMaterial({
+      color: refColor, emissive: refColor, emissiveIntensity: 0.5,
+      metalness: 0.4, roughness: 0.3,
+      transparent: true,
+      opacity: isNegative ? 0.5 : 1.0
+    });
+    const cap = new THREE.Mesh(capGeo, capMat);
+    const capQ = new THREE.Quaternion();
+    capQ.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+    cap.quaternion.copy(capQ);
+    cap.position.copy(dir.clone().multiplyScalar(pipeEnd));
+    scene.add(cap);
+    branch.endCap = cap;
+
+    // ===== 参考方向箭头（大箭头，始终指向参考方向） =====
+    // 位置：管道中段偏外
+    // 颜色：参考方向颜色
+    // 当 I<0 时：半透明（表示"假定方向与实际相反"）
+    const arrowGeo = new THREE.ConeGeometry(PIPE_RADIUS * 0.95, 0.7, 20);
+    const arrowMat = new THREE.MeshStandardMaterial({
+      color: refColor, emissive: refColor, emissiveIntensity: 0.6,
+      metalness: 0.3, roughness: 0.35,
+      transparent: true,
+      opacity: isNegative ? 0.35 : 0.92
+    });
+    const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+    // 参考方向：in → 箭头朝向节点（-dir）；out → 箭头朝外（+dir）
+    const refArrowDir = branch.direction === 'in' ? dir.clone().negate() : dir.clone();
+    const aq = new THREE.Quaternion();
+    aq.setFromUnitVectors(new THREE.Vector3(0, 1, 0), refArrowDir);
+    arrow.quaternion.copy(aq);
+    arrow.position.copy(dir.clone().multiplyScalar(pipeStart + PIPE_LENGTH * 0.58));
+    scene.add(arrow);
+    branch.refArrow = arrow;
+
+    // ===== 水流粒子（数量基于 |flow|） =====
+    const particleCount = Math.max(6, Math.ceil(Math.abs(branch.flow) * 3));
+    for (let i = 0; i < particleCount; i++) {
+      const pGeo = new THREE.SphereGeometry(0.16, 12, 12);
+      const pMat = new THREE.MeshStandardMaterial({
+        color: 0x2563eb,
+        emissive: 0x3b82f6,
+        emissiveIntensity: 0.9,
+        metalness: 0.1,
+        roughness: 0.2
+      });
+      const p = new THREE.Mesh(pGeo, pMat);
+      p.userData.t = i / particleCount;
+      scene.add(p);
+      branch.particles.push(p);
+    }
+  }
+
+  function removeBranch(id) {
+    const idx = branches.findIndex(b => b.id === id);
+    if (idx === -1) return;
+    const branch = branches[idx];
+    [branch.pipeMesh, branch.endCap, branch.refArrow].forEach(m => {
+      if (m) {
+        scene.remove(m);
+        m.geometry.dispose();
+        m.material.dispose();
+      }
+    });
+    branch.particles.forEach(p => {
+      scene.remove(p);
+      p.geometry.dispose();
+      p.material.dispose();
+    });
+    branches.splice(idx, 1);
+  }
+
+  // ====== 动画循环 ======
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+
+    // ===== 粒子动画：根据实际方向流动 =====
+    branches.forEach(branch => {
+      const dir = new THREE.Vector3(Math.cos(branch.angle), 0, Math.sin(branch.angle));
+      const pipeStart = NODE_RADIUS * 0.9;
+      const actualDir = getActualDirection(branch);
+      const absFlow = Math.abs(branch.flow);
+
+      if (absFlow < 0.01) return;  // 电流为零，粒子不动
+
+      const speed = 0.18 + absFlow * 0.09;
+      branch.particles.forEach(p => {
+        p.userData.t = (p.userData.t + dt * speed) % 1;
+        const pt = p.userData.t;
+        // 实际方向 in：粒子从末端走向节点 (along 1→0)
+        // 实际方向 out：粒子从节点走向末端 (along 0→1)
+        const along = actualDir === 'in' ? (1 - pt) : pt;
+        p.position.copy(dir.clone().multiplyScalar(pipeStart + along * PIPE_LENGTH));
+      });
+    });
+
+    // ===== 节点反馈 =====
+    const sumIn = getSumIn();
+    const sumOut = getSumOut();
+    const diff = sumIn - sumOut;
+    const balanced = Math.abs(diff) < TOLERANCE;
+    const netMag = Math.min(1, Math.abs(diff) * 0.18);
+
+    // 守恒→蓝紫；不守恒→偏红
+    const baseColor = new THREE.Color(0x312e81);
+    const badColor  = new THREE.Color(0xb91c1c);
+    const targetEmissive = baseColor.clone().lerp(badColor, balanced ? 0 : Math.max(0.3, netMag));
+    nodeMesh.material.emissive.lerp(targetEmissive, 0.06);
+
+    const pulse = 1 + Math.sin(t * 2.2) * 0.025 + (balanced ? 0 : netMag * 0.12);
+    nodeMesh.scale.setScalar(pulse);
+    haloMesh.scale.setScalar(pulse);
+    nodeGlow.scale.setScalar(pulse * 1.02);
+    haloMesh.material.opacity = 0.14 + Math.sin(t * 3) * 0.04 + (balanced ? 0 : netMag * 0.1);
+
+    renderer.render(scene, camera);
+  }
+
+  // ====== UI 渲染 ======
+  function updateUI() {
+    const sumIn = getSumIn();
+    const sumOut = getSumOut();
+    const diff = sumIn - sumOut;
+
+    document.getElementById('sum-in').textContent   = sumIn.toFixed(2);
+    document.getElementById('sum-out').textContent  = sumOut.toFixed(2);
+    document.getElementById('sum-diff').textContent  = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+
+    const status = document.getElementById('kcl-status');
+    if (Math.abs(diff) < TOLERANCE) {
+      status.textContent = 'KCL 守恒 ✓  Σ I_in = Σ I_out';
+      status.className = 'kcl-ok';
+    } else if (diff > 0) {
+      status.textContent = '节点积聚 ↑  ΔI = +' + diff.toFixed(2);
+      status.className = 'kcl-bad';
+    } else {
+      status.textContent = '节点流失 ↓  ΔI = ' + diff.toFixed(2);
+      status.className = 'kcl-bad';
+    }
+
+    renderBranchList();
+  }
+
+  function renderBranchList() {
+    const list = document.getElementById('branch-list');
+
+    if (branches.length === 0) {
+      list.innerHTML = '<div class="empty-hint">暂无支路<br>点击下方"+ 新增支路"开始编辑</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+
+    branches.forEach(b => {
+      const card = document.createElement('div');
+      card.className = 'branch-card ref-' + b.direction;
+      const angleDeg = ((b.angle * 180 / Math.PI) % 360 + 360) % 360;
+      const actual = getActualDirection(b);
+      const isMatch = b.flow >= 0;  // 电流为正，实际=参考
+      const isZero = Math.abs(b.flow) < 0.01;
+
+      const flowClass = b.flow > 0.01 ? 'pos' : (b.flow < -0.01 ? 'neg' : 'zero');
+      const flowSign = b.flow > 0.01 ? '+' : '';
+      const actualBadge = actual === 'in'
+        ? '<span class="actual-badge actual-in">实际流入</span>'
+        : '<span class="actual-badge actual-out">实际流出</span>';
+      const matchLabel = isZero
+        ? '<span style="color:#64748b">I=0，无电流</span>'
+        : (isMatch
+            ? '<span class="actual-match">✓ 与参考一致</span>'
+            : '<span class="actual-flip">⚠ 与参考相反</span>');
+
+      card.innerHTML = `
+        <div class="branch-head">
+          <span class="branch-label">支路 #${b.id}</span>
+          <div class="dir-toggle">
+            <button data-id="${b.id}" data-dir="in" class="${b.direction === 'in' ? 'on-in' : ''}">参考:流入</button>
+            <button data-id="${b.id}" data-dir="out" class="${b.direction === 'out' ? 'on-out' : ''}">参考:流出</button>
+          </div>
+          <button class="btn-remove" data-remove="${b.id}">✕</button>
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">
+            <span>电流 I（可正可负）</span>
+            <span class="v ${flowClass}">${flowSign}${b.flow.toFixed(1)}</span>
+          </div>
+          <input type="range" min="-10" max="10" step="0.1" value="${b.flow}" data-flow-id="${b.id}" />
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">
+            <span>角度</span>
+            <span class="v">${angleDeg.toFixed(0)}°</span>
+          </div>
+          <input type="range" min="0" max="360" step="5" value="${angleDeg.toFixed(0)}" data-angle-id="${b.id}" />
+        </div>
+        <div class="actual-row">
+          ${actualBadge}
+          ${matchLabel}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+
+    // ===== 事件绑定 =====
+    list.querySelectorAll('[data-flow-id]').forEach(input => {
+      input.addEventListener('input', e => {
+        const id = parseInt(e.target.dataset.flowId);
+        const branch = branches.find(b => b.id === id);
+        if (branch) {
+          branch.flow = parseFloat(e.target.value);
+          buildBranchMesh(branch);
+          updateUI();
+          const newInput = document.querySelector(`[data-flow-id="${id}"]`);
+          if (newInput) { newInput.focus(); newInput.value = branch.flow; }
+        }
+      });
+    });
+
+    list.querySelectorAll('[data-angle-id]').forEach(input => {
+      input.addEventListener('input', e => {
+        const id = parseInt(e.target.dataset.angleId);
+        const branch = branches.find(b => b.id === id);
+        if (branch) {
+          branch.angle = parseFloat(e.target.value) * Math.PI / 180;
+          buildBranchMesh(branch);
+          updateUI();
+          const newInput = document.querySelector(`[data-angle-id="${id}"]`);
+          if (newInput) { newInput.focus(); newInput.value = parseFloat(e.target.value); }
+        }
+      });
+    });
+
+    list.querySelectorAll('.dir-toggle button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = parseInt(e.target.dataset.id);
+        const newDir = e.target.dataset.dir;
+        const branch = branches.find(b => b.id === id);
+        if (branch && branch.direction !== newDir) {
+          branch.direction = newDir;
+          buildBranchMesh(branch);
+          updateUI();
+        }
+      });
+    });
+
+    list.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = parseInt(e.target.dataset.remove);
+        removeBranch(id);
+        updateUI();
+      });
+    });
+  }
+
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  // ====== 工具栏 ======
+  document.getElementById('btn-add').addEventListener('click', () => {
+    if (branches.length >= MAX_BRANCHES) {
+      const status = document.getElementById('kcl-status');
+      const oldText = status.textContent;
+      const oldClass = status.className;
+      status.textContent = `最多支持 ${MAX_BRANCHES} 个支路`;
+      status.className = 'kcl-bad';
+      setTimeout(() => { status.textContent = oldText; status.className = oldClass; }, 1500);
+      return;
+    }
+    const used = branches.map(b => b.angle);
+    let bestAngle = 0, bestDist = 0;
+    for (let i = 0; i < 72; i++) {
+      const a = i * Math.PI / 36;
+      let minD = Infinity;
+      used.forEach(ua => {
+        let d = Math.abs(a - ua); d = Math.min(d, Math.PI * 2 - d);
+        if (d < minD) minD = d;
+      });
+      if (minD > bestDist) { bestDist = minD; bestAngle = a; }
+    }
+    addBranch({ direction: 'out', flow: 2.0, angle: bestAngle });
+    updateUI();
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    branches.slice().forEach(b => removeBranch(b.id));
+    nextBranchId = 1;
+    addBranch({ direction: 'in',  flow:  3.0, angle: Math.PI });
+    addBranch({ direction: 'in',  flow:  2.0, angle: -Math.PI / 3 });
+    addBranch({ direction: 'out', flow:  5.0, angle: Math.PI / 3 });
+    updateUI();
+  });
+
+  // ====== 启动 ======
+  function tryStart() {
+    if (typeof THREE === 'undefined') {
+      setTimeout(tryStart, 50);
+      return;
+    }
+    try {
+      init();
+    } catch (err) {
+      const loading = document.getElementById('loading');
+      loading.innerHTML = '<div style="color:#dc2626">3D 引擎加载失败<br><span style="font-size:13px;color:#64748b">请检查网络后刷新</span></div>';
+      console.error(err);
+    }
+  }
+  tryStart();
+})();
+</script>
+</body>
+</html>

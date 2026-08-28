@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>基尔霍夫电压定律 · 3D 水流动态演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f0f9ff; color: #1e293b;
+    user-select: none; -webkit-user-select: none;
+  }
+  #app { position: relative; width: 100vw; height: 100vh; }
+  #scene { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .panel {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 18px 20px;
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.1);
+  }
+
+  #title-bar { top: 18px; left: 18px; max-width: 400px; }
+  #title-bar h1 { font-size: 22px; font-weight: 700; color: #1d4ed8; margin-bottom: 6px; letter-spacing: 0.3px; }
+  #title-bar p { font-size: 14px; line-height: 1.6; color: #475569; }
+
+  /* ===== Right sidebar ===== */
+  #right-sidebar {
+    position: absolute;
+    top: 18px; right: 18px; bottom: 76px;
+    width: 320px;
+    display: flex; flex-direction: column; gap: 12px;
+    z-index: 10;
+  }
+  #kvl-panel { position: relative; top: auto; right: auto; width: auto; flex-shrink: 0; }
+
+  .panel-title {
+    font-size: 13px; color: #3b82f6;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 12px; font-weight: 700;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  }
+  .stat-row:last-of-type { border-bottom: none; }
+  .stat-label { font-size: 15px; color: #475569; }
+  .stat-value { font-size: 26px; font-weight: 700; font-family: "SF Mono", Menlo, monospace; }
+
+  #kvl-status {
+    margin-top: 12px; padding: 12px; border-radius: 10px;
+    text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.5px;
+    transition: all 0.3s;
+  }
+  .kvl-ok { background: rgba(22, 163, 74, 0.12); color: #15803d; border: 1.5px solid rgba(22, 163, 74, 0.35); }
+  .kvl-bad { background: rgba(220, 38, 38, 0.12); color: #dc2626; border: 1.5px solid rgba(220, 38, 38, 0.35); }
+
+  /* ===== Component editor ===== */
+  #comp-panel {
+    position: relative; top: auto; bottom: auto; left: auto; right: auto;
+    width: auto; max-width: none; margin: 0;
+    max-height: none; flex: 1; overflow-y: auto;
+  }
+  #comp-panel::-webkit-scrollbar { width: 6px; }
+  #comp-panel::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+  #comp-panel::-webkit-scrollbar-track { background: transparent; }
+
+  .comp-card {
+    background: rgba(241, 245, 255, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-left: 4px solid #3b82f6;
+    border-radius: 10px; padding: 12px; margin-bottom: 10px;
+  }
+  .comp-card.rise { border-left-color: #dc2626; background: rgba(254, 226, 226, 0.5); }
+  .comp-card.drop { border-left-color: #2563eb; background: rgba(219, 234, 254, 0.5); }
+  .comp-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 8px;
+  }
+  .comp-label { font-size: 16px; font-weight: 700; color: #334155; }
+  .dir-toggle { display: inline-flex; border: 1.5px solid rgba(59, 130, 246, 0.25); border-radius: 8px; overflow: hidden; }
+  .dir-toggle button {
+    padding: 6px 14px; background: transparent; border: none;
+    color: #94a3b8; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: all 0.15s;
+  }
+  .dir-toggle button.on-rise { background: rgba(220, 38, 38, 0.2); color: #dc2626; }
+  .dir-toggle button.on-drop { background: rgba(37, 99, 235, 0.2); color: #2563eb; }
+
+  .btn-remove {
+    padding: 6px 11px; background: rgba(220, 38, 38, 0.08);
+    color: #dc2626; border: 1.5px solid rgba(220, 38, 38, 0.22);
+    border-radius: 6px; cursor: pointer; font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn-remove:hover { background: rgba(220, 38, 38, 0.2); }
+
+  .ctrl-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+  .ctrl-label {
+    font-size: 13px; color: #64748b;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ctrl-label .val { color: #334155; font-family: monospace; font-weight: 700; font-size: 16px; }
+  .ctrl-label .val.neg { color: #dc2626; }
+  .ctrl-label .val.pos { color: #15803d; }
+  .ctrl-label .actual { font-size: 12px; color: #64748b; font-weight: 600; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 5px;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    background: #3b82f6; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; background: #3b82f6;
+    border-radius: 50%; cursor: pointer; border: none;
+  }
+
+  /* ===== Direction indicator ===== */
+  #dir-indicator {
+    position: absolute; bottom: 76px; left: 18px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 10px; padding: 8px 14px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+  }
+  #dir-indicator .label { font-size: 14px; color: #475569; font-weight: 600; }
+  #dir-indicator .arrow { font-size: 20px; color: #3b82f6; }
+
+  /* ===== Toolbar ===== */
+  #toolbar {
+    position: absolute; bottom: 18px; left: 18px; right: 18px;
+    display: flex; gap: 10px; justify-content: center;
+    z-index: 10;
+  }
+  .btn {
+    padding: 10px 20px;
+    border: 1.5px solid rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.12);
+    color: #1e40af; border-radius: 10px; cursor: pointer;
+    font-size: 16px; font-weight: 600;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.12);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: rgba(59, 130, 246, 0.22); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  /* ===== 3D labels overlay ===== */
+  #labels-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+  .comp-3d-label {
+    position: absolute; transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.92);
+    border: 1.5px solid rgba(59,130,246,0.3);
+    border-radius: 8px; padding: 3px 10px;
+    font-size: 15px; font-weight: 700; font-family: monospace;
+    white-space: nowrap; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .comp-3d-label.rise { color: #dc2626; border-color: rgba(220,38,38,0.3); }
+  .comp-3d-label.drop { color: #2563eb; }
+  .comp-3d-label.neg { opacity: 0.65; }
+
+  .hint { font-size: 13px; color: #94a3b8; margin-top: 10px; text-align: center; line-height: 1.4; }
+
+  #loading {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; z-index: 100;
+    background: #f0f9ff;
+  }
+  .spinner { width: 36px; height: 36px; border: 3px solid rgba(59,130,246,0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 700px) {
+    #title-bar { max-width: calc(100vw - 36px); }
+    #title-bar h1 { font-size: 18px; }
+    #title-bar p { font-size: 12px; }
+    #right-sidebar { width: calc(100vw - 36px); max-width: 290px; bottom: 70px; }
+    .stat-value { font-size: 22px; }
+    .btn { padding: 10px 18px; font-size: 15px; }
+    .comp-label { font-size: 15px; }
+    #dir-indicator { display: none; }
+  }
+  @media (max-height: 640px) {
+    #right-sidebar { bottom: 64px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div id="labels-layer"></div>
+
+  <div class="panel" id="title-bar">
+    <h1>🔌 基尔霍夫电压定律 (KVL)</h1>
+    <p>沿闭合回路一周，电压降的代数和 = 电压升的代数和（ΣU = 0）。<b>参考方向可任意假定</b>——电压为正表示与参考方向一致，为负表示相反。</p>
+  </div>
+
+  <div id="right-sidebar">
+    <div class="panel" id="kvl-panel">
+      <div class="panel-title">回路电压统计</div>
+      <div class="stat-row">
+        <span class="stat-label">电压降 Σ U_drop</span>
+        <span class="stat-value" id="sum-drop" style="color:#2563eb">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">电压升 Σ U_rise</span>
+        <span class="stat-value" id="sum-rise" style="color:#dc2626">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">代数和 Σ U</span>
+        <span class="stat-value" id="sum-total">0.00</span>
+      </div>
+      <div id="kvl-status" class="kvl-ok">KVL 守恒 ✓</div>
+      <div class="hint">拖拽旋转 · 滚轮/双指缩放</div>
+    </div>
+
+    <div class="panel" id="comp-panel">
+      <div class="panel-title">元件编辑（参考方向 + 电压值）</div>
+      <div id="comp-list"></div>
+    </div>
+  </div>
+
+  <div id="dir-indicator">
+    <span class="label">绕行方向</span>
+    <span class="arrow">↻ 顺时针</span>
+  </div>
+
+  <div id="toolbar">
+    <button class="btn" id="btn-add">+ 新增元件</button>
+    <button class="btn" id="btn-dir">⇄ 切换绕行</button>
+    <button class="btn" id="btn-reset">重置</button>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:16px;color:#475569">3D 引擎加载中…</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // ============ Constants ============
+  const LOOP_RADIUS = 3.8;
+  const PIPE_RADIUS = 0.26;
+  const COMP_RADIUS = 0.42;
+  const COMP_LENGTH = 1.0;
+  const NODE_RADIUS = 0.35;
+  const MAX_COMPS = 8;
+  const MIN_COMPS = 3;
+  const TOLERANCE = 0.05;
+  const PARTICLE_COUNT = 40;
+
+  // ============ State ============
+  let scene, camera, renderer;
+  let components = [];   // {id, voltage, refDir: 'rise'|'drop'}
+  let vertices = [];     // polygon vertices
+  let edgePipes = [];    // pipe meshes per edge
+  let nodeSpheres = [];  // small spheres at vertices
+  let compMeshes = [];   // component cylinder meshes
+  let refArrows = [];    // reference direction arrows
+  let particles = [];    // water particles
+  let loopDir = 1;       // 1 = clockwise, -1 = counterclockwise
+  let nextCompId = 1;
+  let labelsLayer;
+
+  // Camera orbit
+  let camTheta = Math.PI * 0.25;
+  let camPhi = Math.PI * 0.42;
+  let camRadius = 11;
+  let clock;
+
+  // ============ Init ============
+  function init() {
+    labelsLayer = document.getElementById('labels-layer');
+    const canvas = document.getElementById('scene');
+    document.getElementById('loading').style.display = 'none';
+
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xf0f9ff, 0.022);
+
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    updateCamera();
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0xf0f9ff, 1);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x93c5fd, 0.45));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    dirLight.position.set(6, 12, 8);
+    scene.add(dirLight);
+    const fill = new THREE.DirectionalLight(0xbfdbfe, 0.4);
+    fill.position.set(-8, 5, -6);
+    scene.add(fill);
+    const centerLight = new THREE.PointLight(0x3b82f6, 1.5, 10);
+    centerLight.position.set(0, 0.5, 0);
+    scene.add(centerLight);
+
+    // Grid floor
+    const grid = new THREE.GridHelper(24, 24, 0xc7d2fe, 0xdbeafe);
+    grid.position.y = -2.5;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.5;
+    scene.add(grid);
+
+    const floorGeo = new THREE.PlaneGeometry(24, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc, transparent: true, opacity: 0.4, side: THREE.DoubleSide
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.5;
+    scene.add(floor);
+
+    // Center status ring
+    const ringGeo = new THREE.TorusGeometry(0.8, 0.06, 16, 64);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 0.4,
+      transparent: true, opacity: 0.5
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = -1.5;
+    scene.add(ring);
+    window._kvlRing = ring;
+
+    // Particles
+    const pGeo = new THREE.SphereGeometry(0.15, 12, 12);
+    const pMat = new THREE.MeshStandardMaterial({
+      color: 0x0ea5e9, emissive: 0x0284c7, emissiveIntensity: 0.8,
+      metalness: 0.1, roughness: 0.2
+    });
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const p = new THREE.Mesh(pGeo, pMat.clone());
+      p.userData.s = (i / PARTICLE_COUNT) * 100; // will be remapped to perimeter
+      scene.add(p);
+      particles.push(p);
+    }
+
+    // Initial components
+    addComponent({ voltage: 5.0, refDir: 'rise' });  // power source
+    addComponent({ voltage: 2.0, refDir: 'drop' });  // load
+    addComponent({ voltage: 2.0, refDir: 'drop' });  // load
+    addComponent({ voltage: 1.0, refDir: 'drop' });  // load
+
+    setupControls();
+    window.addEventListener('resize', onResize);
+
+    clock = new THREE.Clock();
+    updateUI();
+    animate();
+  }
+
+  // ============ Camera ============
+  function updateCamera() {
+    camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+    camera.position.y = camRadius * Math.cos(camPhi);
+    camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+    camera.lookAt(0, 0, 0);
+  }
+
+  // ============ Controls ============
+  function setupControls() {
+    const canvas = renderer.domElement;
+    let dragging = false, lastX = 0, lastY = 0, pinch = 0;
+
+    canvas.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      camTheta -= (e.clientX - lastX) * 0.008;
+      camPhi -= (e.clientY - lastY) * 0.008;
+      camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+      lastX = e.clientX; lastY = e.clientY;
+      updateCamera();
+    });
+    window.addEventListener('mouseup', () => dragging = false);
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      camRadius = Math.max(6, Math.min(22, camRadius + e.deltaY * 0.01));
+      updateCamera();
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) { dragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
+      else if (e.touches.length === 2) { dragging = false; pinch = touchDist(e); }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (e.touches.length === 1 && dragging) {
+        camTheta -= (e.touches[0].clientX - lastX) * 0.008;
+        camPhi -= (e.touches[0].clientY - lastY) * 0.008;
+        camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+        updateCamera();
+      } else if (e.touches.length === 2) {
+        const d = touchDist(e);
+        camRadius = Math.max(6, Math.min(22, camRadius + (pinch - d) * 0.04));
+        pinch = d; updateCamera();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => { dragging = false; pinch = 0; });
+
+    function touchDist(e) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+  }
+
+  // ============ Polygon vertices ============
+  function generateVertices(n) {
+    const verts = [];
+    for (let i = 0; i < n; i++) {
+      const angle = (i / n) * Math.PI * 2 - Math.PI / 2; // start from top
+      verts.push(new THREE.Vector3(
+        LOOP_RADIUS * Math.cos(angle), 0, LOOP_RADIUS * Math.sin(angle)
+      ));
+    }
+    return verts;
+  }
+
+  function getEdgeLengths() {
+    const lens = [];
+    for (let i = 0; i < vertices.length; i++) {
+      lens.push(vertices[i].distanceTo(vertices[(i + 1) % vertices.length]));
+    }
+    return lens;
+  }
+
+  function getPerimeter() {
+    return getEdgeLengths().reduce((a, b) => a + b, 0);
+  }
+
+  function getPositionOnLoop(s) {
+    const n = vertices.length;
+    const lens = getEdgeLengths();
+    const perim = lens.reduce((a, b) => a + b, 0);
+    s = ((s % perim) + perim) % perim;
+    let acc = 0;
+    for (let i = 0; i < n; i++) {
+      if (s <= acc + lens[i]) {
+        const t = (s - acc) / lens[i];
+        return vertices[i].clone().lerp(vertices[(i + 1) % n], t);
+      }
+      acc += lens[i];
+    }
+    return vertices[0].clone();
+  }
+
+  // ============ Component management ============
+  function addComponent(opts = {}) {
+    if (components.length >= MAX_COMPS) return null;
+    const comp = {
+      id: nextCompId++,
+      voltage: opts.voltage !== undefined ? opts.voltage : 2.0,
+      refDir: opts.refDir || 'drop'
+    };
+    components.push(comp);
+    buildLoop();
+    return comp;
+  }
+
+  function removeComponent(id) {
+    const idx = components.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    components.splice(idx, 1);
+    buildLoop();
+  }
+
+  // ============ Build loop ============
+  function buildLoop() {
+    // Cleanup
+    edgePipes.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    nodeSpheres.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    compMeshes.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    refArrows.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    edgePipes = []; nodeSpheres = []; compMeshes = []; refArrows = [];
+
+    const n = components.length;
+    if (n < MIN_COMPS) {
+      // Not enough — clear labels
+      labelsLayer.innerHTML = '';
+      return;
+    }
+
+    vertices = generateVertices(n);
+
+    // Edge pipes + node spheres + components
+    for (let i = 0; i < n; i++) {
+      const a = vertices[i];
+      const b = vertices[(i + 1) % n];
+      const dir = b.clone().sub(a).normalize();
+      const len = a.distanceTo(b);
+      const mid = a.clone().lerp(b, 0.5);
+      const q = new THREE.Quaternion();
+      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+
+      // Pipe (two segments: from node to component, from component to node)
+      const pipeHalfLen = (len - COMP_LENGTH) / 2;
+      if (pipeHalfLen > 0.01) {
+        const pipeGeo = new THREE.CylinderGeometry(PIPE_RADIUS, PIPE_RADIUS, pipeHalfLen, 24, 1, true);
+        const pipeMat = new THREE.MeshStandardMaterial({
+          color: 0x93c5fd, transparent: true, opacity: 0.22, side: THREE.DoubleSide
+        });
+        // First half
+        const pipe1 = new THREE.Mesh(pipeGeo, pipeMat.clone());
+        pipe1.quaternion.copy(q);
+        pipe1.position.copy(a.clone().lerp(mid, 0.5).add(new THREE.Vector3(0, 0.01, 0)));
+        pipe1.position.copy(a.clone().lerp(mid, 0.5));
+        scene.add(pipe1);
+        edgePipes.push(pipe1);
+        // Second half
+        const pipe2 = new THREE.Mesh(pipeGeo, pipeMat.clone());
+        pipe2.quaternion.copy(q);
+        pipe2.position.copy(mid.clone().lerp(b, 0.5));
+        scene.add(pipe2);
+        edgePipes.push(pipe2);
+      }
+
+      // Node sphere at vertex
+      const nodeGeo = new THREE.SphereGeometry(NODE_RADIUS, 24, 24);
+      const nodeMat = new THREE.MeshStandardMaterial({
+        color: 0x475569, metalness: 0.6, roughness: 0.3
+      });
+      const node = new THREE.Mesh(nodeGeo, nodeMat);
+      node.position.copy(a);
+      scene.add(node);
+      nodeSpheres.push(node);
+
+      // Component
+      const comp = components[i];
+      const isNeg = comp.voltage < -0.01;
+      const isZero = Math.abs(comp.voltage) < 0.01;
+      const refColor = comp.refDir === 'rise' ? 0xdc2626 : 0x2563eb;
+
+      const compGeo = new THREE.CylinderGeometry(COMP_RADIUS, COMP_RADIUS, COMP_LENGTH, 32);
+      const compMat = new THREE.MeshStandardMaterial({
+        color: refColor,
+        emissive: refColor,
+        emissiveIntensity: isZero ? 0.05 : (0.2 + Math.min(0.5, Math.abs(comp.voltage) * 0.08)),
+        transparent: true,
+        opacity: isZero ? 0.35 : (isNeg ? 0.5 : 0.8),
+        metalness: 0.2, roughness: 0.4
+      });
+      const compMesh = new THREE.Mesh(compGeo, compMat);
+      compMesh.quaternion.copy(q);
+      compMesh.position.copy(mid);
+      scene.add(compMesh);
+      compMeshes.push(compMesh);
+
+      // Reference direction arrow (above component)
+      // refDir 'drop': arrow along loopDir direction (clockwise = from a to b in vertex order)
+      // refDir 'rise': arrow opposite to loopDir
+      const arrowWorldDir = (comp.refDir === 'drop' ? 1 : -1) * loopDir > 0 ? dir : dir.clone().negate();
+      const arrowGeo = new THREE.ConeGeometry(0.22, 0.55, 16);
+      const arrowMat = new THREE.MeshStandardMaterial({
+        color: refColor, emissive: refColor, emissiveIntensity: 0.5,
+        transparent: true, opacity: isNeg ? 0.4 : 0.9
+      });
+      const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+      const aq = new THREE.Quaternion();
+      aq.setFromUnitVectors(new THREE.Vector3(0, 1, 0), arrowWorldDir);
+      arrow.quaternion.copy(aq);
+      arrow.position.copy(mid.clone().add(new THREE.Vector3(0, 0.75, 0)));
+      scene.add(arrow);
+      refArrows.push(arrow);
+    }
+
+    // Remap particle s to [0, perimeter)
+    const perim = getPerimeter();
+    particles.forEach((p, i) => {
+      p.userData.s = (i / PARTICLE_COUNT) * perim;
+    });
+  }
+
+  // ============ Actual direction ============
+  function getActualDir(comp) {
+    // Returns 'drop' or 'rise' (actual voltage direction along loop)
+    if (comp.voltage >= 0) return comp.refDir;
+    return comp.refDir === 'drop' ? 'rise' : 'drop';
+  }
+
+  function getSumDrop() {
+    return components.reduce((s, c) => {
+      return s + (getActualDir(c) === 'drop' ? Math.abs(c.voltage) : 0);
+    }, 0);
+  }
+  function getSumRise() {
+    return components.reduce((s, c) => {
+      return s + (getActualDir(c) === 'rise' ? Math.abs(c.voltage) : 0);
+    }, 0);
+  }
+
+  // ============ Animation ============
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+    const t = clock.elapsedTime;
+
+    // Move particles along loop
+    const speed = 0.8 * loopDir;
+    particles.forEach(p => {
+      p.userData.s += dt * speed;
+      p.position.copy(getPositionOnLoop(p.userData.s));
+    });
+
+    // KVL status
+    const sumDrop = getSumDrop();
+    const sumRise = getSumRise();
+    const total = sumRise - sumDrop; // ΣU = U_rise - U_drop
+    const balanced = Math.abs(total) < TOLERANCE;
+
+    // Center ring color
+    const ring = window._kvlRing;
+    if (ring) {
+      const targetColor = balanced ? new THREE.Color(0x22c55e) : new THREE.Color(0xef4444);
+      ring.material.emissive.lerp(targetColor, 0.06);
+      const pulse = 1 + Math.sin(t * 2) * 0.06;
+      ring.scale.setScalar(pulse);
+      ring.material.opacity = 0.4 + Math.sin(t * 3) * 0.08;
+    }
+
+    // Update 3D labels
+    updateLabels();
+
+    renderer.render(scene, camera);
+  }
+
+  function updateLabels() {
+    // Remove old labels
+    labelsLayer.innerHTML = '';
+    const n = components.length;
+    if (n < MIN_COMPS) return;
+
+    for (let i = 0; i < n; i++) {
+      const comp = components[i];
+      const mesh = compMeshes[i];
+      if (!mesh) continue;
+
+      const pos = mesh.position.clone();
+      pos.y += 1.2;
+      pos.project(camera);
+
+      // Behind camera?
+      if (pos.z > 1) continue;
+
+      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+
+      const div = document.createElement('div');
+      const isNeg = comp.voltage < -0.01;
+      const isZero = Math.abs(comp.voltage) < 0.01;
+      div.className = `comp-3d-label ${comp.refDir}${isNeg ? ' neg' : ''}`;
+      const sign = comp.voltage >= 0 ? '+' : '';
+      const actual = getActualDir(comp);
+      const actualText = isZero ? 'U=0' : (actual === 'drop' ? '实际降' : '实际升');
+      div.innerHTML = `<b>U${i+1}</b> = ${sign}${comp.voltage.toFixed(1)}<span style="font-size:11px;font-weight:600;opacity:0.7;margin-left:4px">${actualText}</span>`;
+      div.style.left = x + 'px';
+      div.style.top = y + 'px';
+      labelsLayer.appendChild(div);
+    }
+  }
+
+  // ============ UI ============
+  function updateUI() {
+    const sumDrop = getSumDrop();
+    const sumRise = getSumRise();
+    const total = sumRise - sumDrop;
+
+    document.getElementById('sum-drop').textContent = sumDrop.toFixed(2);
+    document.getElementById('sum-rise').textContent = sumRise.toFixed(2);
+    document.getElementById('sum-total').textContent = (total >= 0 ? '+' : '') + total.toFixed(2);
+
+    const status = document.getElementById('kvl-status');
+    if (Math.abs(total) < TOLERANCE) {
+      status.textContent = 'KVL 守恒 ✓  Σ U = 0';
+      status.className = 'kvl-ok';
+    } else {
+      status.textContent = `KVL 不守恒  Σ U = ${total > 0 ? '+' : ''}${total.toFixed(2)}`;
+      status.className = 'kvl-bad';
+    }
+
+    // Direction indicator
+    const dirEl = document.querySelector('#dir-indicator .arrow');
+    dirEl.textContent = loopDir > 0 ? '↻ 顺时针' : '↺ 逆时针';
+
+    renderCompList();
+  }
+
+  function renderCompList() {
+    const list = document.getElementById('comp-list');
+    list.innerHTML = '';
+
+    if (components.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#475569;font-size:14px;padding:20px">暂无元件，点击下方"+ 新增元件"添加</div>';
+      return;
+    }
+
+    components.forEach((c, idx) => {
+      const card = document.createElement('div');
+      card.className = `comp-card ${c.refDir}`;
+      const actual = getActualDir(c);
+      const isNeg = c.voltage < -0.01;
+      const isZero = Math.abs(c.voltage) < 0.01;
+      const actualText = isZero ? '无电压' : (actual === 'drop' ? '实际：电压降 ✓' : '实际：电压升 ✓');
+      const valClass = isZero ? '' : (isNeg ? 'neg' : 'pos');
+      card.innerHTML = `
+        <div class="comp-head">
+          <span class="comp-label">元件 U${idx + 1}</span>
+          <div class="dir-toggle">
+            <button data-id="${c.id}" data-dir="rise" class="${c.refDir === 'rise' ? 'on-rise' : ''}">电压升参考</button>
+            <button data-id="${c.id}" data-dir="drop" class="${c.refDir === 'drop' ? 'on-drop' : ''}">电压降参考</button>
+          </div>
+          <button class="btn-remove" data-remove="${c.id}">✕</button>
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">
+            <span>电压 U <span class="actual" style="margin-left:8px">${actualText}</span></span>
+            <span class="val ${valClass}">${c.voltage >= 0 ? '+' : ''}${c.voltage.toFixed(1)} V</span>
+          </div>
+          <input type="range" min="-10" max="10" step="0.1" value="${c.voltage}" data-volt-id="${c.id}" />
+        </div>
+      `;
+      list.appendChild(card);
+    });
+
+    // Wire events
+    list.querySelectorAll('[data-volt-id]').forEach(input => {
+      input.addEventListener('input', e => {
+        const id = parseInt(e.target.dataset.voltId);
+        const comp = components.find(c => c.id === id);
+        if (comp) {
+          comp.voltage = parseFloat(e.target.value);
+          buildLoop();
+          updateUI();
+        }
+      });
+    });
+    list.querySelectorAll('.dir-toggle button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = parseInt(e.target.dataset.id);
+        const newDir = e.target.dataset.dir;
+        const comp = components.find(c => c.id === id);
+        if (comp && comp.refDir !== newDir) {
+          comp.refDir = newDir;
+          buildLoop();
+          updateUI();
+        }
+      });
+    });
+    list.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = parseInt(e.target.dataset.remove);
+        removeComponent(id);
+        updateUI();
+      });
+    });
+  }
+
+  // ============ Resize ============
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  // ============ Toolbar ============
+  document.getElementById('btn-add').addEventListener('click', () => {
+    if (components.length >= MAX_COMPS) {
+      alert(`最多支持 ${MAX_COMPS} 个元件`);
+      return;
+    }
+    addComponent({ voltage: 1.0, refDir: 'drop' });
+    updateUI();
+  });
+
+  document.getElementById('btn-dir').addEventListener('click', () => {
+    loopDir *= -1;
+    buildLoop(); // rebuild arrows with new direction
+    updateUI();
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    components.forEach(c => {});
+    components = [];
+    nextCompId = 1;
+    loopDir = 1;
+    addComponent({ voltage: 5.0, refDir: 'rise' });
+    addComponent({ voltage: 2.0, refDir: 'drop' });
+    addComponent({ voltage: 2.0, refDir: 'drop' });
+    addComponent({ voltage: 1.0, refDir: 'drop' });
+    updateUI();
+  });
+
+  // ============ Start ============
+  function tryStart() {
+    if (typeof THREE === 'undefined') {
+      setTimeout(tryStart, 50);
+      return;
+    }
+    try {
+      init();
+    } catch (err) {
+      const loading = document.getElementById('loading');
+      loading.innerHTML = '<div style="color:#dc2626">3D 引擎加载失败<br><span style="font-size:13px;color:#64748b">请检查网络后刷新</span></div>';
+      console.error(err);
+    }
+  }
+  tryStart();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电路理论发展历程 · 邱关源《电路》(第6版)章节定位</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{font-size:18px;scroll-behavior:smooth;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    background:linear-gradient(135deg,#eef4ff 0%,#f7f0ff 55%,#fff5f0 100%);
+    color:#233;line-height:1.7;min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 22px 60px;}
+  header.hero{
+    background:linear-gradient(135deg,#3b5bdb,#7048e8);
+    color:#fff;border-radius:22px;padding:42px 36px;box-shadow:0 12px 40px rgba(59,91,219,.25);
+  }
+  header.hero h1{font-size:2.35rem;line-height:1.25;margin-bottom:14px;}
+  header.hero p.sub{font-size:1.12rem;opacity:.95;max-width:860px;}
+  header.hero .tags{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;}
+  header.hero .tags span{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    padding:6px 14px;border-radius:20px;font-size:.98rem;}
+  section.card{background:#fff;border-radius:18px;padding:30px 30px;margin-top:26px;
+    box-shadow:0 6px 26px rgba(60,60,120,.08);}
+  section.card h2{font-size:1.62rem;color:#3b5bdb;margin-bottom:8px;}
+  section.card .lead{font-size:1.02rem;color:#556;margin-bottom:20px;}
+  /* 地位说明 */
+  .role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;}
+  .role-item{border:1px solid #e6e9f5;border-radius:14px;padding:18px 18px;background:#fbfcff;}
+  .role-item h3{font-size:1.12rem;color:#5f3dc4;margin-bottom:6px;}
+  .role-item p{font-size:.98rem;color:#445;}
+  /* 时间轴 */
+  .timeline{position:relative;margin:8px 0 4px;padding:6px 0;}
+  .tl-line{position:absolute;left:18px;top:8px;bottom:8px;width:4px;
+    background:linear-gradient(180deg,#3b5bdb,#7048e8,#e8590c);border-radius:3px;}
+  .tl-item{position:relative;padding:14px 14px 14px 52px;margin-bottom:12px;border-radius:12px;
+    background:#fafbff;border:1px solid #eaeefa;transition:.25s;cursor:default;}
+  .tl-item:hover{transform:translateX(4px);box-shadow:0 4px 18px rgba(59,91,219,.12);}
+  .tl-dot{position:absolute;left:8px;top:20px;width:24px;height:24px;border-radius:50%;
+    background:#3b5bdb;color:#fff;font-size:.82rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 0 0 2px #3b5bdb;}
+  .tl-item h3{font-size:1.08rem;color:#1c3aa9;margin-bottom:3px;}
+  .tl-item .year{font-weight:700;color:#7048e8;}
+  .tl-item p{font-size:.96rem;color:#455;margin-top:2px;}
+  .tl-item .tag{display:inline-block;margin-top:6px;font-size:.82rem;padding:3px 10px;border-radius:12px;
+    background:#edf2ff;color:#3b5bdb;}
+  .tl-item.dist .tag{background:#fff4e6;color:#e8590c;}
+  .tl-item.modern .tag{background:#f3f0ff;color:#5f3dc4;}
+  /* 阶段标题 */
+  .stage-title{font-size:1.22rem;font-weight:800;color:#7048e8;margin:6px 0 10px;padding-left:8px;
+    border-left:5px solid #7048e8;}
+  /* 章节定位 */
+  .ch-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px;}
+  .ch-controls label{font-size:1rem;color:#334;}
+  .ch-controls select{font-size:1rem;padding:7px 12px;border-radius:9px;border:1px solid #c7cce0;background:#fff;}
+  .ch-controls button{font-size:1rem;padding:8px 16px;border-radius:9px;border:0;cursor:pointer;
+    background:#3b5bdb;color:#fff;transition:.2s;}
+  .ch-controls button:hover{background:#2f44b0;}
+  .ch-detail{border:2px solid #c7d2fe;border-radius:14px;padding:22px 24px;background:#fbfcff;min-height:150px;transition:.2s;}
+  .ch-detail.active{border-color:#3b5bdb;box-shadow:0 4px 18px rgba(59,91,219,.14);}
+  .ch-detail h3{font-size:1.28rem;color:#1c3aa9;margin-bottom:6px;}
+  .ch-detail .cd-row{font-size:.98rem;color:#556;margin:4px 0;}
+  .ch-detail .cd-tag{display:inline-block;margin:6px 6px 0 0;font-size:.88rem;padding:4px 11px;border-radius:12px;
+    background:#edf2ff;color:#3b5bdb;}
+  .ch-detail .cd-tag.period{background:#fff4e6;color:#e8590c;}
+  .ch-detail .cd-tag.method{background:#f3f0ff;color:#5f3dc4;}
+  /* 对比表 */
+  table{width:100%;border-collapse:collapse;font-size:.96rem;margin-top:8px;}
+  th,td{padding:11px 10px;border-bottom:1px solid #eaeefa;text-align:left;vertical-align:top;}
+  th{background:#edf2ff;color:#1c3aa9;font-weight:700;}
+  tr:hover td{background:#fafbff;}
+  /* 底部 */
+  footer{text-align:center;color:#889;font-size:.92rem;margin-top:30px;}
+  .errbox{display:none;background:#fff3cd;color:#856404;padding:12px 16px;border-radius:10px;
+    margin-top:16px;border:1px solid #ffe08a;font-size:.96rem;}
+  /* 象限坐标图 */
+  .quad-wrap{display:flex;flex-wrap:wrap;gap:20px;align-items:stretch;}
+  .quad-fig{flex:0 0 auto;}
+  .quad-legend{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px;justify-content:center;}
+  .qcard{border-radius:12px;padding:12px 14px;font-size:.94rem;line-height:1.55;border:1px solid #e6e9f5;}
+  .qcard h4{font-size:1rem;margin-bottom:4px;}
+  .qcard.DC{background:#edf2ff;border-left:5px solid #3b5bdb;}
+  .qcard.AC{background:#e6f7ee;border-left:5px solid #1b8a4b;}
+  .qcard.TR{background:#fff4e6;border-left:5px solid #e8590c;}
+  .qcard.MD{background:#f3f0ff;border-left:5px solid #5f3dc4;}
+  @media(max-width:640px){
+    header.hero h1{font-size:1.7rem;}section.card{padding:22px 18px;}
+    html{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>电路理论的发展历程</h1>
+    <p class="sub">并将邱关源《电路》（第6版）各章节内容，映射到发展历程的时间点与学科地位之中 —— 面向电气工程及其自动化、自动化等专业背景。</p>
+    <div class="tags">
+      <span>分析对象：实际系统的理想化电路模型</span>
+      <span>承前启后：通识基础 → 专业课的桥梁</span>
+      <span>强电 / 弱电专业必修课</span>
+    </div>
+  </header>
+
+  <!-- 课程地位 -->
+  <section class="card">
+    <h2>一、《电路》课程在专业培养中的地位</h2>
+    <p class="lead">电路理论是当代电气工程与电子科学技术的重要理论基础之一，历经一个多世纪的发展，已成为体系完整、逻辑严密、生命力强大的学科[citation:9][citation:16]。</p>
+    <div class="role-grid">
+      <div class="role-item">
+        <h3>课程性质</h3>
+        <p>电气类、电子信息类、自动化类各专业的<strong>专业基础核心课程</strong>，是电类专业第一门技术基础课[citation:9][citation:12]。</p>
+      </div>
+      <div class="role-item">
+        <h3>桥梁作用</h3>
+        <p>由通识基础课（高数/大物）向专业课（模电/数电/电力电子/自动控制原理）过渡的<strong>承前启后</strong>桥梁[citation:3][citation:16]。</p>
+      </div>
+      <div class="role-item">
+        <h3>研究对象</h3>
+        <p>从电工实践中高度抽象出的<strong>理论化教学模型</strong>，研究电网络的基本规律及其计算[citation:3]。</p>
+      </div>
+      <div class="role-item">
+        <h3>能力培养</h3>
+        <p>培养科学归纳综合能力、分析解决工程实际电路问题的基本能力与实验技能[citation:3][citation:18]。</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:16px;">《电路》教材普遍将内容组织为四部分：<strong>直流 · 交流 · 暂态 · 现代电路</strong>，分别对应电阻电路、正弦稳态/三相/频率响应、时域/复频域动态分析、矩阵/二端口/非线性/传输线。邱关源《电路》（第6版，罗先觉主编，高教社 2022）全书共 18 章，正覆盖这一完整体系[citation:1][citation:13][citation:16]。</p>
+  </section>
+
+  <!-- 发展历程时间轴 -->
+  <section class="card">
+    <h2>二、电路理论发展历程时间轴</h2>
+    <p class="lead">学界常以<strong>欧姆(1827)与基尔霍夫(1847)</strong>的贡献作为本学科起点，划分为三大阶段[citation:2]。</p>
+
+    <div class="stage-title">▍经典电路理论阶段（约 1827 — 1950s，约百年）</div>
+    <div class="timeline">
+      <div class="tl-line"></div>
+      <div class="tl-item"><span class="tl-dot">1</span>
+        <h3><span class="year">1827</span>　欧姆定律 V = I·R</h3>
+        <p>欧姆发表《电路的数学研究》，首次给出欧姆定律，至今所有电路教材均保留讲授这一基本定律[citation:8][citation:11]。</p>
+        <span class="tag">学科起点之一</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">2</span>
+        <h3><span class="year">1847</span>　基尔霍夫定律 KCL / KVL</h3>
+        <p>23 岁的基尔霍夫发表论文，提出电流定律(KCL)与电压定律(KVL)，并确定网孔回路分析法原理，成为<strong>集总参数电路分析最根本的理论依据</strong>[citation:2][citation:8]。</p>
+        <span class="tag">学科起点之一 · 集总电路基石</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">3</span>
+        <h3><span class="year">1832 / 1843 / 1853</span>　自感 · 惠斯通电桥 · 等效电源思想</h3>
+        <p>亨利发现自感现象(1832)；惠斯通电桥发明(1843)；亥姆霍兹率先用等效电源思想分析电路[citation:2][citation:11]。</p>
+        <span class="tag">储能与测量基础</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">4</span>
+        <h3><span class="year">1883 / 1933</span>　戴维南定理 与 诺顿定理</h3>
+        <p>戴维南正式发表等效电源定理(1883，定理思想源于亥姆霍兹)；诺顿提出其对偶形式——诺顿定理(1933)[citation:2]。</p>
+        <span class="tag">电路等效 · 对偶原理</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">5</span>
+        <h3><span class="year">1894 / 1911</span>　复数(相量)法 与 阻抗概念</h3>
+        <p>斯坦梅茨将复数理论应用于电路计算(1894)；海维赛德提出阻抗概念(1911)，建立正弦稳态交流电路分析方法[citation:2][citation:11]。</p>
+        <span class="tag">交流稳态分析工具</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">6</span>
+        <h3><span class="year">1918 / 1920s</span>　对称分量法 · 滤波器 · 理想变压器</h3>
+        <p>福特斯库提出三相对称分量法(1918)；瓦格纳发明实际滤波器、坎贝尔提出理想变压器概念(1920)[citation:2]。</p>
+        <span class="tag">三相与频率响应雏形</span>
+      </div>
+      <div class="tl-item"><span class="tl-dot">7</span>
+        <h3><span class="year">1921 / 1924 / 1926</span>　二端口(四端网络)· 电抗定理 · 瞬态响应</h3>
+        <p>布里辛格提出四端网络/黑箱概念(1921)；福斯特提出电抗定理(1924)；卡夫米勒提出瞬态响应概念(1926)[citation:2]。</p>
+        <span class="tag">网络理论 · 动态分析萌芽</span>
+      </div>
+    </div>
+
+    <div class="stage-title">▍近代电路理论阶段（约 1960s — 1970s）</div>
+    <div class="timeline">
+      <div class="tl-line"></div>
+      <div class="tl-item modern"><span class="tl-dot">8</span>
+        <h3>系统论 · 状态空间 · 计算机辅助分析兴起</h3>
+        <p>伴随线性系统理论、状态变量法与计算机数值计算的发展，电路分析由"手算网络"走向"系统化、矩阵化、可计算化"，为现代电路部分（矩阵形式、复频域、非线性、传输线）奠定方法论基础[citation:2]。</p>
+        <span class="tag">系统化 · 矩阵化 · 可计算化</span>
+      </div>
+    </div>
+
+    <div class="stage-title">▍电路与系统理论阶段（1970s 以后至今）</div>
+    <div class="timeline">
+      <div class="tl-line"></div>
+      <div class="tl-item dist"><span class="tl-dot">9</span>
+        <h3>集成电路 · 电子设计自动化(EDA)· 多物理场耦合</h3>
+        <p>集成电路(1958)与晶体管(1947)催生微电子化；现代电路理论融入 EDA 仿真（PSpice/MATLAB）、非线性与分布参数（均匀传输线）分析，并向电力电子、通信系统、控制与智能电网扩展[citation:5][citation:13]。</p>
+        <span class="tag">强弱电融合 · EDA 仿真</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 章节定位交互 -->
+  <section class="card">
+    <h2>三、邱关源《电路》(第6版) 18 章 · 在历史时间点与学科体系中的定位</h2>
+    <p class="lead">选择章节查看：该章的知识主题、所依赖的历史基石、在"直流/交流/暂态/现代电路"四部分中的位置，及其对后续专业课的支撑作用。<em style="color:#7048e8;">（提示：可在下拉框直接选章，也可点"上一章/下一章"逐章浏览，当前章节会高亮显示。）</em></p>
+    <div class="ch-controls">
+      <label for="chSel">选择章节：</label>
+      <select id="chSel" onchange="window.__renderChapter(+this.value)"></select>
+      <button id="btnPrev" type="button" onclick="window.__stepChapter(-1)">上一章</button>
+      <button id="btnNext" type="button" onclick="window.__stepChapter(1)">下一章</button>
+      <span id="chCount" style="font-size:.95rem;color:#889;"></span>
+      <span id="chActive" style="font-size:.95rem;color:#1c3aa9;font-weight:700;margin-left:6px;"></span>
+    </div>
+    <div class="ch-detail" id="chDetail"></div>
+  </section>
+
+  <!-- 教材内容选取逻辑 -->
+  <section class="card">
+    <h2>四、教材为什么包括这些内容 —— 18 章的选取逻辑</h2>
+    <p class="lead">18 章并非知识的随意堆砌，而是按"<strong>建模 → 直流稳态 → 交流稳态 → 动态时域 → 复频域/矩阵化 → 非线性与分布参数</strong>"的认知与学科逻辑递进组织。理解这条主线，就能明白"为什么是这 18 章、为什么是这个顺序"。</p>
+    <div class="role-grid">
+      <div class="role-item">
+        <h3>① 先建"语言"（第1章）</h3>
+        <p>电路模型、参考方向、KCL/KVL 是全书通用"语言"。没有这章，后续所有方程都无从列起——它是分析对象的第一次抽象（实际系统 → 理想化电路模型）。</p>
+      </div>
+      <div class="role-item">
+        <h3>② 再解"直流稳态"（第2—5章）</h3>
+        <p>在电源为直流、不含储能元件的前提下，集中训练<strong>等效变换、系统化求解、核心定理群</strong>。这是方法 toolbox 的建立阶段，也是模电/电力电子看等效内阻的基础。</p>
+      </div>
+      <div class="role-item">
+        <h3>③ 引入"交流稳态"（第8—13章）</h3>
+        <p>相量法把微分方程为代数方程（语言切换），据此处理阻抗、功率、耦合电感、谐振、三相与频谱。<strong>三相（第12章）是电气/自动化专业的立身之本</strong>（供电/电机/继电保护）。</p>
+      </div>
+      <div class="role-item">
+        <h3>④ 进入"动态过程"（第6—7、14章）</h3>
+        <p>储能元件（第6章）引入后，电路由代数方程升格为微分方程。第7章用时域、第14章用复频域（拉氏变换）两条路径求解动态响应，<strong>对接控制理论与电力电子变流</strong>。</p>
+      </div>
+      <div class="role-item">
+        <h3>⑤ 走向"现代电路"（第15—18章）</h3>
+        <p>矩阵形式/二端口是<strong>大规模电路与子系统模块化</strong>的工具；非线性电路纳入真实器件；均匀传输线从集总走向分布参数，完成"电路理论分析对象"的边界拓展。</p>
+      </div>
+      <div class="role-item">
+        <h3>🎯 编排的总原则</h3>
+        <p>由<strong>电阻→动态元件</strong>、由<strong>直流→交流→暂态→现代</strong>、由<strong>手算→矩阵/计算机可算</strong>、由<strong>集总→分布</strong>，层层递进，为后续专业课（模电/电机学/电力电子/信号与系统/电力系统分析）铺设共同基础。</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:16px;">📌 <strong>学习建议：</strong>把第 1、4、6、8 章视为四条"主干"——分别掌握"列方程、用定理、储能元件建模、相量法"四项核心能力，其余章节基本是这四条主干在不同场景下的展开与应用。</p>
+  </section>
+
+  <!-- 四部分映射表 -->
+  <section class="card">
+    <h2>五、18 章 → "四部分"体系映射总览</h2>
+    <p class="lead">参照《电路》教材通行的四部分划分，将 18 章归位，可清晰看到各章在历史脉络与方法论上的承接关系。</p>
+    <table>
+      <thead><tr><th style="width:16%;">部分</th><th style="width:20%;">历史/方法基石</th><th>对应章节（邱关源《电路》第6版）</th></tr></thead>
+      <tbody>
+        <tr><td><strong>一·直流部分</strong><br>电阻电路</td><td>欧姆定律(1827)·基尔霍夫定律(1847)·戴维南/诺顿·等效变换</td><td>第1章 电路模型和电路定律 · 第2章 电阻电路的等效变换 · 第3章 电阻电路的一般分析 · 第4章 电路定理 · 第5章 含有运算放大器的电阻电路</td></tr>
+        <tr><td><strong>二·交流部分</strong><br>正弦稳态</td><td>复数/相量法(1894/1911)·对称分量法(1918)·滤波器/理想变压器(1920)</td><td>第8章 相量法 · 第9章 正弦稳态电路的分析 · 第10章 含有耦合电感的电路 · 第11章 电路的频率响应 · 第12章 三相电路 · 第13章 非正弦周期电流电路和信号的频谱</td></tr>
+        <tr><td><strong>三·暂态部分</strong><br>动态电路</td><td>储能元件(自感1832)·瞬态响应概念(1926)·拉普拉斯变换</td><td>第6章 储能元件 · 第7章 一阶电路和二阶电路的时域分析 · 第14章 线性动态电路的复频域分析</td></tr>
+        <tr><td><strong>四·现代电路部分</strong><br>矩阵/网络/非线性/分布</td><td>二端口/黑箱(1921)·系统论·EDA 仿真·分布参数</td><td>第15章 电路方程的矩阵形式 · 第16章 二端口网络 · 第17章 非线性电路 · 第18章 均匀传输线（附录：磁路和铁心线圈·电流传输器和跨导放大器·PSpice·MATLAB）</td></tr>
+      </tbody>
+    </table>
+    <p class="lead" style="margin-top:16px;">📌 <strong>教学提示：</strong>第 1→4 章是全部后续章节的"语言基础"（参考方向、KCL/KVL、等效、定理）；第 6 章储能元件是进入暂态分析的钥匙；第 8 章相量法是交流稳态的钥匙。掌握这两条主线，18 章体系即可串成一张网[citation:16][citation:17]。</p>
+  </section>
+
+  <!-- 分析对象坐标图 -->
+  <section class="card">
+    <h2>六、一张图看懂：18 章在"电路理论分析对象"坐标中的位置</h2>
+    <p class="lead">结合前作《集总 vs 分布电路》，把 18 章映射到"<strong>集总 → 分布</strong>"（横轴）与"<strong>代数/稳态 ↔ 动态/PDE</strong>"（纵轴）构成的坐标系中，可直观看到：<em>电路理论的分析对象正沿着这两条主线，从"集总·代数"不断拓展到"分布·动态"。</em></p>
+    <div class="quad-wrap">
+      <div class="quad-fig">
+        <svg width="430" height="400" viewBox="0 0 430 400" role="img" aria-label="18章分析对象坐标系">
+          <!-- 坐标轴 -->
+          <line x1="55" y1="340" x2="400" y2="340" stroke="#334" stroke-width="2"/>
+          <line x1="55" y1="340" x2="55" y2="40" stroke="#334" stroke-width="2"/>
+          <polygon points="400,340 392,336 392,344" fill="#334"/>
+          <polygon points="55,40 51,48 59,48" fill="#334"/>
+          <text x="388" y="362" font-size="14" fill="#1c3aa9" font-weight="700">集总 → 分布</text>
+          <text x="20" y="46" font-size="14" fill="#1c3aa9" font-weight="700" transform="rotate(-90 30 46)">代数/稳态 ↑ 动态/PDE</text>
+          <!-- 原点标注 -->
+          <text x="30" y="358" font-size="11" fill="#889">集总·代数</text>
+          <text x="300" y="358" font-size="11" fill="#889">分布(传输线)</text>
+          <text x="14" y="70" font-size="11" fill="#889">动态</text>
+          <text x="14" y="330" font-size="11" fill="#889">稳态</text>
+          <!-- 四象限分区底色 -->
+          <rect x="55" y="40" width="172" height="150" fill="#edf2ff" opacity=".35"/>
+          <rect x="227" y="40" width="173" height="150" fill="#f3f0ff" opacity=".35"/>
+          <rect x="55" y="190" width="172" height="150" fill="#e6f7ee" opacity=".35"/>
+          <rect x="227" y="190" width="173" height="150" fill="#fff4e6" opacity=".35"/>
+          <!-- 象限标签 -->
+          <text x="80" y="70" font-size="11" fill="#3b5bdb" font-weight="700">直流·稳态</text>
+          <text x="252" y="70" font-size="11" fill="#5f3dc4" font-weight="700">暂态·动态</text>
+          <text x="80" y="218" font-size="11" fill="#1b8a4b" font-weight="700">交流·稳态</text>
+          <text x="252" y="218" font-size="11" fill="#e8590c" font-weight="700">现代·分布/非线性</text>
+          <!-- 章节散点(示意位置) -->
+          <g font-size="9" fill="#1c3aa9">
+            <circle cx="120" cy="280" r="4" fill="#3b5bdb"/><text x="128" y="283">1-5 直流</text>
+            <circle cx="150" cy="250" r="4" fill="#1b8a4b"/><text x="158" y="253">8-13 交流</text>
+            <circle cx="280" cy="120" r="4" fill="#5f3dc4"/><text x="288" y="123">6-7,14 暂态</text>
+            <circle cx="310" cy="150" r="4" fill="#e8590c"/><text x="318" y="153">15-18 现代</text>
+          </g>
+          <!-- 拓展箭头：从集总指向分布 -->
+          <path d="M200,330 C260,300 300,270 340,250" stroke="#7048e8" stroke-width="2" fill="none" stroke-dasharray="5,4"/>
+          <polygon points="340,250 332,254 336,246" fill="#7048e8"/>
+          <text x="250" y="295" font-size="10" fill="#7048e8" font-weight="700">分析对象拓展方向</text>
+        </svg>
+      </div>
+      <div class="quad-legend">
+        <div class="qcard DC"><h4>直流·稳态象限（第1—5章）</h4>集总 + 代数方程。建模语言(KCL/KVL)、等效变换、系统化求解、核心定理群——全书方法 toolbox 的奠基区。</div>
+        <div class="qcard AC"><h4>交流·稳态象限（第8—13章）</h4>集总 + 相量(复数代数)。阻抗/导纳、功率、耦合电感、谐振、三相、频谱——电气/自动化专业的立身之本。</div>
+        <div class="qcard TR"><h4>暂态·动态象限（第6—7、14章）</h4>集总 + 微分方程/PDE。储能元件引入使方程升格，时域(7)与复频域(14)两条路径求解动态响应。</div>
+        <div class="qcard MD"><h4>现代·分布/非线性象限（第15—18章）</h4>矩阵化/模块化 → 非线性 → 分布参数(电报方程)。完成"集总→分布"的边界拓展，对接 EDA/电力电子/射频。</div>
+        <p class="lead" style="margin:6px 0 0;">📌 这张坐标图把"电路理论的分析对象"可视化：<strong>纵轴</strong>区分稳态/动态（方程类型），<strong>横轴</strong>区分集总/分布（参数是否随位置变化）。两条轴线正是前作判断"何时用集总模型、何时必须上传输线"的同一对判据。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errBox"></div>
+  <footer>电路理论 · 承前启后的电类专业核心基础课　|　数据来源：高等教育出版社 · 国家高等教育智慧教育平台 · 各高校《电路》课程大纲</footer>
+</div>
+
+<script>
+(function(){
+  function showErr(msg){try{var e=document.getElementById('errBox');if(e){e.style.display='block';e.textContent='⚠ '+msg;}}catch(x){}}
+  var chapters=[
+    {ch:"第1章",title:"电路模型和电路定律",part:"一·直流部分",period:"基础奠基期(1827/1847)",
+      keys:["电路与电路模型","电流/电压参考方向","电功率与能量","电阻/电压源/电流源/受控源","基尔霍夫定律 KCL/KVL"],
+      history:"直接承接欧姆定律(1827)与基尔霍夫定律(1847)——集总参数电路分析最根本的理论依据。",
+      role:"全书'语言基础'：参考方向与KCL/KVL贯穿后续所有章节，是建立电路方程的起点。"},
+    {ch:"第2章",title:"电阻电路的等效变换",part:"一·直流部分",period:"经典电路理论",
+      keys:["等效变换","串/并联","Y—△变换","电源串并联与模型等效","输入电阻"],
+      history:"Y—△变换由肯内利(Kennelly)于1899年解决；实际电源两种模型等效与戴维南/诺顿思想同源。",
+      role:"为复杂电阻网络化简提供工具，是'电路定理'章的前提，也是模电/电力电子中看等效内阻的基础。"},
+    {ch:"第3章",title:"电阻电路的一般分析",part:"一·直流部分",period:"经典电路理论(1847)",
+      keys:["电路的图","独立方程数","支路电流法","网孔电流法","回路电流法","节点电压法"],
+      history:"基尔霍夫(1847)确定网孔回路分析法原理；本章是KCL/KVL系统求解的方法化。",
+      role:"从'列方程'上升到'系统化求解'，节点电压法是后续电路方程矩阵形式(第15章)的雏形。"},
+    {ch:"第4章",title:"电路定理",part:"一·直流部分",period:"经典电路理论(1883/1933)",
+      keys:["叠加定理","替代定理","戴维南/诺顿定理","最大功率传输","特勒根/互易定理","对偶原理"],
+      history:"戴维南定理(1883，思想源于亥姆霍兹1853)、诺顿定理(1933)相继成型；对偶原理由拉塞尔(1904)提出。",
+      role:"工程分析的核心定理群：等效电源、最大功率传输广泛应用于电子线路设计与电力系统等效。"},
+    {ch:"第5章",title:"含有运算放大器的电阻电路",part:"一·直流部分",period:"近代(1960s后集成运放普及)",
+      keys:["运算放大器电路模型","比例电路分析","含理想运放电路分析"],
+      history:"运放是集成电路(1958)时代的标志性器件；本章把第1—4章的电阻电路方法用于运放电路。",
+      role:"连接'电路'与'模拟电子技术'的桥梁，是自动化/电气专业理解反馈放大器的基础。"},
+    {ch:"第6章",title:"储能元件",part:"三·暂态部分",period:"经典(1832自感)",
+      keys:["电容元件","电感元件","电容/电感的串并联"],
+      history:"亨利1832年发现自感现象；电容源于莱顿瓶(1745)。本章为动态电路建立元件模型。",
+      role:"进入暂态(时域/复频域)分析的钥匙——没有储能元件就没有动态方程。"},
+    {ch:"第7章",title:"一阶电路和二阶电路的时域分析",part:"三·暂态部分",period:"经典→近代(1926瞬态响应)",
+      keys:["动态电路方程与初始条件","零输入/零状态响应","全响应","一阶/二阶电路"],
+      history:"卡夫米勒1926年提出瞬态响应概念；本章用微分方程在时域求解动态过程。",
+      role:"理解RC/RL/RLC充放电、过渡过程的基础，直接支撑电力电子变流与控制系统动态分析。"},
+    {ch:"第8章",title:"相量法",part:"二·交流部分",period:"经典(1894/1911)",
+      keys:["复数","正弦量","相量法基础","电路定律的相量形式"],
+      history:"斯坦梅茨1894年将复数应用于电路计算，海维赛德1911年提出阻抗概念，共同奠定相量法。",
+      role:"交流稳态分析的'语言切换'：把微分方程化为复数代数方程，是正弦稳态章节的前置钥匙。"},
+    {ch:"第9章",title:"正弦稳态电路的分析",part:"二·交流部分",period:"经典(1894/1911)",
+      keys:["阻抗与导纳","相量图","正弦稳态分析","功率/复功率","最大功率传输"],
+      history:"建基于相量法与阻抗概念；是交流电路在工程中最常用的稳态分析方法。",
+      role:"电气/自动化专业分析交流供电、电机励磁、功率因数的核心工具。"},
+    {ch:"第10章",title:"含有耦合电感的电路",part:"二·交流部分",period:"经典(1832/法拉第电磁感应)",
+      keys:["互感","含耦合电感电路分析","变压器电路"],
+      history:"法拉第电磁感应定律(1831)与亨利自感(1832)为互感/变压器提供物理基础。",
+      role:"理解变压器、电机绕组耦合的基础，对接《电机学》《电力系统分析》。"},
+    {ch:"第11章",title:"电路的频率响应",part:"二·交流部分",period:"经典(1920滤波器/1924电抗定理)",
+      keys:["网络函数","RLC串联谐振","并联谐振","滤波器概念"],
+      history:"滤波器概念由巴尔的摩(1918)提出，瓦格纳1920年发明实际滤波器，福斯特1924年电抗定理。",
+      role:"滤波器与谐振是通信、无线电、电力电子EMI设计的理论基础。"},
+    {ch:"第12章",title:"三相电路",part:"二·交流部分",period:"经典(1918对称分量法)",
+      keys:["三相电源/负载","线电压与相电压","三相功率","对称/不对称三相电路"],
+      history:"福特斯库1918年提出三相对称分量法；三相制是交流高压输电与电气时代的核心。",
+      role:"电气工程及其自动化专业的核心：三相供电、电机、继电保护均建立在此之上。"},
+    {ch:"第13章",title:"非正弦周期电流电路和信号的频谱",part:"二·交流部分",period:"近代(傅里叶分析)",
+      keys:["非正弦周期信号","傅里叶分解","有效值/平均功率","频谱概念"],
+      history:"傅里叶分析为周期信号分解为各次谐波提供数学工具，是'信号与系统'的前接内容。",
+      role:"连接电路与信号处理/通信，为后续《信号与系统》《通信原理》打基础。"},
+    {ch:"第14章",title:"线性动态电路的复频域分析",part:"三·暂态部分",period:"近代(拉普拉斯变换)",
+      keys:["拉普拉斯变换","复频域电路模型","s域分析","网络函数"],
+      history:"拉普拉斯变换把微分方程转为代数方程，是动态电路分析的强力工具，契合近代系统化方法。",
+      role:"时域(第7章)的复频域对应，工程上便于求全响应与系统函数，对接控制理论。"},
+    {ch:"第15章",title:"电路方程的矩阵形式",part:"四·现代电路部分",period:"近代(1960s系统化/矩阵化)",
+      keys:["关联矩阵/回路矩阵/割集矩阵","节点/回路/割集方程矩阵形式"],
+      history:"伴随线性系统理论与计算机辅助分析兴起，电路方程走向矩阵化、可编程求解。",
+      role:"现代电路分析的框架，为EDA网表求解、大规模电路仿真提供理论支撑。"},
+    {ch:"第16章",title:"二端口网络",part:"四·现代电路部分",period:"经典(1921四端网络/黑箱)",
+      keys:["二端口网络参数(Z/Y/T/H)","二端口连接","转移函数"],
+      history:"布里辛格1921年提出四端网络及黑箱概念，本章是其标准化与工程化应用。",
+      role:"放大器、滤波器、传输线等子系统的模块化分析工具，贯穿模电/高频电路/控制。"},
+    {ch:"第17章",title:"非线性电路",part:"四·现代电路部分",period:"现代(非线性系统理论)",
+      keys:["非线性电阻","含非线性元件电路","小信号分析法"],
+      history:"非线性系统理论发展后，电路理论将二极管、晶体管等真实器件纳入分析框架。",
+      role:"连接'电路'与'模电/电力电子/半导体器件'的桥梁，理解器件非线性的起点。"},
+    {ch:"第18章",title:"均匀传输线",part:"四·现代电路部分",period:"现代(分布参数/电报方程)",
+      keys:["传输线方程(电报方程)","行波","特性阻抗","无畸变/无损耗线"],
+      history:"开尔文发现海底电缆长线效应(信号速度随线长²减慢)；海维赛德1876年《On the Extra Current》建立传输线模型；由基尔霍夫定律对微元段取Δz→0极限导出电报方程，麦克斯韦电磁理论(1865)为其场论根基。",
+      role:"从集总走向分布参数，对接《电磁场与电磁波》《高频/射频电路》《电力传输线》。"}
+  ];
+  var sel=document.getElementById('chSel'),detail=document.getElementById('chDetail'),
+      counter=document.getElementById('chCount'),active=document.getElementById('chActive');
+  if(!sel||!detail){showErr('章节选择/详情容器未找到，脚本加载异常。');return;}
+  chapters.forEach(function(c,i){var o=document.createElement('option');o.value=i;o.textContent=c.ch+'　'+c.title;sel.appendChild(o);});
+  function render(i){
+    try{
+      var idx=Number(i);if(!Number.isInteger(idx)||idx<0||idx>=chapters.length)return;
+      var c=chapters[idx];if(!c)return;
+      var keys=Array.isArray(c.keys)?c.keys:[c.keys];
+      var html='<h3 style="color:#1c3aa9;">'+c.ch+'　'+c.title+'</h3>';
+      html+='<div class="cd-row"><strong>所属部分：</strong><span class="cd-tag period">'+c.part+'</span> <span class="cd-tag">'+c.period+'</span></div>';
+      html+='<div class="cd-row"><strong>核心知识点：</strong><br>';
+      keys.forEach(function(k){html+='<span class="cd-tag method">'+k+'</span>';});
+      html+='</div>';
+      html+='<div class="cd-row" style="margin-top:10px;"><strong>📜 历史脉络：</strong>'+c.history+'</div>';
+      html+='<div class="cd-row"><strong>🎯 学科/工程地位：</strong>'+c.role+'</div>';
+      detail.innerHTML=html;
+      detail.classList.add('active');
+      counter.textContent='('+(idx+1)+' / '+chapters.length+')';
+      if(active)active.textContent='当前：'+c.ch+' '+c.title;
+      sel.value=String(idx);
+    }catch(e){showErr('渲染章节时出错：'+e.message);}
+  }
+  window.__renderChapter=function(i){render(i);};
+  window.__stepChapter=function(d){var i=Number(sel.value)||0;var n=i+d;if(n>=0&&n<chapters.length)render(n);};
+  function init(){render(0);}
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+  else if(window.addEventListener){window.addEventListener('load',init);init();}
+  else{init();}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电路工程案例交互式教学</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    line-height: 1.7;
+    font-size: 18px;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #1a1a2e;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 20px;
+    color: #5a5a7a;
+    margin-bottom: 32px;
+  }
+  .case-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    justify-content: center;
+  }
+  .case-tab {
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 2px solid #d0d5dd;
+    background: #fff;
+    color: #5a5a7a;
+    font-size: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .case-tab:hover {
+    border-color: #1a1a2e;
+    color: #1a1a2e;
+  }
+  .case-tab.active {
+    background: #1a1a2e;
+    color: #fff;
+    border-color: #1a1a2e;
+  }
+  .case-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .case-panel.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 28px 0 10px 0;
+  }
+  .section-subtitle {
+    font-size: 19px;
+    color: #5a5a7a;
+    margin-bottom: 20px;
+  }
+  .tag-row {
+    margin: 14px 0;
+  }
+  .knowledge-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    margin: 4px 6px 4px 0;
+  }
+  .tag-kvl { background: #e8f0fe; color: #1a56db; }
+  .tag-kcl { background: #e6f4ea; color: #137333; }
+  .tag-power { background: #fce8e8; color: #c5221f; }
+  .tag-model { background: #f3e8fd; color: #7b1fa2; }
+  .tag-potential { background: #e8eaed; color: #5f6368; }
+
+  .circuit-container {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    margin: 20px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e8eaed;
+  }
+  .circuit-svg {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin: 24px 0;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e8eaed;
+  }
+  .control-label {
+    font-size: 17px;
+    font-weight: 500;
+    color: #1a1a2e;
+  }
+  .control-value {
+    font-size: 32px;
+    font-weight: 600;
+    color: #1a56db;
+    font-variant-numeric: tabular-nums;
+  }
+  .control-unit {
+    font-size: 18px;
+    color: #5a5a7a;
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: #1a1a2e;
+    height: 8px;
+    cursor: pointer;
+  }
+
+  .formula-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    font-size: 19px;
+    color: #1a1a2e;
+    border-left: 5px solid #1a1a2e;
+    line-height: 1.9;
+  }
+  .formula-box .label {
+    font-size: 16px;
+    color: #5a5a7a;
+    margin-bottom: 10px;
+  }
+  .highlight-kvl { color: #1a56db; font-weight: 600; }
+  .highlight-kcl { color: #137333; font-weight: 600; }
+  .highlight-power { color: #c5221f; font-weight: 600; }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 18px;
+    margin: 24px 0;
+  }
+  .result-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e8eaed;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease;
+  }
+  .result-card:hover {
+    transform: translateY(-2px);
+  }
+  .result-label {
+    font-size: 15px;
+    color: #5a5a7a;
+    margin-bottom: 10px;
+  }
+  .result-value {
+    font-size: 36px;
+    font-weight: 600;
+    color: #1a1a2e;
+    font-variant-numeric: tabular-nums;
+  }
+  .result-unit {
+    font-size: 18px;
+    color: #5a5a7a;
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  .status-safe { color: #137333; }
+  .status-danger { color: #c5221f; }
+  .status-warning { color: #b06000; }
+
+  .analysis-text {
+    font-size: 19px;
+    line-height: 1.9;
+    color: #1a1a2e;
+    margin: 20px 0;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8eaed;
+  }
+
+  .step-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 14px 0;
+    border: 1px solid #e8eaed;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .step-title {
+    font-size: 21px;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  .step-body {
+    font-size: 18px;
+    color: #5a5a7a;
+    line-height: 1.8;
+    padding-left: 50px;
+  }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 17px;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .summary-table th, .summary-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid #e8eaed;
+  }
+  .summary-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  .summary-table td {
+    color: #5a5a7a;
+  }
+  .summary-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 28px; }
+    .section-title { font-size: 24px; }
+    .case-tab { font-size: 17px; padding: 12px 20px; }
+    .control-value { font-size: 26px; }
+    .result-value { font-size: 28px; }
+    .formula-box { font-size: 16px; }
+    .step-body { padding-left: 0; padding-top: 10px; }
+  }
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="container">
+  <h1>电路工程案例交互式教学</h1>
+  <div class="subtitle">基于邱关源《电路》第一章：电路模型与电路定律</div>
+
+  <div class="case-tabs">
+    <button class="case-tab active" onclick="switchCase(0)">案例一：晶体管放大电路</button>
+    <button class="case-tab" onclick="switchCase(1)">案例二：短路故障分析</button>
+  </div>
+
+  <!-- ==================== 案例一：晶体管放大电路 ==================== -->
+  <div class="case-panel active" id="case0">
+    <div class="section-title">工程案例：NPN晶体管音频前置放大电路</div>
+    <div class="section-subtitle">基于固定偏置共射极电路，用第一章的 KCL、KVL、受控源分析真实工程问题</div>
+
+    <div class="tag-row">
+      <span class="knowledge-tag tag-model">集总参数模型</span>
+      <span class="knowledge-tag tag-kvl">KVL 电压定律</span>
+      <span class="knowledge-tag tag-kcl">KCL 电流定律</span>
+      <span class="knowledge-tag tag-power">电功率计算</span>
+      <span class="knowledge-tag tag-potential">电位分析</span>
+    </div>
+
+    <!-- 电路图 -->
+    <div class="circuit-container">
+      <svg class="circuit-svg" viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#1a1a2e"/>
+          </marker>
+          <marker id="arrow-ib" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#137333"/>
+          </marker>
+          <marker id="arrow-ic" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#c5221f"/>
+          </marker>
+        </defs>
+
+        <!-- 电源 VCC -->
+        <circle cx="90" cy="55" r="26" fill="none" stroke="#1a1a2e" stroke-width="2.5"/>
+        <text x="90" y="62" text-anchor="middle" font-size="16" fill="#1a1a2e" font-weight="600">Vcc</text>
+
+        <!-- 上方导线：VCC → RC -->
+        <line x1="90" y1="81" x2="90" y2="130" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="90" y1="130" x2="180" y2="130" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- RB -->
+        <rect x="180" y="118" width="70" height="24" fill="none" stroke="#1a1a2e" stroke-width="2.5" rx="3"/>
+        <text x="215" y="110" text-anchor="middle" font-size="15" fill="#5a5a7a" font-weight="500">RB</text>
+
+        <!-- 导线：RB → 基极B -->
+        <line x1="250" y1="130" x2="310" y2="130" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="310" y1="130" x2="310" y2="165" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 三极管主体 -->
+        <line x1="310" y1="165" x2="310" y2="265" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="310" y1="188" x2="355" y2="165" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="310" y1="242" x2="355" y2="265" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 发射极箭头（NPN 向外） -->
+        <polygon points="345,258 355,265 345,272" fill="#1a1a2e"/>
+
+        <!-- 极性标注 -->
+        <text x="295" y="158" font-size="15" fill="#1a1a2e" font-weight="600">B</text>
+        <text x="365" y="158" font-size="15" fill="#1a1a2e" font-weight="600">C</text>
+        <text x="365" y="278" font-size="15" fill="#1a1a2e" font-weight="600">E</text>
+        <text x="375" y="210" font-size="14" fill="#5a5a7a">NPN</text>
+
+        <!-- 集电极导线：C → RC -->
+        <line x1="355" y1="165" x2="420" y2="165" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- RC -->
+        <rect x="420" y="153" width="70" height="24" fill="none" stroke="#1a1a2e" stroke-width="2.5" rx="3"/>
+        <text x="455" y="145" text-anchor="middle" font-size="15" fill="#5a5a7a" font-weight="500">RC</text>
+
+        <!-- 导线：RC → VCC -->
+        <line x1="490" y1="165" x2="490" y2="55" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="90" y1="55" x2="490" y2="55" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 发射极导线：E → 地 -->
+        <line x1="355" y1="265" x2="355" y2="330" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 接地符号 -->
+        <line x1="335" y1="330" x2="375" y2="330" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="345" y1="339" x2="365" y2="339" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="350" y1="348" x2="360" y2="348" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 受控源标注 -->
+        <rect x="390" y="188" width="110" height="34" rx="8" fill="#e8f0fe" stroke="#1a56db" stroke-width="1.5"/>
+        <text x="445" y="210" text-anchor="middle" font-size="15" fill="#1a56db" font-weight="600">IC = β·IB</text>
+
+        <!-- ========== 电流方向标注（已修正） ========== -->
+        <!-- IB：从 RB 流向基极 B，水平向右 -->
+        <line x1="255" y1="115" x2="305" y2="115" stroke="#137333" stroke-width="2.5" marker-end="url(#arrow-ib)"/>
+        <text x="278" y="105" text-anchor="middle" font-size="15" fill="#137333" font-weight="600">IB</text>
+
+        <!-- IC：从 RC 流向集电极 C，画在C极导线上 -->
+        <line x1="410" y1="152" x2="365" y2="152" stroke="#c5221f" stroke-width="2.5" marker-end="url(#arrow-ic)"/>
+        <text x="388" y="142" text-anchor="middle" font-size="15" fill="#c5221f" font-weight="600">IC</text>
+
+        <!-- IE：从发射极 E 流出到地，垂直向下 -->
+        <line x1="370" y1="275" x2="370" y2="320" stroke="#b06000" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <text x="385" y="305" font-size="15" fill="#b06000" font-weight="600">IE</text>
+
+        <!-- 电压标注 VBE -->
+        <line x1="268" y1="165" x2="268" y2="265" stroke="#7b1fa2" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <text x="245" y="220" font-size="14" fill="#7b1fa2" font-weight="500">VBE</text>
+
+        <!-- 电压标注 VCE -->
+        <line x1="385" y1="165" x2="385" y2="330" stroke="#7b1fa2" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <text x="390" y="255" font-size="14" fill="#7b1fa2" font-weight="500">VCE</text>
+      </svg>
+    </div>
+
+    <!-- 参数调节 -->
+    <div class="controls-grid">
+      <div class="control-group">
+        <div class="control-label">电源电压 VCC</div>
+        <div class="control-value"><span id="vcc-val">12</span><span class="control-unit">V</span></div>
+        <input type="range" id="vcc" min="3" max="24" step="0.5" value="12" oninput="updateTransistor()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">基极电阻 RB</div>
+        <div class="control-value"><span id="rb-val">100</span><span class="control-unit">kΩ</span></div>
+        <input type="range" id="rb" min="10" max="500" step="10" value="100" oninput="updateTransistor()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">集电极电阻 RC</div>
+        <div class="control-value"><span id="rc-val">1.0</span><span class="control-unit">kΩ</span></div>
+        <input type="range" id="rc" min="0.1" max="5" step="0.1" value="1" oninput="updateTransistor()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">电流放大系数 β</div>
+        <div class="control-value"><span id="beta-val">100</span></div>
+        <input type="range" id="beta" min="20" max="300" step="10" value="100" oninput="updateTransistor()">
+      </div>
+    </div>
+
+    <!-- 核心公式 -->
+    <div class="formula-box">
+      <div class="label">核心方程</div>
+      <div><span class="highlight-kvl">KVL 输入回路：</span> VCC − IB·RB − VBE = 0 &nbsp;→&nbsp; IB = (VCC − 0.7) / RB</div>
+      <div style="margin-top:10px;"><span class="highlight-kcl">KCL 晶体管节点：</span> IE = IB + IC &nbsp;&nbsp;|&nbsp;&nbsp; <span class="highlight-kvl">KVL 输出回路：</span> VCC − IC·RC − VCE = 0</div>
+      <div style="margin-top:10px;"><span class="highlight-power">受控源约束：</span> IC = β·IB</div>
+    </div>
+
+    <!-- 计算结果 -->
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-label">基极电流 IB</div>
+        <div class="result-value"><span id="res-ib">113.0</span><span class="result-unit">μA</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">集电极电流 IC</div>
+        <div class="result-value"><span id="res-ic">11.30</span><span class="result-unit">mA</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">发射极电流 IE</div>
+        <div class="result-value"><span id="res-ie">11.41</span><span class="result-unit">mA</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">集射电压 VCE</div>
+        <div class="result-value"><span id="res-vce">0.70</span><span class="result-unit">V</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">三极管功耗 PT</div>
+        <div class="result-value"><span id="res-pt">7.9</span><span class="result-unit">mW</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">RC 电阻功耗 PRC</div>
+        <div class="result-value"><span id="res-prc">128</span><span class="result-unit">mW</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">基极电位 VB</div>
+        <div class="result-value"><span id="res-vb">0.70</span><span class="result-unit">V</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">工作状态</div>
+        <div class="result-value status-warning" id="res-status" style="font-size:24px;">临界饱和</div>
+      </div>
+    </div>
+
+    <div class="analysis-text" id="transistor-analysis">
+      当前参数下，VCE ≈ VBE ≈ 0.7V，三极管处于<strong>临界饱和区</strong>边缘。若要作为放大电路使用，需增大 RC 或减小 RB，使 VCE 处于 2~6V 的放大区。
+    </div>
+
+    <!-- 知识点讲解 -->
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span class="step-title">集总参数建模</span>
+      </div>
+      <div class="step-body">
+        将 NPN 三极管抽象为三端元件：基极 B、集电极 C、发射极 E。放大区建模为电流控制电流源（CCCS），即 IC = β·IB。基射极间近似为导通电压 VBE ≈ 0.7V 的 PN 结。实际器件通过"建模"转化为熟悉的电路元件组合，KCL/KVL 就有了用武之地。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span class="step-title">参考方向设定</span>
+      </div>
+      <div class="step-body">
+        人为规定参考方向：IB 从基极流入晶体管，IC 从集电极流入晶体管，IE 从晶体管流出到发射极。电压 VCE 从集电极指向发射极（关联参考方向）。若计算结果为负，说明实际方向与参考方向相反——这在调试电路时至关重要。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span class="step-title">KCL / KVL 实战求解</span>
+      </div>
+      <div class="step-body">
+        输入回路 KVL：VCC − IB·RB − VBE = 0，解得基极电流。晶体管内部节点 KCL：IE = IB + IC（电荷守恒）。输出回路 KVL：VCC − IC·RC − VCE = 0，解得集射电压。即便在三极管这种非线性器件中，KCL 和 KVL 依然 100% 成立——它们是拓扑定律，与元件特性无关。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <span class="step-title">功率与能量核算</span>
+      </div>
+      <div class="step-body">
+        工程上不能只看信号放不放大，还要看器件会不会烧毁。P = VI（关联参考方向下吸收功率）。RC 电阻功耗决定电阻瓦数选型，三极管功耗决定是否需要散热片。若 VCE 过高，PT 增大，必须考虑热设计。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">5</span>
+        <span class="step-title">电位分析</span>
+      </div>
+      <div class="step-body">
+        发射极接地 VE = 0V。基极电位 VB = VBE = 0.7V（由输入回路 KVL 得出）。集电极电位 VC = VCC − IC·RC。若 VC ≈ VB，说明三极管进入饱和区，需要调整参数——这就是工程调试的核心依据。
+      </div>
+    </div>
+
+    <!-- 知识点总结表 -->
+    <table class="summary-table">
+      <thead>
+        <tr><th>第一章知识点</th><th>在本案例中的具体体现</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>集总参数电路模型</strong></td><td>将三极管抽象为 CCCS + VBE 压降，外接电阻用欧姆定律</td></tr>
+        <tr><td><strong>电流/电压参考方向</strong></td><td>统一规定 IB、IC、IE 流向，为调试和计算打基础</td></tr>
+        <tr><td><strong>KVL</strong></td><td>输入/输出回路列 KVL，求解 IB 与 VCE</td></tr>
+        <tr><td><strong>KCL</strong></td><td>晶体管节点 IE = IB + IC，体现电荷守恒</td></tr>
+        <tr><td><strong>电功率</strong></td><td>P = VI 计算器件功耗，判断热安全性</td></tr>
+        <tr><td><strong>电位</strong></td><td>VB、VC、VE 计算判断工作区域（放大/饱和/截止）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 案例二：短路故障分析 ==================== -->
+  <div class="case-panel" id="case1">
+    <div class="section-title">工程案例：工厂配电房短路事故分析</div>
+    <div class="section-subtitle">用直流电阻模型分析电力系统短路故障——KVL 算电流、功率算破坏力、电位定位故障点</div>
+
+    <div class="tag-row">
+      <span class="knowledge-tag tag-model">集总参数模型</span>
+      <span class="knowledge-tag tag-kvl">KVL 电压定律</span>
+      <span class="knowledge-tag tag-kcl">KCL 电流定律</span>
+      <span class="knowledge-tag tag-power">电功率 / 焦耳热</span>
+      <span class="knowledge-tag tag-potential">电位分布</span>
+    </div>
+
+    <!-- 电路图 -->
+    <div class="circuit-container">
+      <svg class="circuit-svg" viewBox="0 0 560 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow-s" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#1a1a2e"/>
+          </marker>
+        </defs>
+
+        <!-- 电源 Us -->
+        <circle cx="90" cy="80" r="28" fill="none" stroke="#1a1a2e" stroke-width="2.5"/>
+        <text x="90" y="87" text-anchor="middle" font-size="16" fill="#1a1a2e" font-weight="600">Us</text>
+
+        <!-- 左侧导线 -->
+        <line x1="90" y1="108" x2="90" y2="175" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="90" y1="175" x2="200" y2="175" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- Rline -->
+        <rect x="200" y="163" width="80" height="24" fill="none" stroke="#1a1a2e" stroke-width="2.5" rx="3"/>
+        <text x="240" y="155" text-anchor="middle" font-size="15" fill="#5a5a7a" font-weight="500">Rline</text>
+
+        <!-- 导线到短路点 -->
+        <line x1="280" y1="175" x2="360" y2="175" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 短路点 -->
+        <line x1="360" y1="152" x2="360" y2="198" stroke="#c5221f" stroke-width="3"/>
+        <line x1="348" y1="165" x2="372" y2="185" stroke="#c5221f" stroke-width="2.5"/>
+        <line x1="372" y1="165" x2="348" y2="185" stroke="#c5221f" stroke-width="2.5"/>
+        <text x="360" y="140" text-anchor="middle" font-size="14" fill="#c5221f" font-weight="600">短路点</text>
+
+        <!-- Rf -->
+        <rect x="385" y="163" width="70" height="24" fill="none" stroke="#1a1a2e" stroke-width="2.5" rx="3"/>
+        <text x="420" y="155" text-anchor="middle" font-size="15" fill="#5a5a7a" font-weight="500">Rf</text>
+
+        <!-- 右侧回路 -->
+        <line x1="455" y1="175" x2="500" y2="175" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="500" y1="175" x2="500" y2="260" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="500" y1="260" x2="90" y2="260" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="90" y1="260" x2="90" y2="215" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- 接地符号 -->
+        <line x1="80" y1="215" x2="100" y2="215" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="85" y1="223" x2="95" y2="223" stroke="#1a1a2e" stroke-width="2.5"/>
+        <line x1="88" y1="231" x2="92" y2="231" stroke="#1a1a2e" stroke-width="2.5"/>
+
+        <!-- ========== 电流方向标注（已修正：水平向右） ========== -->
+        <line x1="220" y1="148" x2="270" y2="148" stroke="#1a56db" stroke-width="2.5" marker-end="url(#arrow-s)"/>
+        <text x="245" y="138" text-anchor="middle" font-size="15" fill="#1a56db" font-weight="600">If</text>
+
+        <!-- 电位标注 -->
+        <text x="90" y="68" text-anchor="middle" font-size="14" fill="#7b1fa2" font-weight="500">V+</text>
+        <text x="240" y="215" text-anchor="middle" font-size="14" fill="#7b1fa2" font-weight="500">Vnode</text>
+        <text x="420" y="215" text-anchor="middle" font-size="14" fill="#7b1fa2" font-weight="500">Vf</text>
+        <text x="90" y="278" text-anchor="middle" font-size="14" fill="#7b1fa2" font-weight="500">V− = 0</text>
+
+        <!-- 电弧示意 -->
+        <path d="M352,185 Q360,200 368,185" fill="none" stroke="#c5221f" stroke-width="2" opacity="0.5"/>
+      </svg>
+    </div>
+
+    <!-- 参数调节 -->
+    <div class="controls-grid">
+      <div class="control-group">
+        <div class="control-label">电源电压 Us</div>
+        <div class="control-value"><span id="us-val">480</span><span class="control-unit">V</span></div>
+        <input type="range" id="us" min="100" max="1000" step="20" value="480" oninput="updateShort()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">线路电阻 Rline</div>
+        <div class="control-value"><span id="rline-val">0.15</span><span class="control-unit">Ω</span></div>
+        <input type="range" id="rline" min="0.01" max="1" step="0.01" value="0.15" oninput="updateShort()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">短路电阻 Rf</div>
+        <div class="control-value"><span id="rf-val">0.05</span><span class="control-unit">Ω</span></div>
+        <input type="range" id="rf" min="0" max="0.5" step="0.01" value="0.05" oninput="updateShort()">
+      </div>
+      <div class="control-group">
+        <div class="control-label">保护动作时间 t</div>
+        <div class="control-value"><span id="t-val">0.10</span><span class="control-unit">s</span></div>
+        <input type="range" id="t" min="0.01" max="1" step="0.01" value="0.1" oninput="updateShort()">
+      </div>
+    </div>
+
+    <!-- 核心公式 -->
+    <div class="formula-box">
+      <div class="label">核心方程</div>
+      <div><span class="highlight-kvl">KVL 主回路：</span> Us − If·Rline − If·Rf = 0 &nbsp;→&nbsp; If = Us / (Rline + Rf)</div>
+      <div style="margin-top:10px;"><span class="highlight-power">热功率：</span> Pline = If²·Rline &nbsp;&nbsp;|&nbsp;&nbsp; <span class="highlight-power">焦耳热：</span> Q = If²·Rline·t</div>
+      <div style="margin-top:10px;"><span class="highlight-kvl">电位分布：</span> Vnode = Us − If·Rline &nbsp;&nbsp;|&nbsp;&nbsp; Vf = If·Rf</div>
+    </div>
+
+    <!-- 计算结果 -->
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-label">短路电流 If</div>
+        <div class="result-value"><span id="res-if">2400</span><span class="result-unit">A</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">线路热功率 Pline</div>
+        <div class="result-value"><span id="res-pline">864.0</span><span class="result-unit">kW</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">短路点电弧功率 Pf</div>
+        <div class="result-value"><span id="res-pf">288.0</span><span class="result-unit">kW</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">焦耳热 Q</div>
+        <div class="result-value"><span id="res-q">86.4</span><span class="result-unit">kJ</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">线路末端电位 Vnode</div>
+        <div class="result-value"><span id="res-vnode">120.0</span><span class="result-unit">V</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-label">危险等级</div>
+        <div class="result-value status-danger" id="res-danger" style="font-size:24px;">极高</div>
+      </div>
+    </div>
+
+    <div class="analysis-text" id="short-analysis">
+      短路电流高达 <strong>2400 A</strong>，是正常工况（50 A）的 48 倍。0.1 秒内线路产生 <strong>86.4 kJ</strong> 热量，相当于约 20.7 克 TNT 炸药释放的能量。断路器必须在此电流持续超过整定时间前跳闸，否则电缆将熔化起火。
+    </div>
+
+    <!-- 知识点讲解 -->
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span class="step-title">建立电路模型</span>
+      </div>
+      <div class="step-body">
+        将发电厂抽象为理想电压源 Us（内阻极小），电缆抽象为线路电阻 Rline，短路点（水和杂质）抽象为极小电阻 Rf。短路瞬间电机被旁路，暂不考虑。这就是"无限大容量系统"的集总参数抽象。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span class="step-title">KVL 计算短路电流</span>
+      </div>
+      <div class="step-body">
+        沿主回路列 KVL：Us − If·Rline − If·Rf = 0，解得 If = Us/(Rline+Rf)。这是整定继电保护定值的数学基础。断路器必须在 If 持续超过整定时间前跳闸，否则电缆熔化。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span class="step-title">KCL 与分布式短路</span>
+      </div>
+      <div class="step-body">
+        在母线排节点列 KCL：Itotal = I1 + I2 + I3。多条分支同时向故障点馈入电流，每条支路断路器承受的电流不同，保护整定值必须分层配合。KCL 是电力系统保护配合的理论根基。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <span class="step-title">功率与破坏力</span>
+      </div>
+      <div class="step-body">
+        P = I²R 热效应决定电缆会不会烧断。功率公式在此不是算电费，而是算"导体热稳定"——这段时间产生的热量，电缆绝缘层能不能承受？焦耳热 Q = I²Rt，是选择电缆截面和断路器脱扣曲线的核心依据。
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-number">5</span>
+        <span class="step-title">电位分布定位故障</span>
+      </div>
+      <div class="step-body">
+        设电源负极为零电位，沿线各点电位：V+ = Us，Vnode = Us − If·Rline，Vf = If·Rf。巡线员测量沿线电位，发现电位从 480V 骤降到接近 0V 的位置，即为短路点——这就是电位梯度法查找故障的原理。
+      </div>
+    </div>
+
+    <!-- 知识点总结表 -->
+    <table class="summary-table">
+      <thead>
+        <tr><th>第一章知识点</th><th>在本案例中的具体体现</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>集总参数电路模型</strong></td><td>发电厂→输电线路→电缆→短路点，抽象为 Us、Rline、Rf</td></tr>
+        <tr><td><strong>电流/电压参考方向</strong></td><td>统一规定短路电流流向，为后续保护方向判别打基础</td></tr>
+        <tr><td><strong>KVL</strong></td><td>计算短路电流 If = Us/(Rline+Rf)，保护整定的核心公式</td></tr>
+        <tr><td><strong>KCL</strong></td><td>多分支配电网中，各支路向故障点贡献电流的总和等于总故障电流</td></tr>
+        <tr><td><strong>电功率</strong></td><td>I²R 热效应决定电缆会不会烧断、断路器要不要跳闸</td></tr>
+        <tr><td><strong>电位</strong></td><td>沿线电位分布用于故障点精确定位</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 思考题 -->
+    <div class="step-card" style="background:#fffbeb; border-color:#f59e0b;">
+      <div class="step-header">
+        <span class="step-number" style="background:#f59e0b;">?</span>
+        <span class="step-title">思考题</span>
+      </div>
+      <div class="step-body">
+        如果把短路点电阻 Rf 从 0.05Ω 降到 0Ω（理想金属性短路），短路电流会变成多少？此时 KVL 还成立吗？功率公式还能用吗？<br><br>
+        <span style="color:#b06000;">提示：If = 480/0.15 = 3200A。KVL 依然成立（等式右边仍为 0），但 Pf = 0——这意味着所有能量都砸在了线路电阻上，电缆烧得更惨。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchCase(idx) {
+    document.querySelectorAll('.case-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+    document.querySelectorAll('.case-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+  }
+
+  function updateTransistor() {
+    const vcc = parseFloat(document.getElementById('vcc').value);
+    const rb = parseFloat(document.getElementById('rb').value);
+    const rc = parseFloat(document.getElementById('rc').value);
+    const beta = parseFloat(document.getElementById('beta').value);
+
+    document.getElementById('vcc-val').textContent = vcc;
+    document.getElementById('rb-val').textContent = rb;
+    document.getElementById('rc-val').textContent = rc.toFixed(1);
+    document.getElementById('beta-val').textContent = beta;
+
+    const vbe = 0.7;
+    const ib = (vcc - vbe) / (rb * 1000); // A
+    const ic = beta * ib; // A
+    const ie = ib + ic; // A
+    const vce = vcc - ic * rc * 1000; // V
+    const pt = vce * ic * 1000; // mW
+    const prc = ic * ic * rc * 1000 * 1000; // mW
+    const vb = vbe;
+
+    document.getElementById('res-ib').textContent = (ib * 1e6).toFixed(1);
+    document.getElementById('res-ic').textContent = (ic * 1000).toFixed(2);
+    document.getElementById('res-ie').textContent = (ie * 1000).toFixed(2);
+    document.getElementById('res-vce').textContent = vce.toFixed(2);
+    document.getElementById('res-pt').textContent = pt.toFixed(1);
+    document.getElementById('res-prc').textContent = prc.toFixed(0);
+    document.getElementById('res-vb').textContent = vb.toFixed(2);
+
+    let status, analysis;
+    const statusEl = document.getElementById('res-status');
+    if (vce < 0.3) {
+      status = '深度饱和';
+      statusEl.className = 'result-value status-danger';
+      analysis = `VCE = ${vce.toFixed(2)}V < 0.3V，三极管进入<strong>深度饱和区</strong>。此时 IC 不再受 IB 控制，失去放大能力。需增大 RB 或减小 RC 使 VCE > 2V。`;
+    } else if (vce < 1.0) {
+      status = '临界饱和';
+      statusEl.className = 'result-value status-warning';
+      analysis = `VCE ≈ ${vce.toFixed(2)}V，三极管处于<strong>临界饱和区</strong>边缘。若要作为放大电路使用，需调整参数使 VCE 处于 2~6V 的放大区。`;
+    } else if (vce < vcc - 1) {
+      status = '放大区';
+      statusEl.className = 'result-value status-safe';
+      analysis = `VCE = ${vce.toFixed(2)}V，三极管工作在<strong>放大区</strong>。IC = β·IB 成立，电路可正常放大信号。功耗 ${pt.toFixed(1)}mW，器件安全。`;
+    } else {
+      status = '截止区';
+      statusEl.className = 'result-value status-warning';
+      analysis = `VCE ≈ ${vce.toFixed(2)}V 接近 VCC，三极管接近<strong>截止区</strong>。IC 过小，可能 IB 不足或 RB 过大。`;
+    }
+    statusEl.textContent = status;
+    document.getElementById('transistor-analysis').innerHTML = analysis;
+  }
+
+  function updateShort() {
+    const us = parseFloat(document.getElementById('us').value);
+    const rline = parseFloat(document.getElementById('rline').value);
+    const rf = parseFloat(document.getElementById('rf').value);
+    const t = parseFloat(document.getElementById('t').value);
+
+    document.getElementById('us-val').textContent = us;
+    document.getElementById('rline-val').textContent = rline;
+    document.getElementById('rf-val').textContent = rf;
+    document.getElementById('t-val').textContent = t.toFixed(2);
+
+    const rtotal = rline + rf;
+    const If = us / rtotal;
+    const pline = If * If * rline;
+    const pf = If * If * rf;
+    const q = pline * t;
+    const vnode = us - If * rline;
+
+    document.getElementById('res-if').textContent = If.toFixed(0);
+    document.getElementById('res-pline').textContent = (pline / 1000).toFixed(1);
+    document.getElementById('res-pf').textContent = (pf / 1000).toFixed(1);
+    document.getElementById('res-q').textContent = (q / 1000).toFixed(1);
+    document.getElementById('res-vnode').textContent = vnode.toFixed(1);
+
+    const dangerEl = document.getElementById('res-danger');
+    let danger, analysis;
+    if (If > 5000) {
+      danger = '灾难性';
+      dangerEl.className = 'result-value status-danger';
+    } else if (If > 2000) {
+      danger = '极高';
+      dangerEl.className = 'result-value status-danger';
+    } else if (If > 500) {
+      danger = '高';
+      dangerEl.className = 'result-value status-warning';
+    } else {
+      danger = '中等';
+      dangerEl.className = 'result-value status-safe';
+    }
+    dangerEl.textContent = danger;
+
+    const tnt = (q / 4184).toFixed(1);
+    analysis = `短路电流 <strong>${If.toFixed(0)} A</strong>。${t.toFixed(2)} 秒内线路产生 <strong>${(q/1000).toFixed(1)} kJ</strong> 热量，相当于约 ${tnt} 克 TNT 炸药释放的能量。`;
+    if (rf < 0.01) {
+      analysis += ` Rf 趋近于 0，几乎所有能量都砸在线路电阻上，电缆烧损最严重。`;
+    }
+    document.getElementById('short-analysis').innerHTML = analysis;
+  }
+
+  updateTransistor();
+  updateShort();
+</script>
+</body>
+</html>

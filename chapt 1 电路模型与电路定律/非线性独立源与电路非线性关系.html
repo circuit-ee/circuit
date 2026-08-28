@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>电路线性与否的决定因素 · 交互演示</title>
+<style>
+  :root{--blue:#1f6feb;--red:#e8553a;--ink:#1c2530;--muted:#5b6b7c;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+       background:linear-gradient(160deg,#eef3f9,#f7f9fc);color:var(--ink);
+       font-size:19px;line-height:1.85;}
+  header{padding:28px 22px 10px;text-align:center}
+  h1{font-size:2.5rem;margin:.2em 0}
+  h2{font-size:1.6rem;margin:1.1em 0 .4em}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px 80px}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:18px 0 24px}
+  .tabs button{border:1px solid #c7d4e2;background:#fff;color:var(--ink);
+       font-size:18px;padding:10px 18px;border-radius:30px;cursor:pointer}
+  .tabs button.on{background:var(--blue);color:#fff;border-color:var(--bd)}
+  .panel{display:none;background:#fff;border:1px solid #e3eaf2;border-radius:16px;
+       padding:22px 24px;box-shadow:0 6px 24px rgba(40,70,110,.07)}
+  .panel.on{display:block}
+  .stage{width:100%;height:440px;background:#eef2f7;border-radius:12px;overflow:hidden}
+  .cv{width:100%;display:block;background:#fbfdff;border:1px solid #e3eaf2;border-radius:12px}
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  .row label{font-weight:600}
+  input[type=range]{width:260px}
+  .tag{display:inline-block;padding:4px 12px;border-radius:20px;font-size:16px;font-weight:700}
+  .tag.ok{background:#e3f6ea;color:#1c8a4d}
+  .tag.no{background:#fde4de;color:#c23a1e}
+  .card{border-left:5px solid var(--blue);background:#f3f8ff;padding:12px 16px;border-radius:8px;margin:14px 0}
+  .card.warn{border-color:var(--red);background:#fff4f1}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:17px}
+  th,td{border:1px solid #d7e1ec;padding:8px 10px;text-align:left}
+  th{background:#eef4fb}
+  code{background:#eef2f7;padding:2px 6px;border-radius:6px}
+  #status{padding:10px 14px;margin:10px 0;border-radius:8px;font-size:16px}
+  #status.err{background:#fde4de;color:#c23a1e}
+  #status.ok{background:#e3f6ea;color:#1c8a4d}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:16px;margin-top:8px}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<header><h1>电路线性与否，由谁决定？</h1>
+<div style="color:var(--muted)">结构元件 vs 独立源 · 交互式 3D / 2D 演示 · 大一适用</div></header>
+
+<div class="wrap">
+  <div id="status">⏳ 正在加载 3D 引擎…</div>
+  <div class="tabs">
+    <button data-t="0" class="on">① 结论与直觉</button>
+    <button data-t="1">② 结构决定线性（3D+波形）</button>
+    <button data-t="2">③ 独立源只改幅度</button>
+    <button data-t="3">④ 叠加/齐次性验证</button>
+  </div>
+
+  <!-- ① -->
+  <section class="panel on" data-p="0">
+    <h2>核心结论</h2>
+    <div class="card"><b>电路是否线性，由「结构 + 元件特性」决定，与独立源的大小、波形都无关。</b></div>
+    <p>判断一个电路是不是线性电路，只看两件事：</p>
+    <table>
+      <tr><th>组成</th><th>是否决定线性</th><th>说明</th></tr>
+      <tr><td>电阻 / 电感 / 电容（线性元件）</td><td>✅ 决定</td><td><code>R,L,C</code> 为常数 → 线性；<code>R(i)=R₀+αi</code> → 非线性</td></tr>
+      <tr><td>独立电压源 / 电流源（大小、直流、正弦、方波…）</td><td>❌ 不决定</td><td>只是输入信号，改它只改响应幅度/形状</td></tr>
+      <tr><td>受控源（控制关系线性，如 <code>i=g·v</code>）</td><td>✅ 决定（仍线性）</td><td>属于结构一部分</td></tr>
+      <tr><td>受控源（控制关系非线性，如 <code>i=g·v²</code>）</td><td>✅ 决定（非线性）</td><td>整体非线性</td></tr>
+    </table>
+    <div class="card warn"><b>💡 关键区分</b><br>
+    独立源的<b>大小</b> → 只改响应幅度<br>
+    独立源的<b>波形</b>（方波/锯齿/噪声）→ 只改响应形状，<b>不改变电路线性属性</b><br>
+    只有<b>元件/结构</b>（含受控源控制关系）非线性 → 电路才非线性</div>
+    <p style="color:var(--muted)">类比：弹簧秤（线性元件）挂 1kg 或 5kg（独立源大小不同），读数同比变化，秤本身还是线性的；换成橡皮筋（非线性元件），哪怕只挂 1kg，它也非线性。</p>
+  </section>
+
+  <!-- ② -->
+  <section class="panel" data-p="1">
+    <h2>结构决定线性 · RL 串联电路</h2>
+    <div class="stage" id="stage3d" data-w="900" data-h="440"></div>
+    <div class="row">
+      <label>独立源 Uₛ (V)：<span id="usv">6</span></label>
+      <input type="range" id="us" min="0" max="12" step="0.1" value="6">
+    </div>
+    <p>拖 Uₛ：3D 里电池电压变、电流同比变，但 <b>电阻 R、电感 L 没变 → 电路仍是线性</b>，响应曲线形状不变。</p>
+    <h2>时域电流波形 i(t)</h2>
+    <canvas class="cv" id="wave" width="1000" height="320"></canvas>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--blue)"></i>线性 RL：i(t)=(Uₛ/R)(1−e^(−t/τ)), τ=L/R</span>
+      <span><i class="dot" style="background:var(--red)"></i>非线性对照（R(i)=R₀+αi）：饱和弯曲曲线</span>
+    </div>
+    <div class="card">改 Uₛ → 蓝线整条同比缩放（形状不变）；把 R 改成 <code>R(i)=R₀+αi</code>（结构变）→ 红线弯曲 → 这才是非线性电路。</div>
+  </section>
+
+  <!-- ③ -->
+  <section class="panel" data-p="2">
+    <h2>独立源只改幅度，不改斜率（线性判据）</h2>
+    <canvas class="cv" id="iu" width="1000" height="360"></canvas>
+    <div class="row">
+      <label>独立源 Uₛ (V)：<span id="usv2">6</span></label>
+      <input type="range" id="us2" min="0" max="12" step="0.1" value="6">
+      <label>电阻 R (Ω)：<span id="rv">2</span></label>
+      <input type="range" id="r2" min="0.5" max="6" step="0.1" value="2">
+    </div>
+    <div class="card">改 <b>Uₛ</b> → 绿点沿同一条直线滑动（斜率 1/R 不变）→ <b>源只改工作点幅度</b><br>
+    改 <b>R</b> → 整条直线绕原点转动（斜率变）→ <b>结构元件才决定线性/斜率</b></div>
+  </section>
+
+  <!-- ④ -->
+  <section class="panel" data-p="3">
+    <h2>叠加性 / 齐次性验证</h2>
+    <div class="row">
+      <label>源 U₁ (V)：<span id="u1v">6</span></label>
+      <input type="range" id="u1" min="0" max="10" step="0.1" value="6">
+      <label>源 U₂ (V)：<span id="u2v">4</span></label>
+      <input type="range" id="u2" min="0" max="10" step="0.1" value="4">
+      <label>R = 2 Ω（固定结构）</label>
+    </div>
+    <p id="sup"></p>
+    <div class="card warn">叠加定理 <b>对电路成立</b>：<code>i(U₁+U₂) = i(U₁)+i(U₂)</code>；<br>
+    但 <b>对源信号本身不成立</b>（如方波源 square(t) 不是线性算子）—— 这不改变电路仍是线性电路。</div>
+  </section>
+</div>
+
+<script>
+/* ---------- CDN 加载（jsDelivr 主用 + unpkg 回退） ---------- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>setTimeout(res,0);s.onerror=rej;document.head.appendChild(s);});}
+async function boot3D(){
+  const cdn=['https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+            'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'];
+  const bak=['https://unpkg.com/three@0.128.0/build/three.min.js',
+            'https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js'];
+  try{
+    await loadScript(cdn[0]); if(!window.THREE) throw 0;
+    await loadScript(cdn[1]); if(!window.THREE.OrbitControls) throw 0;
+  }catch(e){
+    try{ await loadScript(bak[0]); if(!window.THREE) throw 0;
+         await loadScript(bak[1]); if(!window.THREE.OrbitControls) throw 0; }
+    catch(e2){ document.getElementById('status').className='err';
+      document.getElementById('status').textContent='⚠ 3D 引擎加载失败（教育网可能限制 CDN，请切换热点或仅使用 2D 部分）'; return; }
+  }
+  document.getElementById('status').className='ok';
+  document.getElementById('status').textContent='✅ 3D 引擎就绪';
+  init3D();
+}
+
+/* ---------- 3D 场景：RL 串联 ---------- */
+let def3d=null;
+function init3D(){
+  if(def3d) return;
+  const stage=document.getElementById('stage3d');
+  const w=parseInt(stage.dataset.w)||stage.clientWidth||900;
+  const h=parseInt(stage.dataset.h)||440;
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(50,w/h,0.1,100); cam.position.set(4,3,6);
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setClearColor(0xeef2f7,1); renderer.setSize(w,h,false); stage.appendChild(renderer.domElement);
+  const ctl=new THREE.OrbitControls(cam,renderer.domElement); ctl.target.set(0,0,0);
+  scene.add(new THREE.AmbientLight(0xffffff,0.75)); const dl=new THREE.DirectionalLight(0xffffff,0.6); dl.position.set(5,8,6); scene.add(dl);
+  // 导线
+  const wire=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3,0,0),new THREE.Vector3(3,0,0)]),
+        new THREE.LineBasicMaterial({color:0x33475a})); scene.add(wire);
+  // 电阻（盒）
+  const R=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.5,0.5),new THREE.MeshLambertMaterial({color:0x1f6feb}));
+  R.position.set(-1,0,0); scene.add(R);
+  // 电感（线圈替代：torus 堆）
+  const ind=new THREE.Group(); for(let k=0;k<4;k++){const t=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.07,8,20),new THREE.MeshLambertMaterial({color:0x2bb673})); t.position.set(1+k*0.0,0,0); t.rotation.y=k*0.5; ind.add(t);} ind.position.set(1,0,0); scene.add(ind);
+  // 电池
+  const bat=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.8,20),new THREE.MeshLambertMaterial({color:0xe8553a}));
+  bat.position.set(0,0.6,0); scene.add(bat);
+  // 电流箭头
+  const arrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(-3,0,0),1,0x111111,0.3,0.18); scene.add(arrow);
+  def3d={scene,cam,renderer,ctl,arrow,R,ind,bat,loop:true};
+  setUs(parseFloat(document.getElementById('us').value));
+  (function animate(){requestAnimationFrame(animate); ctl.update(); renderer.render(scene,cam);})();
+}
+function setUs(val){
+  document.getElementById('usv').textContent=val.toFixed(1);
+  if(!def3d) return;
+  const i=val/2; // R=2Ω
+  def3d.arrow.setLength(Math.max(0.2,Math.min(5,i*0.4)),0.3,0.18);
+  def3d.bat.scale.y=0.6+val/12;
+  drawWave(val);
+}
+
+/* ---------- 2D 波形 ---------- */
+function drawWave(Us){
+  const cv=document.getElementById('wave'); const g=cv.getContext('2d');
+  const W=cv.width,H=cv.height; g.clearRect(0,0,W,H);
+  const R=2,L=1,tau=L/R, T=6, Imax=12/2;
+  // 轴
+  g.strokeStyle='#b9c6d4'; g.lineWidth=1; g.beginPath(); g.moveTo(50,20); g.lineTo(50,H-30); g.lineTo(W-10,H-30); g.stroke();
+  g.fillStyle='#5b6b7c'; g.font='16px sans-serif';
+  g.fillText('i(t)',8,30); g.fillText('t',W-22,H-12);
+  // 线性 RL 指数曲线
+  g.strokeStyle='#1f6feb'; g.lineWidth=3; g.beginPath();
+  for(let px=0;px<=W-60;px++){const t=px/(W-60)*T; const i=(Us/R)*(1-Math.exp(-t/tau));
+    const y=(H-30)-i/Imax*(H-60); if(px===0)g.moveTo(50,y); else g.lineTo(50+px,y);} g.stroke();
+  // 非线性对照 R(i)=R0+αi → i(t) 饱和：用 i=(Us/R0)*tanh(t/tau*0.8)
+  g.strokeStyle='#e8553a'; g.lineWidth=3; g.beginPath();
+  for(let px=0;px<=W-60;px++){const t=px/(W-60)*T; const i=(Us/2)*Math.tanh(t/tau*0.9);
+    const y=(H-30)-i/Imax*(H-60); if(px===0)g.moveTo(50,y); else g.lineTo(50+px,y);} g.stroke();
+}
+
+/* ---------- ③ i-U 直线 ---------- */
+function drawIU(){
+  const Us=parseFloat(document.getElementById('us2').value);
+  const R=parseFloat(document.getElementById('r2').value);
+  document.getElementById('usv2').textContent=Us.toFixed(1);
+  document.getElementById('rv').textContent=R.toFixed(1);
+  const cv=document.getElementById('iu'); const g=cv.getContext('2d');
+  const W=cv.width,H=cv.height; g.clearRect(0,0,W,H);
+  const ox=60,oy=H-40, Um=12, Im=6;
+  g.strokeStyle='#b9c6d4'; g.lineWidth=1; g.beginPath(); g.moveTo(ox,20); g.lineTo(ox,oy); g.lineTo(W-20,oy); g.stroke();
+  g.fillStyle='#5b6b7c'; g.font='16px sans-serif'; g.fillText('i(A)',10,30); g.fillText('Uₛ(V)',W-70,oy+26);
+  // 直线 i=U/R
+  g.strokeStyle='#1f6feb'; g.lineWidth=3; g.beginPath();
+  for(let u=0;u<=Um;u++){const i=u/R; const x=ox+u/Um*(W-ox-30); const y=oy-i/Im*(oy-30);
+    if(u===0)g.moveTo(x,y); else g.lineTo(x,y);} g.stroke();
+  // 工作点
+  const i=Us/R; const x=ox+Us/Um*(W-ox-30); const y=oy-i/Im*(oy-30);
+  g.fillStyle='#1c8a4d'; g.beginPath(); g.arc(x,y,7,0,7); g.fill();
+  g.fillStyle='#1c2530'; g.fillText(`Uₛ=${Us.toFixed(1)}V, i=${i.toFixed(2)}A, 斜率=1/R=${(1/R).toFixed(2)}`,70,40);
+}
+
+/* ---------- ④ 叠加验证 ---------- */
+function drawSup(){
+  const U1=parseFloat(document.getElementById('u1').value);
+  const U2=parseFloat(document.getElementById('u2').value); const R=2;
+  document.getElementById('u1v').textContent=U1.toFixed(1);
+  document.getElementById('u2v').textContent=U2.toFixed(1);
+  const i1=U1/R,i2=U2/R,is=U1/U2!==Infinity?(U1+U2)/R:0, sum=i1+i2;
+  const ok=Math.abs(is-sum)<1e-6;
+  document.getElementById('sup').innerHTML=
+    `i(U₁)=${i1.toFixed(2)}A ，i(U₂)=${i2.toFixed(2)}A ，i(U₁)+i(U₂)=${sum.toFixed(2)}A<br>`+
+    `i(U₁+U₂)=i(${(U1+U2).toFixed(1)}V)=${( (U1+U2)/R ).toFixed(2)}A `+
+    `<span class="tag ${ok?'ok':'no'}">叠加${ok?'成立 ✓':'不成立 ✗'}（对电路成立）</span>`;
+}
+
+/* ---------- tab 切换 ---------- */
+const tabs=[...document.querySelectorAll('.tabs button')];
+const panels=[...document.querySelectorAll('.panel')];
+tabs.forEach(b=>b.onclick=()=>{const t=+b.dataset.t;
+  tabs.forEach(x=>x.classList.toggle('on',x===b));
+  panels.forEach(p=>p.classList.toggle('on',+p.dataset.p===t));
+  if(t===1 && window.THREE) setTimeout(()=>{if(!def3d)init3D();},60);
+  if(t===1) drawWave(parseFloat(document.getElementById('us').value));
+  if(t===2) drawIU();
+  if(t===3) drawSup();
+});
+
+/* ---------- 绑定 ---------- */
+document.getElementById('us').oninput=e=>setUs(parseFloat(e.target.value));
+document.getElementById('us2').oninput=drawIU;
+document.getElementById('r2').oninput=drawIU;
+document.getElementById('u1').oninput=drawSup;
+document.getElementById('u2').oninput=drawSup;
+
+drawIU(); drawSup();
+boot3D();
+</script>
+</body>
+</html>

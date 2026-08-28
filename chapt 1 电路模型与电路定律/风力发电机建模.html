@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>草原风力发电机单机建模方式</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+    background: linear-gradient(135deg, #f5fbf7 0%, #eaf4fb 100%);
+    color: #243746;
+    font-size: 20px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: linear-gradient(135deg, #2e8b57 0%, #3aa6d6 100%);
+    color: #fff;
+    padding: 70px 24px 60px;
+    text-align: center;
+    box-shadow: 0 6px 24px rgba(46,139,87,.18);
+  }
+  header h1 { font-size: 46px; letter-spacing: 2px; margin-bottom: 18px; }
+  header p { font-size: 22px; opacity: .95; max-width: 860px; margin: 0 auto; }
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e0ece5;
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    padding: 14px 18px;
+  }
+  nav a {
+    color: #2e8b57; text-decoration: none; font-size: 18px; font-weight: 600;
+    padding: 8px 16px; border-radius: 22px; transition: all .25s;
+    border: 1px solid transparent;
+  }
+  nav a:hover { background: #e6f4ec; border-color: #bce3cd; }
+  main { max-width: 980px; margin: 0 auto; padding: 30px 22px 60px; }
+  section { margin-bottom: 46px; scroll-margin-top: 70px; }
+  .card {
+    background: #ffffff; border-radius: 18px; padding: 34px 34px;
+    box-shadow: 0 8px 28px rgba(60,90,110,.08);
+    border: 1px solid #eef3f1;
+  }
+  h2 { font-size: 32px; color: #2e8b57; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 12px; background: #2e8b57; color: #fff;
+    font-size: 22px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 24px; color: #1f6f8b; margin: 22px 0 10px; }
+  p { margin-bottom: 14px; }
+  .formula {
+    background: #f2f8f4; border-left: 5px solid #3aa6d6; border-radius: 10px;
+    padding: 16px 20px; margin: 16px 0; font-family: "Cambria Math", serif;
+    font-size: 20px; color: #1d4e63; overflow-x: auto;
+  }
+  .tip {
+    background: #fff6e6; border-left: 5px solid #f0b429; border-radius: 10px;
+    padding: 16px 20px; margin: 16px 0; font-size: 19px;
+  }
+  .tip b { color: #c98a00; }
+  .interactive { margin-top: 20px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .tab {
+    cursor: pointer; padding: 12px 20px; border-radius: 12px; font-size: 19px; font-weight: 600;
+    background: #eef4f1; color: #3a6650; border: 2px solid transparent; transition: all .25s;
+  }
+  .tab.active { background: #2e8b57; color: #fff; border-color: #24704a; }
+  .tab:hover:not(.active) { background: #dcebe3; }
+  .panel { display: none; animation: fade .4s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  details {
+    background: #f6faf8; border-radius: 12px; padding: 16px 20px; margin: 14px 0;
+    border: 1px solid #e2ece6; transition: background .2s;
+  }
+  details[open] { background: #eef7f2; }
+  summary { cursor: pointer; font-size: 21px; font-weight: 700; color: #2e6b47; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "＋"; font-size: 26px; color: #8bb8a0; transition: transform .3s; }
+  details[open] summary::after { content: "－"; }
+  ul, ol { padding-left: 26px; margin-bottom: 12px; }
+  li { margin-bottom: 9px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 18px; }
+  th, td { border: 1px solid #d9e6e0; padding: 12px 14px; text-align: left; vertical-align: top; }
+  th { background: #eaf4ef; color: #2e6b47; }
+  tr:nth-child(even) td { background: #f8fbfa; }
+  .ref { font-size: 17px; color: #3a4a55; }
+  .ref li { margin-bottom: 12px; }
+  .tag {
+    display: inline-block; font-size: 15px; padding: 3px 10px; border-radius: 14px;
+    background: #e3f0e8; color: #2e8b57; margin-left: 8px; vertical-align: middle;
+  }
+  footer { text-align: center; color: #8aa3a0; font-size: 16px; padding: 30px 20px 50px; }
+  .pulse { color:#2e8b57; font-weight:700; }
+  @media (max-width: 640px) {
+    header h1 { font-size: 34px; } header p { font-size: 18px; }
+    body { font-size: 18px; } h2 { font-size: 27px; } h3 { font-size: 21px; }
+    .card { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌬️ 草原风力发电机单机建模</h1>
+  <p>面向陆上（草原）风电场的单机常见建模方式与经典文献来源 —— 交互式科普读本</p>
+</header>
+
+<nav>
+  <a href="#overview">建模总览</a>
+  <a href="#detailed">详细模型</a>
+  <a href="#linear">线性化模型</a>
+  <a href="#source">电源等效</a>
+  <a href="#select">选型指南</a>
+  <a href="#refs">文献来源</a>
+</nav>
+
+<main>
+
+<!-- 1 概述 -->
+<section id="overview">
+  <div class="card">
+    <h2><span class="num">1</span>建模总览</h2>
+    <p>草原上的风力发电机本质是<strong>陆上风电机组</strong>，建模与"草原"地理本身关系不大，主要取决于两件事：<span class="pulse">风机类型</span>（双馈 DFIG 或直驱 PMSG）与<strong>研究尺度</strong>（单机控制 / 风电场并网）。</p>
+    <div class="interactive">
+      <div class="tabs" role="tablist">
+        <div class="tab active" data-target="ov1">双馈 DFIG</div>
+        <div class="tab" data-target="ov2">直驱 PMSG</div>
+        <div class="tab" data-target="ov3">研究尺度</div>
+      </div>
+      <div class="panel active" id="ov1">
+        <h3>双馈感应风机（DFIG）</h3>
+        <p>由转子侧变流器、网侧变流器、双馈感应发电机、传动系、定子及直流电容组成。发电机经<strong>部分功率</strong>背靠背变流器接入电网，是目前陆上风场的主流机型之一。</p>
+        <div class="formula">P<sub>m</sub> = ½ ρ π R² v³ C<sub>p</sub>(λ, β)　　（气动功率模型）</div>
+      </div>
+      <div class="panel" id="ov2">
+        <h3>直驱永磁风机（PMSG）</h3>
+        <p>无齿轮箱，永磁同步发电机经<strong>全功率</strong>背靠背变流器并网。省去齿轮箱损耗，可靠性高，在大容量陆上/海上机组中应用渐广。</p>
+        <div class="formula">P<sub>e</sub> = T<sub>e</sub> · ω<sub>r</sub>　　（电磁功率，ω<sub>r</sub> 为转子电角速度）</div>
+      </div>
+      <div class="panel" id="ov3">
+        <h3>研究尺度决定模型粒度</h3>
+        <ul>
+          <li><strong>控制算法 / 载荷</strong>：用详细非线性模型（气动+机械+电气）。</li>
+          <li><strong>稳定性 / 小干扰</strong>：在工作点线性化，取状态空间模型。</li>
+          <li><strong>并网 / 规划</strong>：风电场可等值为"电源"（受控源/PQ节点）。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip"><b>核心提示：</b>风机不是"旋转切割磁感线的传统发电机"，而是"整流–直流–逆变的电力电子并网装置"，建模必须体现<strong>变流器控制</strong>与<strong>锁相环（PLL）</strong>特性。</div>
+  </div>
+</section>
+
+<!-- 2 详细模型 -->
+<section id="detailed">
+  <div class="card">
+    <h2><span class="num">2</span>详细机理模型（单机级）</h2>
+    <p>对风机各物理环节分别建模再组合，精度高，是控制设计与数字孪生的基础。可展开下列环节查看建模要点：</p>
+
+    <details open>
+      <summary>① 风力机气动模型</summary>
+      <p>描述风能为机械能的转换，是整机模型的输入环节。</p>
+      <div class="formula">P<sub>m</sub> = ½ ρ A v³ C<sub>p</sub>(λ, β)，　A = πR²，　λ = ω<sub>r</sub>R / v</div>
+      <p>其中 ρ 为空气密度，R 为叶轮半径，v 为风速，C<sub>p</sub> 为风能利用系数（关于叶尖速比 λ 与桨距角 β 的非线性函数）。</p>
+    </details>
+
+    <details>
+      <summary>② 传动系模型</summary>
+      <p>通常采用<strong>两质块</strong>模型：叶片+低速轴+齿轮箱+高速轴+转子，计及轴系柔性。</p>
+      <div class="formula">2H<sub>t</sub> dω<sub>t</sub>/dt = T<sub>m</sub> − T<sub>sh</sub> − D(ω<sub>t</sub>−ω<sub>r</sub>)</div>
+      <p>H<sub>t</sub>、H<sub>g</sub> 分别为叶片侧与发电机侧惯性常数，T<sub>sh</sub> 为轴系扭矩，D 为阻尼系数。</p>
+    </details>
+
+    <details>
+      <summary>③ 发电机与变流器模型</summary>
+      <ul>
+        <li><strong>DFIG</strong>：在 dq 同步旋转坐标系下列写 5 阶状态方程；转子侧变流器采用<strong>定子磁链定向矢量控制</strong>，实现有功/无功解耦。</li>
+        <li><strong>PMSG</strong>：永磁同步发电机模型 + 机侧/网侧变流器；机侧控制转矩/转速，网侧控制直流电压与无功。</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>④ 整机数字孪生（高精度）</summary>
+      <p>用 FAST（NREL）建立空气动力学与结构动力学，在 Simulink 搭建电气与控制，形成数字孪生，用于验证不同风速下的功率、转速与桨距角响应。</p>
+    </details>
+
+    <div class="tip"><b>取舍：</b>详细模型精度高但<strong>工作量大，不适于大型风电场</strong>的全场仿真；全场研究需采用等效/电源建模（见第 4 节）。</div>
+  </div>
+</section>
+
+<!-- 3 线性化 -->
+<section id="linear">
+  <div class="card">
+    <h2><span class="num">3</span>线性化小信号模型</h2>
+    <p>详细非线性模型可在<strong>稳态工作点附近做泰勒一阶展开</strong>，忽略高次项得到增量状态空间模型，是稳定性分析与控制器设计的标配工具。</p>
+    <div class="formula">Δẋ = A·Δx + B·Δu</div>
+    <p>例如对气动转矩 T<sub>m</sub> 在工作点 (v₀, ω<sub>r0</sub>, β₀) 附近展开：</p>
+    <div class="formula">ΔT<sub>m</sub> = (∂T<sub>m</sub>/∂ω<sub>r</sub>)Δω<sub>r</sub> + (∂T<sub>m</sub>/∂v)Δv + (∂T<sub>m</sub>/∂β)Δβ</div>
+    <h3>适用边界（可点击查看）</h3>
+    <div class="interactive">
+      <div class="tabs">
+        <div class="tab active" data-target="ln1">✅ 适用</div>
+        <div class="tab" data-target="ln2">❌ 不适用</div>
+      </div>
+      <div class="panel active" id="ln1">
+        <ul>
+          <li>小幅度负荷变化、minor switching。</li>
+          <li>小扰动稳定性 / 特征值分析 / 阻尼比计算。</li>
+          <li>PID、MPC 等控制器设计（局部线性化）。</li>
+        </ul>
+      </div>
+      <div class="panel" id="ln2">
+        <ul>
+          <li>大扰动暂态（短路故障、孤岛切换）。</li>
+          <li>剧烈负载波动、大电流启动冲击。</li>
+          <li>风速大范围变化（工作点移动，A/B 矩阵随之改变）。</li>
+        </ul>
+        <div class="tip"><b>解法：</b>风速多变时采用 <strong>LPV（线性参数变化）</strong>或<strong>分段仿射（PWA）/ 多模型切换</strong>，而非单一线性模型。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 电源等效 -->
+<section id="source">
+  <div class="card">
+    <h2><span class="num">4</span>电源等效建模（风电场级）</h2>
+    <p>当风电场由数十上百台机组构成时，详细模型阶数过高、仿真困难，须等值为一个（或多个）"等效电源"。<strong>不能用理想正弦交流电源</strong>（会误判为同步机、短路电流虚高）。</p>
+    <h3>三种主流等值方法</h3>
+    <table>
+      <tr><th>方法</th><th>做法</th><th>适用场景</th></tr>
+      <tr><td>单机表征法</td><td>全场等值为一台风机+一台发电机，容量=机组之和</td><td>机组同质、风速均匀</td></tr>
+      <tr><td>风速分群多机等值</td><td>按风速对机组分群，每群等值为一台机组</td><td>场内风速差异明显</td></tr>
+      <tr><td>机群划分多机等值</td><td>按运行点分群，相近运行点动态聚合</td><td>机组运行状态差异大</td></tr>
+    </table>
+    <h3>正确的"电源"抽象形式（点击对比）</h3>
+    <div class="interactive">
+      <div class="tabs">
+        <div class="tab active" data-target="ps1">受控电流源（推荐）</div>
+        <div class="tab" data-target="ps2">受控电压源</div>
+        <div class="tab" data-target="ps3">PQ 节点（规划级）</div>
+      </div>
+      <div class="panel active" id="ps1">
+        <p>并网点（PCC）对外表现为受控电流源，电流大小/相位由有功无功指令决定，经 PLL 跟随电网电压矢量旋转。</p>
+        <div class="formula">I<sub>d,ref</sub> = f(P<sub>ref</sub>)，　I<sub>q,ref</sub> = f(Q<sub>ref</sub>)</div>
+        <p>适用：<strong>电网稳定、潮流、故障穿越、短路计算</strong>（须带限流）。</p>
+      </div>
+      <div class="panel" id="ps2">
+        <p>直流侧电容足够大、控制目标为维持并网点电压时可等效为受控电压源，<strong>须串联等效阻抗</strong>（滤波电感+线路阻抗）以模拟变流器限流特性。</p>
+        <p>适用：电压支撑（SVG 功能）、微电网孤岛运行研究。</p>
+      </div>
+      <div class="panel" id="ps3">
+        <p>完全忽略电气特性，仅注入指定有功 P 与无功 Q。计算快但<strong>无法用于暂态仿真</strong>（不响应电压突变）。</p>
+        <p>适用：中长期电网规划、静态潮流计算。</p>
+      </div>
+    </div>
+    <div class="tip"><b>草原场景提示：</b>草原地形平坦、机组排布均匀、尾流效应弱于山地，单机等值或少量机群等值的误差通常<strong>更小</strong>，"电源建模"合理性更高。</div>
+  </div>
+</section>
+
+<!-- 5 选型 -->
+<section id="select">
+  <div class="card">
+    <h2><span class="num">5</span>按研究目的选型</h2>
+    <table>
+      <tr><th>研究目的</th><th>推荐模型</th></tr>
+      <tr><td>短路计算 / 继电保护整定</td><td>详细模型 或 受控电流源（带限流）</td></tr>
+      <tr><td>次同步 / 宽频振荡</td><td>详细模型（含 PLL 与电流控制）</td></tr>
+      <tr><td>静态电压稳定 / 潮流</td><td>PQ 节点（功率注入）</td></tr>
+      <tr><td>暂态稳定（故障后是否脱网）</td><td>单机等值模型（含变流器控制/LVRT）</td></tr>
+      <tr><td>控制算法 / MPPT / 变桨</td><td>详细非线性模型 + 工作点线性化</td></tr>
+      <tr><td>载荷 / 疲劳 / 塔架振动</td><td>FAST 整机 + Simulink 电气耦合</td></tr>
+    </table>
+    <div class="tip"><b>一句话：</b>风机是"<strong>带直流储能的有源整流–逆变装置</strong>"，须用受控源或电力电子接口模型（如 WECC / NREL Type 3 DFIG、Type 4 PMSG）建模，才能反映其在草原电网中的真实行为。</div>
+  </div>
+</section>
+
+<!-- 6 文献 -->
+<section id="refs">
+  <div class="card">
+    <h2><span class="num">6</span>经典文献与标准模型来源</h2>
+    <ol class="ref">
+      <li><strong>Heffron W. G., Phillips R. A.</strong> Effect of modern amplidyne voltage regulators on underexcited synchronous operation of large turbine generators. <em>AIEE Trans.</em>, 1952.（同步机经典 Heffron–Phillips 模型，线性化基准）</li>
+      <li><strong>NREL 5-MW Reference Wind Turbine</strong>, NREL/TP-500-38060, 2009.（陆上 5MW 三叶片上风向变速变桨风机定义，LPV/分段线性建模常用基准）</li>
+      <li><strong>Jonkman J. M., Buhl M. L.</strong> FAST User's Guide. NREL/EL-500-38230, 2005.（FAST 气动/结构动力学 + Simulink 电气耦合数字孪生）</li>
+      <li><strong>WECC / NREL Type 3 (DFIG) & Type 4 (PMSG) Generator Models</strong>. Western Electricity Coordinating Council 可再生能源建模工作组.（电网仿真标准风机模型，PSCAD/PowerFactory/Simulink 均有库）</li>
+      <li><strong>Ellis A. et al.</strong> Review of existing reactive-power requirements for variable-speed wind turbines. <em>National Renewable Energy Laboratory</em>, CP-550-47608, 2010.（变流器无功/电压控制与并网要求综述）</li>
+      <li><strong>Wang L., Miura Y., Ise T.</strong> 海上/陆上风电场通过 VSC-HVDC 并网的稳定控制相关研究；风电场 VSC 等效与 PQ 控制接口方法见于 IEEE Trans. on Energy Conversion 与 IEEE Trans. on Power Systems 系列论文.</li>
+      <li><strong>《可再生能源》期刊（中国科协）</strong>：基于 NREL 5MW 风机、固定转子转速扫风速得到局部线性模型族的 LPV 线性化方法研究.（风速多变场景的分段/多模型建模依据）</li>
+      <li><strong>Wiley 学术文献</strong>：基于聚类算法的风电机组非线性模型分段仿射（PWA）识别方法，用于风电场级 MPC/LQR 控制.（PWA 电源等效依据）</li>
+    </ol>
+    <div class="tip"><b>检索建议：</b>在 Google Scholar / IEEE Xplore 以 "<em>wind turbine DFIG state-space model</em>"、"<em>NREL 5MW FAST linear parameter varying</em>"、"<em>wind farm equivalent aggregated model</em>" 为关键词，可定位上述原始文献与最新延伸工作。</div>
+    <p style="font-size:16px;color:#9bb0aa;margin-top:10px;">⚠️ 本页面为教学/选型参考，具体建模参数请以所选风机厂商数据与最新标准（IEC 61400 系列）及原始文献为准。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  交互式 H5 · 草原风力发电机单机建模读本 · 浅色版 · 字号已放大适配阅读
+</footer>
+
+<script>
+  // Tab 交互（每个 .interactive 内独立）
+  document.querySelectorAll('.interactive').forEach(function (box) {
+    var tabs = box.querySelectorAll('.tab');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var target = tab.getAttribute('data-target');
+        box.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+        box.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        var panel = document.getElementById(target);
+        if (panel) panel.classList.add('active');
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

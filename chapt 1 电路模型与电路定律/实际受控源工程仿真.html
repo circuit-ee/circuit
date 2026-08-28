@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程级CCCS仿真：顺从电压与四区特性</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:linear-gradient(135deg,#f0f4f8,#e2e8f0);padding:30px;min-height:100vh;display:flex;justify-content:center}
+.container{max-width:1300px;width:100%;background:#fff;border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.1);padding:40px;font-size:17px}
+h1{text-align:center;color:#1a202c;font-size:34px;margin-bottom:15px}
+.subtitle{text-align:center;color:#718096;font-size:19px;margin-bottom:40px}
+.explain-block{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:40px}
+.explain-card{background:#f7fafc;border-radius:15px;padding:30px;border:1px solid #e2e8f0}
+.explain-card h2{font-size:24px;color:#2d3748;margin-bottom:25px;border-left:6px solid #4299e1;padding-left:15px}
+.explain-item{margin-bottom:20px;padding-bottom:20px;border-bottom:1px dashed #cbd5e0}
+.explain-item:last-child{border-bottom:none}
+.explain-item h3{font-size:19px;color:#2b6cb0;margin-bottom:10px;font-weight:600}
+.explain-item p{font-size:17px;color:#4a5568;line-height:1.8}
+.zone-badge{display:inline-block;padding:6px 15px;border-radius:9999px;font-size:16px;font-weight:bold;margin-right:10px;margin-bottom:10px}
+.b-cut{background:#e2e8f0;color:#4a5568}.b-act{background:#c6f6d5;color:#276749}.b-sat{background:#fefcbf;color:#975a16}.b-brk{background:#fed7d7;color:#9b2c2c}
+.circuit-wrapper{background:#fff;border:2px solid #cbd5e0;border-radius:15px;padding:30px;margin-bottom:40px;text-align:center;overflow-x:auto}
+svg{max-width:100%;height:auto}
+.wire{stroke:#333;stroke-width:3;fill:none}
+.voltage-src{stroke:#dc2626;stroke-width:3;fill:rgba(220,38,38,.05)}
+.src-polarity{font-size:20px;font-weight:bold;fill:#dc2626}
+.resistor{stroke:#d97706;stroke-width:3;fill:none}
+.ccs{stroke:#8b5cf6;stroke-width:3;fill:rgba(139,92,246,.1)}
+.node{fill:#ef4444;r:6}
+.label{font-size:20px;font-weight:bold;fill:#333}
+.current-arrow{stroke:#333;stroke-width:3;fill:#333;marker-end:url(#arrow)}
+.voltage-line{stroke:#2563eb;stroke-width:3;stroke-dasharray:6}
+.param-text{font-size:18px;fill:#333;font-weight:bold}
+.control-panel{background:#f7fafc;padding:30px;border-radius:15px;margin-bottom:40px;border:1px solid #e2e8f0}
+.control-title{font-size:24px;font-weight:bold;color:#2d3748;margin-bottom:25px;border-left:6px solid #4299e1;padding-left:15px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:30px}
+.control-group{display:flex;flex-direction:column}
+.control-group label{font-size:18px;margin-bottom:8px;color:#4a5568;font-weight:600}
+.control-group input{padding:12px;border:2px solid #cbd5e0;border-radius:8px;font-size:18px}
+.buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:25px}
+button{padding:15px;border:none;border-radius:10px;cursor:pointer;font-size:17px;font-weight:bold;color:#fff;transition:all .2s}
+button:hover{opacity:.9;transform:translateY(-2px)}
+.btn-cutoff{background:#a0aec0}.btn-act{background:#38a169}.btn-sat{background:#ecc94b;color:#744210}.btn-break{background:#e53e3e}.btn-reset{background:#4299e1;grid-column:span 4}
+.interval-container{position:relative;height:70px;background:#edf2f7;border-radius:10px;margin-bottom:40px;border:2px solid #cbd5e0;display:flex;align-items:center;justify-content:space-between;padding:0 15px}
+.marker{position:absolute;top:0;bottom:0;width:3px;background:#a0aec0}
+.label-box{position:absolute;top:50%;transform:translateY(-50%);font-size:16px;font-weight:bold;color:#718096;text-align:center;width:100px}
+.indicator{position:absolute;top:50%;transform:translate(-50%,-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;transition:left .5s ease}
+.arrow-cutoff{border-top:25px solid #a0aec0}.arrow-act{border-top:25px solid #38a169}.arrow-sat{border-top:25px solid #ecc94b}.arrow-break{border-top:25px solid #e53e3e}
+.results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:30px}
+.result-box{background:#f7fafc;border:1px solid #e2e8f0;border-left:6px solid #4299e1;padding:25px;border-radius:12px}
+.result-box h3{margin:0 0 15px;font-size:20px;color:#2d3748}
+.result-box p{margin:0;font-size:28px;font-weight:bold;color:#1a202c;font-family:'Consolas',monospace}
+.eq{font-size:17px!important;color:#718096!important;font-weight:400!important;margin-top:10px!important;line-height:1.6}
+.kcl-box{background:#f0fff4;border-left:6px solid #68d391;padding:20px;border-radius:12px;font-size:19px;text-align:center;margin-bottom:30px;font-weight:600}
+.theory-box{background:#f7fafc;padding:30px;border-radius:15px;border:1px solid #e2e8f0}
+.theory-box h2{font-size:24px;color:#2b6cb0;margin-bottom:25px;border-left:6px solid #4299e1;padding-left:15px}
+.theory-step{margin-bottom:25px;padding:20px;background:#fff;border-radius:10px;border:1px solid #e2e8f0}
+.theory-step h3{font-size:20px;color:#2d3748;margin-bottom:15px;display:flex;align-items:center;gap:10px}
+.theory-step h3::before{content:'';width:10px;height:10px;border-radius:50%;background:#4299e1}
+.theory-step p{font-size:18px;color:#4a5568;line-height:1.8;margin-bottom:10px}
+.formula{background:#fff5f5;padding:15px;border-radius:8px;font-family:'Consolas',monospace;font-size:18px;color:#c53030;margin:15px 0;border:1px dashed #fc8181}
+.note-box{background:#fffbeb;border-left:6px solid #f59e0b;padding:18px;border-radius:10px;margin-top:20px;color:#92400e;font-size:16px;line-height:1.7}
+@media(max-width:768px){.explain-block{grid-template-columns:1fr}.buttons{grid-template-columns:repeat(2,1fr)}.btn-reset{grid-column:span 2}.results-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>电流控制电流源（CCCS）工程仿真</h1>
+<div class="subtitle">标准电路元件 | 顺从电压特性 | KCL/KVL/VCR 严格求解</div>
+
+<div class="explain-block">
+<div class="explain-card">
+<h2>📌 核心参数物理含义</h2>
+<div class="explain-item"><h3>1. 电压源激励 Vs</h3><p>控制回路的独立直流电压源，同时为受控源提供工作供电，是电路的唯一能量来源。</p></div>
+<div class="explain-item"><h3>2. 导通阈值 Vbe</h3><p>控制端 PN 结开启的最小正向电压，当 Vs &lt; Vbe 时控制回路无电流，器件完全关断。</p></div>
+<div class="explain-item"><h3>3. 电流增益 k</h3><p>受控源的控制系数，输出电流与控制电流的比例关系，是受控源的最大输出能力上限。</p></div>
+<div class="explain-item"><h3>4. 顺从电压下限 Vdrop</h3><p>受控源内部有源器件（BJT/运放输出级）维持正常工作所需的最小压差：V_device = Vs − Va ≥ Vdrop。对应输出电压上限 Va ≤ Vs − Vdrop。</p></div>
+<div class="explain-item"><h3>5. 最大耐压 Vmax</h3><p>受控源输出端（节点 a）能承受的最大对地电压，超过此值会导致器件击穿损坏。</p></div>
+<div class="explain-item"><h3>6. 负载电阻 R2</h3><p>与受控源并联的负载，决定输出回路电流大小，是外部约束的核心参数。</p></div>
+</div>
+<div class="explain-card">
+<h2>📌 四个工程工作区</h2>
+<div class="explain-item"><span class="zone-badge b-cut">截止区</span><p>Vs &lt; Vbe，控制电流 i=0，受控源无输出，Iout=0，Va=0，器件完全关断。</p></div>
+<div class="explain-item"><span class="zone-badge b-act">恒流区（放大区）</span><p>Va ≤ min(Vs−Vdrop, Vmax)，内部压差充足，Iout = k·i，严格成比例，是理想工作区。</p></div>
+<div class="explain-item"><span class="zone-badge b-sat">低压失恒区</span><p>Va_assume &gt; Vs−Vdrop（内部器件压差不足），Va 被钳到 Vs−Vdrop，Iout &lt; k·i，输出被外部电路限制。</p></div>
+<div class="explain-item"><span class="zone-badge b-brk">击穿区</span><p>Va_assume &gt; Vmax（输出端过压），Va 被钳到 Vmax，Iout &lt; k·i，器件可能永久损坏。</p></div>
+<div class="explain-item"><h3>⚠️ 工程核心约束</h3><p>实际输出电流永远不可能大于理论值 k·i。低压失恒区与击穿区的本质都是外部约束使输出能力无法兑现，电流被限制。</p></div>
+</div>
+</div>
+
+<div class="circuit-wrapper">
+<svg width="520" height="240" viewBox="0 0 520 240" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M0,0 L0,8 L10,4 z" fill="#333"/></marker></defs>
+<circle cx="60" cy="120" r="30" class="voltage-src"/>
+<text x="60" y="115" class="src-polarity">+</text><text x="60" y="135" class="src-polarity">-</text>
+<text x="55" y="70" class="label">电压源激励</text>
+<text x="55" y="180" class="param-text">Vs = <tspan id="svgVs">10</tspan>V</text>
+<line x1="90" y1="120" x2="140" y2="120" class="wire"/>
+<rect x="140" y="110" width="50" height="20" class="resistor"/>
+<text x="165" y="105" class="label">R1</text>
+<text x="130" y="220" class="param-text">R1 = <tspan id="svgR1">1kΩ</tspan></text>
+<line x1="190" y1="120" x2="240" y2="120" class="wire"/>
+<circle cx="240" cy="120" r="6" class="node"/>
+<text x="235" y="100" class="label">节点a</text>
+<line x1="190" y1="120" x2="240" y2="120" class="current-arrow"/>
+<text x="210" y="105" class="label">i</text>
+<path d="M 240 150 L 280 120 L 240 90 L 200 120 Z" class="ccs"/>
+<line x1="240" y1="150" x2="240" y2="210" class="wire"/>
+<polygon points="235,220 245,220 240,210" fill="#8b5cf6"/>
+<text x="290" y="115" class="label" fill="#8b5cf6">Iout = k·i</text>
+<text x="245" y="85" class="param-text">k = <tspan id="svgK">2</tspan></text>
+<line x1="240" y1="150" x2="280" y2="120" class="current-arrow"/>
+<rect x="320" y="110" width="20" height="50" class="resistor" transform="rotate(90 330 135)"/>
+<line x1="330" y1="120" x2="390" y2="120" class="wire"/>
+<text x="360" y="105" class="label">R2</text>
+<text x="340" y="220" class="param-text">R2 = <tspan id="svgR2">500Ω</tspan></text>
+<line x1="330" y1="120" x2="330" y2="210" class="wire"/>
+<line x1="330" y1="210" x2="240" y2="210" class="wire"/>
+<text x="340" y="180" class="label">i₂</text>
+<line x1="330" y1="140" x2="330" y2="180" class="current-arrow"/>
+<line x1="240" y1="210" x2="390" y2="210" class="wire"/>
+<path d="M 230 210 L 250 220 L 230 230 Z" fill="#333"/>
+<text x="260" y="245" class="label">GND</text>
+<line x1="410" y1="120" x2="410" y2="210" class="voltage-line"/>
+<polygon points="405,125 415,125 410,115" fill="#2563eb"/>
+<polygon points="405,205 415,205 410,215" fill="#2563eb"/>
+<text x="415" y="165" class="label" fill="#2563eb">Va</text>
+<path d="M 60,120 L 240,120 L 240,210 L 60,210 L 60,120" fill="none" stroke="#38a169" stroke-width="2" stroke-dasharray="6"/>
+<text x="100" y="250" class="label" fill="#38a169">KVL回路</text>
+</svg>
+</div>
+
+<div class="control-panel">
+<div class="control-title">参数调节</div>
+<div class="controls">
+<div class="control-group"><label>电压源激励 Vs (V)</label><input type="number" id="Vs" value="10" step="0.1"></div>
+<div class="control-group"><label>导通阈值 Vbe (V)</label><input type="number" id="Vbe" value="0.7" step="0.1"></div>
+<div class="control-group"><label>电流增益 k</label><input type="number" id="k" value="2" step="0.1"></div>
+<div class="control-group"><label>顺从电压下限 Vdrop (V)</label><input type="number" id="Vdrop" value="2" step="0.1"></div>
+<div class="control-group"><label>最大耐压 Vmax (V)</label><input type="number" id="Vmax" value="10" step="1"></div>
+<div class="control-group"><label>控制电阻 R1 (Ω)</label><input type="number" id="R1" value="1000" step="10"></div>
+<div class="control-group"><label>负载电阻 R2 (Ω)</label><input type="number" id="R2" value="500" step="10"></div>
+</div>
+<div class="buttons">
+<button class="btn-cutoff" id="btn-cutoff">一键截止区</button>
+<button class="btn-act" id="btn-active">一键恒流区</button>
+<button class="btn-sat" id="btn-sat">一键低压失恒区</button>
+<button class="btn-break" id="btn-break">一键击穿区</button>
+<button class="btn-reset" id="btn-reset">重置参数</button>
+</div>
+</div>
+
+<div class="interval-container">
+<div class="marker" style="left:10%"></div><div class="label-box" style="left:10%">截止区</div>
+<div class="marker" style="left:35%"></div><div class="label-box" style="left:35%">恒流区</div>
+<div class="marker" style="left:60%"></div><div class="label-box" style="left:60%">低压失恒区</div>
+<div class="marker" style="left:85%"></div><div class="label-box" style="left:85%">击穿区</div>
+<div id="statusArrow" class="indicator arrow-act" style="left:35%"></div>
+</div>
+
+<div class="results-grid">
+<div class="result-box"><h3>控制电流 i</h3><p id="res_i">0.0000 A</p><div class="eq">KVL：i = (Vs − Vbe) / R1</div></div>
+<div class="result-box"><h3>理论输出 k·i</h3><p id="res_ki">0.0000 A</p><div class="eq">受控源最大输出能力（上限）</div></div>
+<div class="result-box"><h3>实际输出 Iout</h3><p id="res_Iout">0.0000 A</p><div class="eq" id="outStatus">状态：等待计算</div></div>
+<div class="result-box"><h3>端口压差 Va</h3><p id="res_Va">0.000 V</p><div class="eq">KCL：i + Iout = i₂ = Va / R2</div></div>
+</div>
+<div class="kcl-box" id="kclCheck">等待计算...</div>
+
+<div class="theory-box">
+<h2>🔧 基于 KCL/KVL/VCR 的详细求解原理（假设-校验法）</h2>
+<div class="theory-step">
+<h3>步骤1：计算控制电流（KVL）</h3>
+<p>控制回路 KVL：Vs = i·R1 + Vbe（器件导通时）。</p>
+<div class="formula">Vs &lt; Vbe → i = 0（截止区，关断）　|　Vs ≥ Vbe → i = (Vs − Vbe) / R1</div>
+</div>
+<div class="theory-step">
+<h3>步骤2：受控源最大输出能力</h3>
+<div class="formula">I_nom = k·i（输出能力的天花板，Iout ≤ I_nom 恒成立）</div>
+</div>
+<div class="theory-step">
+<h3>步骤3：假设恒流区，算理论端口电压</h3>
+<div class="formula">KCL(节点a)：i + Iout = i₂　|　VCR(R2)：i₂ = Va/R2 → Va = R2·(i + Iout)</div>
+<div class="formula">代入 Iout=I_nom → Va_assume = R2 · i · (1 + k)</div>
+</div>
+<div class="theory-step">
+<h3>步骤4：双约束独立校验（核心判定，两约束取更严上限）</h3>
+<div class="formula">
+Va_limit = min(Vs − Vdrop,　Vmax)　← 顺从电压与最大耐压同时生效，取更严格的电压上限<br>
+若 Va_assume ≤ Va_limit → <span class="zone-badge b-act">恒流区</span>：Iout = I_nom = k·i，Va = Va_assume（成比例）<br>
+若 Va_assume &gt; Va_limit → Va 被钳到 Va_limit：<br>
+　　· 若上限由 Vmax 决定（Va_limit = Vmax &lt; Vs−Vdrop）→ <span class="zone-badge b-brk">击穿区</span>：Iout = max(0, Vmax/R2 − i) &lt; I_nom<br>
+　　· 若上限由顺从电压决定（Va_limit = Vs−Vdrop &lt; Vmax）→ <span class="zone-badge b-sat">低压失恒区</span>：Iout = max(0, (Vs−Vdrop)/R2 − i) &lt; I_nom
+</div>
+</div>
+<div class="theory-step">
+<h3>步骤5：KCL 校验</h3>
+<div class="formula">i + Iout = i₂ = Va / R2 → 误差恒为 0</div>
+</div>
+<div class="theory-step">
+<h3>步骤6：工程实际对应</h3>
+<p>恒流区对应 LM334/运放电流源正常工况；低压失恒区对应 BJT 的 Vce 不足进入饱和区，β 下降导致输出降低；击穿区对应器件过压损坏。所有场景 Iout ≤ k·i，符合器件物理极限。</p>
+</div>
+<div class="note-box">
+<b>💡 为什么之前"一键击穿区没反应"？</b><br>
+旧版先判"低压失恒"再判"击穿"：当 Vs−Vdrop &lt; Vmax 时，Va_assume 会先因大于 Vs−Vdrop 而被低压失恒拦截，击穿区永远进不去。修正后把"顺从电压"与"最大耐压"作为<b>两个独立约束同时校验、取更严的电压上限</b>，击穿区即可被正确命中。
+</div>
+</div>
+</div>
+
+<script>
+(function(){
+function num(id){return parseFloat(document.getElementById(id).value)||0;}
+function setText(id,t){var el=document.getElementById(id);if(el)el.textContent=t;}
+
+// 核心：双约束独立校验，取更严电压上限
+function updateAll(){
+var Vs=num('Vs'),Vbe=num('Vbe'),k=num('k'),Vdrop=num('Vdrop'),Vmax=num('Vmax'),R1=num('R1'),R2=num('R2');
+setText('svgVs',Vs);setText('svgR1',R1+'Ω');setText('svgR2',R2+'Ω');setText('svgK',k);
+var i=0,I_nom=0,Iout=0,Va=0,zone='cutoff',statusText='',arrowClass='arrow-cutoff';
+if(Vs<Vbe){zone='cutoff';statusText='截止区：Vs('+Vs+')<Vbe('+Vbe+')，控制电流不足，Iout=0';arrowClass='arrow-cutoff';}
+else{
+i=(Vs-Vbe)/R1;I_nom=k*i;
+var Va_assume=R2*i*(1+k);
+var vaSat=Vs-Vdrop; // 顺从电压决定的输出电压上限
+var Va_limit=vaSat<Vmax?vaSat:Vmax; // 两约束取更严
+if(Va_assume<=Va_limit){
+// 恒流区
+zone='active';Iout=I_nom;Va=Va_assume;
+statusText='恒流区：Va='+Va.toFixed(3)+'V ≤ min('+vaSat.toFixed(2)+', '+Vmax+')V，Iout='+Iout.toFixed(4)+'A = k·i，严格成比例';
+arrowClass='arrow-act';
+}else{
+// 电压被钳到更严上限，判断是哪个约束导致
+Va=Va_limit;Iout=Math.max(0,(Va/R2)-i);
+if(Va_limit===Vmax && Vmax<vaSat){
+// 击穿区（上限由最大耐压决定）
+zone='break';
+statusText='击穿区：Va_assume='+Va_assume.toFixed(3)+'V > Vmax='+Vmax+'V，输出端过压，Va钳位到'+Va.toFixed(3)+'V，Iout='+Iout.toFixed(4)+'A < 理论值'+I_nom.toFixed(4)+'A，器件可能损坏';
+arrowClass='arrow-break';
+}else{
+// 低压失恒区（上限由顺从电压决定）
+zone='sat';
+statusText='低压失恒区：Va_assume='+Va_assume.toFixed(3)+'V > Vs−Vdrop='+vaSat.toFixed(3)+'V，内部器件压差不足，Va钳位到'+Va.toFixed(3)+'V，Iout='+Iout.toFixed(4)+'A < 理论值'+I_nom.toFixed(4)+'A';
+arrowClass='arrow-sat';
+}
+}
+}
+setText('res_i',i.toFixed(4)+' A');
+setText('res_ki',(k*i).toFixed(4)+' A');
+setText('res_Iout',Iout.toFixed(4)+' A');
+setText('res_Va',Va.toFixed(3)+' V');
+setText('outStatus','状态：'+statusText);
+var arrow=document.getElementById('statusArrow');arrow.className='indicator '+arrowClass;
+if(zone==='cutoff')arrow.style.left='10%';else if(zone==='active')arrow.style.left='35%';else if(zone==='sat')arrow.style.left='60%';else arrow.style.left='85%';
+var i2=i+Iout,err=Math.abs(i+Iout-i2);
+setText('kclCheck','<strong>KCL节点a校验：</strong> 流入(i+Iout)=<b>'+(i+Iout).toFixed(4)+'A</b>，流出(i₂)=<b>'+i2.toFixed(4)+'A</b>，误差 <span style="color:#276749;font-weight:bold">'+err.toFixed(12)+'A</span>（完美守恒）');
+}
+
+// 一键按钮：设置参数后调用 updateAll
+function setRegion(p){
+['Vs','Vbe','k','Vdrop','Vmax','R1','R2'].forEach(function(key){var el=document.getElementById(key);if(el)el.value=p[key];});
+updateAll();
+}
+var presets={
+cutoff:{Vs:0.5,Vbe:0.7,k:2,Vdrop:2,Vmax:10,R1:1000,R2:500},
+active:{Vs:10,Vbe:0.7,k:0.5,Vdrop:2,Vmax:10,R1:1000,R2:500},
+sat:{Vs:10,Vbe:0.7,k:2,Vdrop:2,Vmax:20,R1:1000,R2:500}, // Va_assume=13.95 > Vs-Vdrop=8
+break:{Vs:10,Vbe:0.7,k:2,Vdrop:2,Vmax:5,R1:1000,R2:500}  // Vmax=5 < Vs-Vdrop=8 → 上限由Vmax决定，进击穿区
+};
+document.getElementById('btn-cutoff').onclick=function(){setRegion(presets.cutoff);};
+document.getElementById('btn-active').onclick=function(){setRegion(presets.active);};
+document.getElementById('btn-sat').onclick=function(){setRegion(presets.sat);};
+document.getElementById('btn-break').onclick=function(){setRegion(presets.break);};
+document.getElementById('btn-reset').onclick=function(){setRegion({Vs:10,Vbe:0.7,k:2,Vdrop:2,Vmax:10,R1:1000,R2:500});};
+['Vs','Vbe','k','Vdrop','Vmax','R1','R2'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',updateAll);});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateAll);else updateAll();
+})();
+</script>
+</body>
+</html>

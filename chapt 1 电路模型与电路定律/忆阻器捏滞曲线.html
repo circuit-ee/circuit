@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>忆阻器捏滞曲线演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #334e68;
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 10px;
+            color: #102a43;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 1.6rem;
+            color: #486581;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            border: 3px solid #bcccdc;
+        }
+        
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        canvas {
+            border-radius: 15px;
+            background: #ffffff;
+            box-shadow: inset 0 3px 15px rgba(0,0,0,0.06);
+            border: 3px solid #cbd5e0;
+        }
+        
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            font-size: 1.3rem;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .info-panel {
+            min-width: 400px;
+            max-width: 450px;
+        }
+        
+        .info-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 15px;
+            border-left: 5px solid #3b82f6;
+        }
+        
+        .info-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            color: #1a202c;
+            font-weight: 700;
+        }
+        
+        .info-section p, .info-section li {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .info-section ul {
+            padding-left: 20px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #fef3c7 0%, #fde68a 100%);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 700;
+            color: #92400e;
+        }
+        
+        .status-box {
+            background: #ffffff;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .status-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .status-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 6px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            min-width: 140px;
+            text-align: center;
+        }
+        
+        .lrs { color: #059669; border-color: #059669; background: rgba(5, 150, 105, 0.1); }
+        .hrs { color: #dc2626; border-color: #dc2626; background: rgba(220, 38, 38, 0.1); }
+        
+        .legend {
+            display: flex;
+            gap: 25px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.9);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .legend-line {
+            width: 30px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .direction-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 1200px) {
+            h1 { font-size: 2.5rem; }
+            .subtitle { font-size: 1.4rem; }
+            .info-section h2 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 忆阻器捏滞曲线演示</h1>
+    <p class="subtitle">8字形 I-V 特性 · 双极性阻变存储器</p>
+    
+    <div class="main-container">
+        <div class="panel canvas-container">
+            <div style="position: relative;">
+                <canvas id="memristorCanvas" width="700" height="600"></canvas>
+                <div class="direction-indicator" id="directionIndicator" style="display: none;">
+                    <span id="phaseText">0 → +2V</span>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #dc2626;"></div>
+                    <span>低阻态 (LRS)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #2563eb;"></div>
+                    <span>高阻态 (HRS)</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 18px; height: 18px; background: #10b981; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);"></div>
+                    <span>当前点</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-primary" id="startBtn" onclick="startSim()">▶ 开始</button>
+                <button class="btn-secondary" id="pauseBtn" onclick="pauseSim()">⏸ 暂停</button>
+                <button class="btn-warning" onclick="resetSim()">↺ 重置</button>
+                <button class="btn-success" onclick="stepSim()">⏭ 单步</button>
+            </div>
+        </div>
+        
+        <div class="panel info-panel">
+            <div class="info-section">
+                <h2>📐 坐标参数</h2>
+                <p>X轴: <span class="highlight">±2V</span> (150像素/V)</p>
+                <p>Y轴: <span class="highlight">±2mA</span> (100像素/mA)</p>
+                <p>阻值: LRS <span class="highlight">500Ω</span> | HRS <span class="highlight">5kΩ</span></p>
+            </div>
+            
+            <div class="info-section" style="border-left-color: #dc2626;">
+                <h2>⚡ 捏滞特征</h2>
+                <ul>
+                    <li>曲线通过原点 <strong>(0,0)</strong></li>
+                    <li>形成明显"8字形"回线</li>
+                    <li>SET: <strong>+1.0V</strong> | RESET: <strong>-0.8V</strong></li>
+                </ul>
+            </div>
+            
+            <div class="status-box">
+                <div class="status-row">
+                    <span>⚡ 电压:</span>
+                    <span class="status-value" id="voltageDisplay">0.00 V</span>
+                </div>
+                <div class="status-row">
+                    <span>🔌 电流:</span>
+                    <span class="status-value" id="currentDisplay">0.00 mA</span>
+                </div>
+                <div class="status-row">
+                    <span>🎚️ 阻值:</span>
+                    <span class="status-value lrs" id="resistanceDisplay">0.5 kΩ</span>
+                </div>
+                <div class="status-row">
+                    <span>🔄 状态:</span>
+                    <span class="status-value lrs" id="stateDisplay">LRS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取画布和上下文
+        const canvas = document.getElementById('memristorCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 物理参数
+        const V_SET = 1.0;
+        const V_RESET = -0.8;
+        const R_LRS = 500;
+        const R_HRS = 5000;
+        const V_MAX = 2.0;
+        
+        // 坐标参数
+        const CX = 350;
+        const CY = 300;
+        const SX = 150;  // X轴缩放
+        const SY = 100;  // Y轴缩放 (放大电流显示)
+        
+        // 状态变量
+        let running = false;
+        let animId = null;
+        let phase = 0;      // 0: 0->+V, 1: +V->0, 2: 0->-V, 3: -V->0
+        let voltage = 0;
+        let state = 'LRS';
+        let resistance = R_LRS;
+        let trace = [];
+        let step = 0.03;
+        
+        // 转换函数
+        function V2X(v) { return CX + v * SX; }
+        function I2Y(i) { return CY - i * SY; }
+        
+        // 初始化
+        function init() {
+            // 重置所有状态
+            running = false;
+            phase = 0;
+            voltage = 0;
+            state = 'LRS';
+            resistance = R_LRS;
+            trace = [];
+            
+            // 清除动画
+            if(animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            
+            // 绘制初始画面
+            drawAll();
+            updateUI(0, 0);
+            
+            // 隐藏方向指示器
+            document.getElementById('directionIndicator').style.display = 'none';
+        }
+        
+        // 绘制所有内容
+        function drawAll() {
+            // 清空画布
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            drawGrid();
+            
+            // 绘制坐标轴
+            drawAxes();
+            
+            // 绘制参考8字形
+            drawReference8();
+            
+            // 绘制轨迹
+            drawTrace();
+            
+            // 绘制当前点
+            if(trace.length > 0) {
+                const last = trace[trace.length-1];
+                drawPoint(last.x, last.y, voltage, last.i);
+            } else {
+                drawPoint(CX, CY, 0, 0);
+            }
+            
+            // 绘制忆阻器符号
+            drawMemristor();
+        }
+        
+        // 绘制网格
+        function drawGrid() {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            for(let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for(let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // 绘制坐标轴
+        function drawAxes() {
+            ctx.strokeStyle = '#334e68';
+            ctx.lineWidth = 3;
+            
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(80, CY);
+            ctx.lineTo(620, CY);
+            ctx.stroke();
+            
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(CX, 550);
+            ctx.lineTo(CX, 50);
+            ctx.stroke();
+            
+            // 箭头
+            ctx.fillStyle = '#334e68';
+            ctx.beginPath();
+            ctx.moveTo(620, CY);
+            ctx.lineTo(610, CY-7);
+            ctx.lineTo(610, CY+7);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(CX, 50);
+            ctx.lineTo(CX-7, 60);
+            ctx.lineTo(CX+7, 60);
+            ctx.fill();
+            
+            // 标签
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#102a43';
+            ctx.textAlign = 'center';
+            ctx.fillText('电压 V (V)', 580, CY + 40);
+            
+            ctx.save();
+            ctx.translate(45, CY);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('电流 I (mA)', 0, 0);
+            ctx.restore();
+            
+            // 刻度
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#486581';
+            
+            // X轴刻度
+            for(let v = -2; v <= 2; v += 0.5) {
+                if(Math.abs(v) < 0.1) continue;
+                const x = V2X(v);
+                ctx.beginPath();
+                ctx.moveTo(x, CY-5);
+                ctx.lineTo(x, CY+5);
+                ctx.stroke();
+                ctx.fillText(v.toFixed(1), x, CY + 25);
+            }
+            
+            // Y轴刻度
+            ctx.textAlign = 'right';
+            for(let i = -2; i <= 2; i += 0.5) {
+                if(Math.abs(i) < 0.1) continue;
+                const y = I2Y(i);
+                ctx.beginPath();
+                ctx.moveTo(CX-5, y);
+                ctx.lineTo(CX+5, y);
+                ctx.stroke();
+                ctx.fillText(i.toFixed(1), CX - 10, y + 5);
+            }
+            
+            // 原点
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(CX, CY, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#102a43';
+            ctx.textAlign = 'right';
+            ctx.fillText('0', CX - 10, CY + 20);
+            
+            // 标题
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.fillStyle = '#102a43';
+            ctx.textAlign = 'center';
+            ctx.fillText('忆阻器 8字形捏滞曲线', CX, 40);
+        }
+        
+        // 绘制理论8字形参考
+        function drawReference8() {
+            const points = [];
+            const steps = 400;
+            
+            for(let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                let v;
+                
+                // 完整周期: 0 -> +V -> 0 -> -V -> 0
+                if(t < 0.25) v = t * 4 * V_MAX;
+                else if(t < 0.5) v = V_MAX - (t-0.25) * 4 * V_MAX;
+                else if(t < 0.75) v = -(t-0.5) * 4 * V_MAX;
+                else v = -V_MAX + (t-0.75) * 4 * V_MAX;
+                
+                // 确定阻值
+                let r = R_LRS;
+                if(t < 0.25 && v < V_SET) r = R_HRS;
+                else if(t >= 0.25 && t < 0.5) r = R_LRS;
+                else if(t >= 0.5 && t < 0.75 && v > V_RESET) r = R_LRS;
+                else if(t >= 0.75) r = R_HRS;
+                
+                const curr = (v / r) * 1000;
+                points.push({x: V2X(v), y: I2Y(curr)});
+            }
+            
+            // 绘制淡色参考线
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            points.forEach((p, i) => {
+                if(i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // 绘制轨迹
+        function drawTrace() {
+            if(trace.length < 2) return;
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 4;
+            
+            for(let i = 1; i < trace.length; i++) {
+                const p1 = trace[i-1];
+                const p2 = trace[i];
+                
+                // LRS红色, HRS蓝色
+                ctx.strokeStyle = (p2.state === 'LRS') ? '#dc2626' : '#2563eb';
+                
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        }
+        
+        // 绘制当前点
+        function drawPoint(x, y, v, i) {
+            // 发光效果
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, 25);
+            grad.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
+            grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 中心点
+            ctx.fillStyle = '#10b981';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // 标签
+            ctx.font = 'bold 13px Arial';
+            ctx.fillStyle = '#102a43';
+            ctx.textAlign = 'left';
+            ctx.fillText(`V:${v.toFixed(1)}V I:${i.toFixed(1)}mA`, x + 15, y - 10);
+        }
+        
+        // 绘制忆阻器符号
+        function drawMemristor() {
+            ctx.save();
+            ctx.translate(CX, 130);
+            
+            // 外框
+            ctx.strokeStyle = '#334e68';
+            ctx.lineWidth = 3;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.rect(-40, -30, 80, 60);
+            ctx.fill();
+            ctx.stroke();
+            
+            // 内部线条
+            ctx.strokeStyle = '#cbd5e0';
+            ctx.lineWidth = 2;
+            for(let i = -25; i <= 25; i += 12.5) {
+                ctx.beginPath();
+                ctx.moveTo(i, -20);
+                ctx.lineTo(i, 20);
+                ctx.stroke();
+            }
+            
+            // 导电细丝
+            ctx.strokeStyle = (state === 'LRS') ? '#dc2626' : '#2563eb';
+            ctx.lineWidth = (state === 'LRS') ? 6 : 2;
+            ctx.beginPath();
+            ctx.moveTo(-25, 0);
+            ctx.lineTo(25, 0);
+            ctx.stroke();
+            
+            // 引脚
+            ctx.strokeStyle = '#334e68';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-70, 0);
+            ctx.lineTo(-40, 0);
+            ctx.moveTo(40, 0);
+            ctx.lineTo(70, 0);
+            ctx.stroke();
+            
+            // 标签
+            ctx.font = 'bold 16px Arial';
+            ctx.fillStyle = (state === 'LRS') ? '#059669' : '#dc2626';
+            ctx.textAlign = 'center';
+            ctx.fillText((state === 'LRS') ? 'LRS' : 'HRS', 0, 55);
+            
+            ctx.restore();
+        }
+        
+        // 计算电流
+        function calcCurrent(v) {
+            // 状态切换
+            if(v >= V_SET && state === 'HRS') {
+                state = 'LRS';
+                resistance = R_LRS;
+            } else if(v <= V_RESET && state === 'LRS') {
+                state = 'HRS';
+                resistance = R_HRS;
+            }
+            
+            return (v / resistance) * 1000; // mA
+        }
+        
+        // 更新UI
+        function updateUI(v, i) {
+            document.getElementById('voltageDisplay').textContent = v.toFixed(2) + ' V';
+            document.getElementById('currentDisplay').textContent = i.toFixed(2) + ' mA';
+            
+            const rEl = document.getElementById('resistanceDisplay');
+            const sEl = document.getElementById('stateDisplay');
+            
+            if(state === 'LRS') {
+                rEl.textContent = (resistance/1000).toFixed(1) + ' kΩ';
+                rEl.className = 'status-value lrs';
+                sEl.textContent = 'LRS (ON)';
+                sEl.className = 'status-value lrs';
+            } else {
+                rEl.textContent = (resistance/1000).toFixed(1) + ' kΩ';
+                rEl.className = 'status-value hrs';
+                sEl.textContent = 'HRS (OFF)';
+                sEl.className = 'status-value hrs';
+            }
+            
+            // 更新方向指示
+            const phases = ['0 → +2V', '+2V → 0', '0 → -2V', '-2V → 0'];
+            document.getElementById('phaseText').textContent = phases[phase];
+            document.getElementById('directionIndicator').style.display = 'block';
+        }
+        
+        // 模拟步进
+        function simStep() {
+            // 更新电压
+            switch(phase) {
+                case 0: // 0 -> +V
+                    voltage += step;
+                    if(voltage >= V_MAX) {
+                        voltage = V_MAX;
+                        phase = 1;
+                    }
+                    break;
+                case 1: // +V -> 0
+                    voltage -= step;
+                    if(voltage <= 0) {
+                        voltage = 0;
+                        phase = 2;
+                    }
+                    break;
+                case 2: // 0 -> -V
+                    voltage -= step;
+                    if(voltage <= -V_MAX) {
+                        voltage = -V_MAX;
+                        phase = 3;
+                    }
+                    break;
+                case 3: // -V -> 0
+                    voltage += step;
+                    if(voltage >= 0) {
+                        voltage = 0;
+                        phase = 0;
+                        trace = []; // 新周期
+                    }
+                    break;
+            }
+            
+            const curr = calcCurrent(voltage);
+            
+            trace.push({
+                x: V2X(voltage),
+                y: I2Y(curr),
+                i: curr,
+                state: state
+            });
+            
+            // 限制轨迹长度
+            if(trace.length > 500) trace.shift();
+            
+            // 重绘
+            drawAll();
+            updateUI(voltage, curr);
+        }
+        
+        // 动画循环
+        function loop() {
+            if(!running) return;
+            
+            simStep();
+            animId = requestAnimationFrame(loop);
+        }
+        
+        // 控制函数
+        function startSim() {
+            if(running) return;
+            running = true;
+            loop();
+        }
+        
+        function pauseSim() {
+            running = false;
+            if(animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+        }
+        
+        function resetSim() {
+            pauseSim();
+            init();
+        }
+        
+        function stepSim() {
+            pauseSim();
+            simStep();
+        }
+        
+        // 页面加载时初始化
+        window.onload = init;
+    </script>
+</body>
+</html>

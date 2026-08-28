@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电路中的电位与电位零点</title>
+<style>
+:root{
+  --bg:#f3f6fa; --card:#fff; --text:#1a1a1a;
+  --blue:#0b57d0; --blue-l:#e8f0fe; --green:#1a7c42; --green-l:#e6f4ea;
+  --orange:#b35c00; --orange-l:#fff4e0; --red:#c62828; --gray:#5f6368; --border:#d0d7de;
+}
+*{box-sizing:border-box;}
+html{font-size:21px; scroll-behavior:smooth;}
+body{margin:0;font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.85;}
+header{background:linear-gradient(135deg,var(--blue),#1565d8);color:#fff;padding:2rem 1rem;text-align:center;}
+header h1{margin:0;font-size:2.3rem;font-weight:900;}
+header p{opacity:.92;margin:.5rem 0 0;font-size:1.1rem;}
+
+/* 导航：纯文字链接 */
+nav{max-width:1200px;margin:.6rem auto 0;padding:.4rem 1rem 1rem;display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:center;font-size:1.05rem;}
+nav a{color:var(--blue);text-decoration:none;font-weight:700;border-bottom:2px solid transparent;padding:.35rem .15rem;cursor:pointer;}
+nav a:hover{border-bottom-color:var(--blue);}
+
+.container{max-width:1200px;margin:auto;padding:1rem;}
+.lead{background:var(--card);border-radius:16px;padding:1.5rem 1.8rem;margin-bottom:1.2rem;border-left:8px solid var(--blue);}
+.lead h2{margin:0 0 .6rem;font-size:1.55rem;color:var(--blue);}
+.section{background:var(--card);border-radius:16px;padding:1.8rem;margin-bottom:1.3rem;scroll-margin-top:70px;}
+.section h2{margin-top:0;font-size:1.7rem;color:var(--blue);}
+.section h3{font-size:1.25rem;color:var(--blue);margin:1.2rem 0 .5rem;}
+.tag{display:inline-block;padding:.35rem .85rem;border-radius:20px;font-size:.88rem;font-weight:700;margin:.2rem .3rem .2rem 0;}
+.tag-b{background:var(--blue-l);color:var(--blue);} .tag-g{background:var(--green-l);color:var(--green);} .tag-o{background:var(--orange-l);color:var(--orange);}
+.formula{font-size:1.7rem;font-weight:900;color:var(--blue);text-align:center;margin:.8rem 0;background:#fafcff;border:2px dashed #c7d8f7;border-radius:12px;padding:.9rem;}
+.note{color:var(--gray);font-size:.95rem;}
+.flex{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;}
+.flex .text{flex:1;min-width:260px;}
+.icon{font-size:4rem;text-align:center;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.8rem;}
+.grid2>div{background:#f7f9fc;border-radius:12px;padding:1.1rem;}
+.grid2 h4{margin:0 0 .4rem;font-size:1.1rem;}
+.demo-box{background:#fafcff;border:2px solid #e3e9f3;border-radius:14px;padding:1.4rem;margin-top:1rem;}
+.circuit{display:flex;align-items:center;justify-content:center;gap:.4rem;flex-wrap:wrap;margin:1.2rem 0;font-size:1.05rem;}
+.node{background:var(--blue-l);border:3px solid var(--blue);border-radius:12px;padding:.9rem 1rem;text-align:center;min-width:78px;font-weight:700;}
+.node b{display:block;font-size:1.15rem;color:var(--blue);}
+.wire{flex:1;height:4px;background:#333;min-width:26px;}
+.ctrl{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;margin:.8rem 0;}
+.ctrl button{padding:.9rem 1.3rem;font-size:1.02rem;font-weight:800;border:3px solid var(--blue);border-radius:12px;background:#fff;cursor:pointer;color:var(--blue);}
+.ctrl button.active{background:var(--blue);color:#fff;}
+.values{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-top:.8rem;}
+.val{background:#f7f9fc;border-radius:12px;padding:.9rem;text-align:center;}
+.val .n{font-size:1.9rem;font-weight:900;color:var(--blue);}
+.hint{text-align:center;font-weight:800;color:var(--green);font-size:1.05rem;margin-top:.8rem;min-height:1.4em;}
+table{width:100%;border-collapse:collapse;font-size:1rem;margin-top:.6rem;}
+th,td{border:2px solid var(--border);padding:.85rem 1rem;text-align:left;}
+th{background:var(--blue-l);font-weight:800;}
+tr:nth-child(even) td{background:#fafbfd;}
+.sym{font-size:1.6rem;font-weight:900;color:var(--blue);text-align:center;}
+.tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0;}
+.tab-btn{flex:1;min-width:120px;padding:.85rem;font-size:.98rem;font-weight:700;border:2px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;color:var(--text);}
+.tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.panel{display:none;background:#fafcff;border:2px solid #e3e9f3;border-radius:14px;padding:1.4rem;margin-bottom:.5rem;}
+.panel.active{display:block;}
+footer{text-align:center;padding:1.5rem;color:var(--gray);font-size:.9rem;}
+@media(max-width:760px){.grid2{grid-template-columns:1fr;}html{font-size:19px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ 电路中的电位与电位零点</h1>
+  <p>为什么引入电位 · 零点的意义 · 电势 vs 电位 · 工程应用 · 常见零点种类</p>
+</header>
+
+<nav id="topnav">
+  <a data-target="why-potential">① 为何引入电位</a>
+  <a data-target="why-zero">② 为何引入零点</a>
+  <a data-target="diff">③ 电位 与 电势 的联系与区别</a>
+  <a data-target="apply">④ 工程应用</a>
+  <a data-target="kinds">⑤ 零点种类与符号</a>
+</nav>
+
+<div class="container">
+
+<!-- 引子 -->
+<section class="lead" id="lead">
+  <h2>📌 一句话先记住</h2>
+  <p><strong>电压 = 电位差</strong>（U<sub>AB</sub>=V<sub>A</sub>−V<sub>B</sub>），它描述"两点之间"。但当电路有几十上百个节点时，给每个节点标一个<strong>电位 V</strong>（相对同一个零点），比两两列举电压简单得多；而电位是相对值，必须先把<strong>电位零点</strong>定下来，才有意义。</p>
+  <div class="formula">U<sub>AB</sub> = V<sub>A</sub> − V<sub>B</sub>　｜　电位零点：人为规定 V<sub>0</sub> = 0 V</div>
+</section>
+
+<!-- ① -->
+<section class="section" id="why-potential">
+  <h2>① 为什么有了电压，还要引入"电位"？</h2>
+  <div class="flex">
+    <div class="text">
+      <p><strong>电压</strong>是"两点间的高度差"，<strong>电位</strong>是"每点的海拔"。两者本质相同，但描述对象不同。</p>
+      <p>若电路有 <b>n</b> 个节点：两两电压共有 C(n,2) 个；而给每个节点一个电位只要 n 个数，任意电压一减即得。</p>
+      <p class="note">例：100 个节点 → 电压需记 4950 个，电位只要 100 个。</p>
+    </div>
+    <div class="icon">🏔<br><span style="font-size:1rem;color:var(--gray);">海拔类比</span></div>
+  </div>
+  <div class="grid2">
+    <div><h4>电压（电位差）</h4><p>描述两点之间，如"泰山比济南高 1000 m"。关心的是"差"。</p></div>
+    <div><h4>电位</h4><p>描述某一点相对零点的数值，如"泰山海拔 1545 m"。关心的是"点的值"。</p></div>
+  </div>
+</section>
+
+<!-- ② 交互演示 -->
+<section class="section" id="why-zero">
+  <h2>② 为什么必须引入"电位零点"？</h2>
+  <p>电位是<strong>相对值</strong>：选不同的零点，各点电位数值会变，但<strong>任意两点电压（电位差）始终不变</strong>。点击下方按钮切换零点，观察数值。</p>
+  <div class="demo-box">
+    <p style="text-align:center;font-weight:700;">10 V 电池 + 两个 5Ω 电阻串联分压（A—R—B—R—C）</p>
+    <div class="circuit">
+      <div class="node">A<b id="dA">10V</b></div><div class="wire"></div>
+      <div class="node">B<b id="dB">5V</b></div><div class="wire"></div>
+      <div class="node">C<b id="dC">0V</b></div>
+    </div>
+    <div class="ctrl">
+      <button class="active" onclick="setZero('C',this)">选 C 为零点（电源地）</button>
+      <button onclick="setZero('B',this)">选 B 为零点（虚地）</button>
+      <button onclick="setZero('A',this)">选 A 为零点</button>
+    </div>
+    <div class="values">
+      <div class="val"><div>V<sub>A</sub></div><div class="n" id="vA">10</div></div>
+      <div class="val"><div>V<sub>B</sub></div><div class="n" id="vB">5</div></div>
+      <div class="val"><div>V<sub>C</sub></div><div class="n" id="vC">0</div></div>
+      <div class="val"><div>U<sub>AB</sub></div><div class="n" id="uAB">5</div></div>
+      <div class="val"><div>U<sub>BC</sub></div><div class="n" id="uBC">5</div></div>
+    </div>
+    <div class="hint" id="hint">✅ 零点一变，各点电位全变；但 U<sub>AB</sub>、U<sub>BC</sub> 永远是 5 V！</div>
+  </div>
+  <p class="note" style="margin-top:.8rem;">结论：电位零点是一个<strong>人为约定的参考基准</strong>，用来给"电位"这个相对量赋予确定的数值，方便计算、测量与标注。</p>
+</section>
+
+<!-- ③ -->
+<section class="section" id="diff">
+  <h2>③ 电位 与 电势 的联系与区别</h2>
+  <p>电位与电势在数值上是<strong>同一个物理量</strong>，只是学科语境不同：物理学常用"电势（φ）"描述电场中某点的属性；电路工程常用"电位（V）"表示节点相对参考点的电压值。下面从"联系"和"区别"两方面说明。</p>
+
+  <h3>🔗 联系（数值上统一）</h3>
+  <div class="grid2">
+    <div><h4>同一物理量的两种叫法</h4><p>物理学称"电势 φ"，电路工程称"电位 V"。两者单位都是伏特(V)，描述同一电场属性。</p></div>
+    <div><h4>公式一致</h4><p>V<sub>A</sub> = φ<sub>A</sub> − φ<sub>0</sub>。选定参考点 φ<sub>0</sub>=0 后，电位 V<sub>A</sub> 与电势 φ<sub>A</sub> 在数值上一致。</p></div>
+  </div>
+  <div class="formula">电位（V）是电势（φ）在电路工程中的"实用化表述"　→　数值体系完全统一</div>
+
+  <h3>📍 补充：电位零点 vs 电势零点</h3>
+  <p>两者本质也是"同一参考约定"的两种语境：<strong>电势零点</strong>是物理学中给电势 φ 选的参考点（常取无穷远或大地）；<strong>电位零点</strong>是电路工程里给电位 V 选的 0 V 参考节点（常取 GND/机壳/指定节点）。选定后两者数值相同，只是工程上更强调"电路节点"这一具体对象。</p>
+
+  <h3>↔️ 区别（视角与习惯不同）</h3>
+  <table>
+    <tr><th style="width:14%;">对比项</th><th>电势（物理视角 φ）</th><th>电位（工程视角 V）</th></tr>
+    <tr><td><b>所属学科</b></td><td>电磁学 / 物理学</td><td>电路理论 / 电子工程</td></tr>
+    <tr><td><b>研究对象</b></td><td>电场中某点的电势属性</td><td>电路节点相对参考点的电压值</td></tr>
+    <tr><td><b>参考点习惯</b></td><td>常取无穷远处或地球为电势零点</td><td>常取电源负极(GND)、机壳或指定节点为零点</td></tr>
+    <tr><td><b>选取动机</b></td><td>满足物理场的边界条件</td><td>便于电路分析、标注与测量</td></tr>
+    <tr><td><b>典型表述</b></td><td>"取无穷远为电势零点"</td><td>"该引脚电位为 3.3 V（相对 GND）"</td></tr>
+  </table>
+  <p class="note" style="margin-top:.8rem;">一句话总结：<strong>电势是物理上的原始概念，电位是它在电路工程中的实用叫法</strong>——本质相通，参考点的选取习惯和表述方式不同。而"电位零点"正是为电位这个相对量人为规定的 0 V 参考点（见章节 ②）。</p>
+</section>
+
+<!-- ④ -->
+<section class="section" id="apply">
+  <h2>④ 电位在工程中的应用（4 大好处）</h2>
+  <div class="grid2">
+    <div><h4>📐 简化电路图</h4><p>所有 GND 符号代表同一点，不必把回线全部画回电池；芯片手册只标引脚电位。</p></div>
+    <div><h4>🔌 示波器直读</h4><p>黑夹子接零点（GND），红夹子点到哪点，屏幕即显示该点电位，无需再算差。</p></div>
+    <div><h4>🧩 模块对接</h4><p>传感器输出 3.3 V、单片机识别 3.3 V——前提是两者共用同一零点（共地）。</p></div>
+    <div><h4>🛡 安全与抗干扰</h4><p>把零点接大地泄放漏电/雷击；或把零点隔离（浮地）避免地环路干扰。</p></div>
+  </div>
+  <div class="note" style="margin-top:.9rem;background:#fafcff;border:2px dashed #c7d8f7;border-radius:10px;padding:.8rem 1rem;">
+    <b>📐 接地方式速记（PCB 设计）：</b>低频（&lt;1 MHz）用<b>单点接地</b>（所有地汇到一点，避免共阻抗耦合）；高频（&gt;10 MHz）用<b>多点接地</b>（就近接到接地平面，减小引线电感）；数/模地分开后在电源入口单点汇合。这是大二模电/PCB 设计常考的工程要点。
+  </div>
+</section>
+
+<!-- ⑤ 种类 -->
+<section class="section" id="kinds">
+  <h2>⑤ 工程中常见的电位零点种类、符号与区别</h2>
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="power">电源地</button>
+    <button class="tab-btn" data-tab="earth">保护大地</button>
+    <button class="tab-btn" data-tab="chassis">机壳地</button>
+    <button class="tab-btn" data-tab="split">数/模地</button>
+    <button class="tab-btn" data-tab="virtual">虚地</button>
+    <button class="tab-btn" data-tab="float">浮地</button>
+  </div>
+  <div class="panel active" id="power"><h3>🔋 电源地（Power / Signal GND）</h3><span class="tag tag-b">符号 ▽（倒三角）或 GND / Vss</span><div class="grid2"><div><h4>是什么</h4><p>电源负极 / 电流公共回流节点，原理图上所有 GND 符号构成同一网络（全局 0 V 参考）。</p></div><div><h4>用法</h4><p>所有芯片地脚连到这里；说"某脚 3.3 V"默认相对此点。</p></div></div></div>
+  <div class="panel" id="earth"><h3>🌍 保护大地（Earth / PE）</h3><span class="tag tag-o">符号 ⏚（圆圈+三条递减横线）</span><div class="grid2"><div><h4>是什么</h4><p>经接地棒真正接入大地的零点，电位稳定≈0。</p></div><div><h4>作用</h4><p>防触电、泄放静电与雷击电流（三孔插座上孔为 PE）。</p></div></div></div>
+  <div class="panel" id="chassis"><h3>📦 机壳地（Chassis）</h3><span class="tag tag-b">符号 ⟋⟋⟋（三条向下斜线，IEC 5020）</span><div class="grid2"><div><h4>是什么</h4><p>以设备金属外壳/机架作为零电位导体与屏蔽面。</p></div><div><h4>注意</h4><p>IEEE 315 指出：机壳相对大地可有相当高电位，需"接大地"须显式画出连接。</p></div></div></div>
+  <div class="panel" id="split"><h3>🎚 数字地 / 模拟地（DGND / AGND）</h3><span class="tag tag-g">抗干扰</span><div class="grid2"><div><h4>为何分开</h4><p>数字电路开关噪声大，模拟电路（音频/传感器）敏感，共地会串扰。</p></div><div><h4>接法</h4><p>PCB 上分开布线，最后在电源入口单点汇合（单点共地/星型接地）。</p></div></div></div>
+  <div class="panel" id="virtual"><h3>🎛 虚地（Virtual Ground）</h3><span class="tag tag-o">运放特性（非真接地）</span><div class="grid2"><div><h4>是什么</h4><p>运放负反馈时，反相端电位被"钳"到同相端电位（同相端接地时=0V）。</p></div><div><h4>注意</h4><p>依赖负反馈与高开环增益；运放一旦饱和/开环/过载即失效，不能当真实回流地。</p></div></div></div>
+  <div class="panel" id="float"><h3>✈️ 浮地（Floating）</h3><span class="tag tag-g">隔离</span><div class="grid2"><div><h4>是什么</h4><p>系统内部有地，但整体不接大地（手机、笔记本、医疗仪器）。</p></div><div><h4>折衷</h4><p>隔离变压器断开地环路抗干扰；为防止静电积累，常在浮地与大地间并一阻值很大的泄放电阻。</p></div></div></div>
+
+  <h3 style="margin-top:1.6rem;">📊 六种零点快速对比</h3>
+  <table>
+    <tr><th>种类</th><th>标准符号</th><th>接不接大地</th><th>核心作用</th><th>典型场景</th></tr>
+    <tr><td>电源/信号地</td><td class="sym">▽</td><td>不一定</td><td>电流回路 / 标注基准</td><td>所有电路板</td></tr>
+    <tr><td>保护大地</td><td class="sym">⏚</td><td>✅ 是</td><td>安全、防雷、稳压</td><td>插座、避雷、机箱</td></tr>
+    <tr><td>机壳地</td><td class="sym">⟋⟋⟋</td><td>常接(须显式)</td><td>屏蔽、结构参考面</td><td>电脑机箱、机架</td></tr>
+    <tr><td>数/模地</td><td>AGND/DGND</td><td>单点汇合</td><td>抗干扰</td><td>音频、ADC</td></tr>
+    <tr><td>虚地</td><td>虚线 0V</td><td>否</td><td>运放工作点</td><td>反相/加法/积分电路</td></tr>
+    <tr><td>浮地</td><td>隔离</td><td>❌ 不接</td><td>隔离、断地环路</td><td>充电器、医疗仪器</td></tr>
+  </table>
+  <p class="note" style="margin-top:.8rem;">符号区分要点：<b>▽（GND）</b>是电路内部 0 V 参考；<b>⏚</b>是真正接大地的保护地；<b>⟋⟋⟋</b>是机壳/机架——三者不可混用。</p>
+</section>
+
+</div>
+
+<footer>教学投屏版 · 保存为 HTML 直接打开 · 按 F11 全屏效果更佳</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  // 导航：纯 JS 平滑滚动到目标 section（解决锚点跳转异常/空白问题）
+  var navLinks = document.querySelectorAll('#topnav a[data-target]');
+  navLinks.forEach(function(a){
+    a.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var id = a.getAttribute('data-target');
+      var sec = document.getElementById(id);
+      if(sec){ sec.scrollIntoView({behavior:'smooth', block:'start'}); }
+    });
+  });
+
+  // tabs
+  var tabs = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.panel');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('active'); });
+      t.classList.add('active');
+      panels.forEach(function(p){ p.classList.remove('active'); });
+      var el = document.getElementById(t.dataset.tab);
+      if(el) el.classList.add('active');
+    });
+  });
+
+  // 零点演示
+  window.setZero = function(zero, btn){
+    document.querySelectorAll('.ctrl button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var Va, Vb, Vc;
+    if(zero==='C'){ Vc=0; Vb=5; Va=10; }
+    else if(zero==='B'){ Vc=-5; Vb=0; Va=5; }
+    else { Vc=-10; Vb=-5; Va=0; }
+    document.getElementById('vA').textContent=Va; document.getElementById('dA').textContent=Va+'V';
+    document.getElementById('vB').textContent=Vb; document.getElementById('dB').textContent=Vb+'V';
+    document.getElementById('vC').textContent=Vc; document.getElementById('dC').textContent=Vc+'V';
+    document.getElementById('uAB').textContent=Va-Vb;
+    document.getElementById('uBC').textContent=Vb-Vc;
+    document.getElementById('hint').textContent =
+      zero==='C' ? '✅ 选电源负极为零点：工程最常用。' :
+      zero==='B' ? '✅ 选中点为零点：类似运放"虚地"思路。' :
+      '✅ 选电源正极为零点：电位全为负，但电压仍为 5 V。';
+  };
+})();
+</script>
+</body>
+</html>
