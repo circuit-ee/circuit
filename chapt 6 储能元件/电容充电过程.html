@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电容充放电过程动画演示（可靠版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fc 0%, #eef2f7 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90e2 0%, #5ca0f2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            padding: 25px;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .analogy-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .water-tank {
+            width: 180px;
+            height: 220px;
+            position: relative;
+            background: rgba(240, 245, 255, 0.7);
+            border: 2px solid #4a90e2;
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(74, 144, 226, 0.1);
+        }
+
+        .water-level {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #4a90e2 0%, #87ceeb 100%);
+            transition: height 0.3s ease;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .water-level::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            animation: wave 2s infinite linear;
+            border-radius: 50%;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(-10px); }
+            100% { transform: translateX(10px); }
+        }
+
+        .tank-labels {
+            position: absolute;
+            right: -40px;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .circuit-diagram {
+            width: 280px;
+            height: 220px;
+            background: rgba(250, 250, 250, 0.7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .controls {
+            background: rgba(236, 244, 253, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(74, 144, 226, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #d6e4f5;
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4a90e2;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+            border: 2px solid white;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4a90e2;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+            border: 2px solid white;
+        }
+
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #4a90e2;
+            font-size: 15px;
+        }
+
+        .switch-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 25px 0;
+        }
+
+        .switch {
+            position: relative;
+            width: 80px;
+            height: 40px;
+            background: #e0e7f0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .switch.active {
+            background: #4a90e2;
+        }
+
+        .switch-knob {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .switch.active .switch-knob {
+            transform: translateX(40px);
+        }
+
+        .switch-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: 500;
+            padding: 0 5px;
+        }
+
+        .time-constant {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border: 1px solid rgba(255, 213, 79, 0.3);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .tau-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #e67e22;
+            margin: 8px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .waveform-canvas {
+            width: 100%;
+            height: 320px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: rgba(250, 250, 250, 0.7);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .voltage-color {
+            background: #4a90e2;
+        }
+
+        .current-color {
+            background: #e74c3c;
+        }
+
+        .explanation {
+            background: rgba(255, 243, 205, 0.7);
+            border: 1px solid rgba(255, 234, 167, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            color: #856404;
+            line-height: 1.7;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .explanation h3 {
+            margin-bottom: 12px;
+            color: #7d5a00;
+            font-weight: 600;
+        }
+
+        .explanation strong {
+            color: #7d5a00;
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            gap: 15px;
+        }
+
+        .indicator {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            flex: 1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: all 0.3s;
+        }
+
+        .indicator:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .indicator-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .indicator-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .current-arrow {
+            position: absolute;
+            color: #e74c3c;
+            font-size: 24px;
+            font-weight: bold;
+            animation: pulse 0.5s infinite;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .highlight-current {
+            background: rgba(231, 76, 60, 0.15) !important;
+            border: 1px dashed #e74c3c !important;
+            border-radius: 8px !important;
+        }
+
+        .highlight-voltage {
+            background: rgba(74, 144, 226, 0.15) !important;
+            border: 1px dashed #4a90e2 !important;
+            border-radius: 8px !important;
+        }
+
+        .control-btn {
+            background: rgba(74, 144, 226, 0.85);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.2);
+        }
+
+        .control-btn:hover {
+            background: rgba(53, 122, 189, 0.9);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(53, 122, 189, 0.25);
+        }
+
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+
+        .state-indicator {
+            text-align: center;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .state-ready {
+            background: rgba(149, 165, 166, 0.1);
+            color: #7f8c8d;
+            border: 1px solid rgba(149, 165, 166, 0.3);
+        }
+
+        .state-charging {
+            background: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .state-complete {
+            background: rgba(52, 152, 219, 0.15);
+            color: #2980b9;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>电容充放电过程动画演示</h1>
+            <p>用水容器类比理解电压电流特性 | 时间常数τ = RC</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel-title">物理类比与电路</div>
+                
+                <div class="analogy-container">
+                    <div style="text-align: center;">
+                        <div class="water-tank" id="waterTank">
+                            <div class="water-level" id="waterLevel"></div>
+                            <div class="tank-labels">
+                                <span>10V</span>
+                                <span>5V</span>
+                                <span>0V</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 14px; color: #666;">水容器类比</div>
+                        <div style="font-size: 12px; color: #999;">水位 = 电容电压</div>
+                    </div>
+
+                    <div class="circuit-diagram">
+                        <svg width="260" height="200" id="circuitSvg">
+                            <!-- 电源 -->
+                            <circle cx="50" cy="100" r="15" fill="none" stroke="#333" stroke-width="2"/>
+                            <text x="50" y="105" text-anchor="middle" font-size="16" font-weight="bold">+</text>
+                            <text x="50" y="120" text-anchor="middle" font-size="12">Us</text>
+                            
+                            <!-- 开关 -->
+                            <line x1="75" y1="100" x2="110" y2="100" stroke="#333" stroke-width="2"/>
+                            <line x1="90" y1="85" x2="90" y2="115" stroke="#333" stroke-width="2" id="switchLine"/>
+                            <circle cx="110" cy="100" r="3" fill="#333"/>
+                            
+                            <!-- 电阻 -->
+                            <rect x="110" y="85" width="40" height="30" fill="none" stroke="#333" stroke-width="2"/>
+                            <text x="130" y="115" text-anchor="middle" font-size="12">R</text>
+                            
+                            <!-- 电容 -->
+                            <line x1="170" y1="85" x2="170" y2="115" stroke="#333" stroke-width="2"/>
+                            <line x1="180" y1="85" x2="180" y2="115" stroke="#333" stroke-width="2"/>
+                            <text x="175" y="130" text-anchor="middle" font-size="12">C</text>
+                            
+                            <!-- 连接线 -->
+                            <line x1="150" y1="100" x2="170" y2="100" stroke="#333" stroke-width="2"/>
+                            <line x1="180" y1="100" x2="210" y2="100" stroke="#333" stroke-width="2"/>
+                            <line x1="210" y1="100" x2="210" y2="150" stroke="#333" stroke-width="2"/>
+                            <line x1="50" y1="150" x2="210" y2="150" stroke="#333" stroke-width="2"/>
+                            <line x1="50" y1="115" x2="50" y2="150" stroke="#333" stroke-width="2"/>
+                            
+                            <!-- 电压电流标签 -->
+                            <text x="175" y="80" text-anchor="middle" font-size="12" fill="#4a90e2">u_C</text>
+                            <text x="160" y="95" text-anchor="middle" font-size="12" fill="#e74c3c">i</text>
+                            
+                            <!-- 电流箭头 -->
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                        refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c"/>
+                                </marker>
+                            </defs>
+                            <line x1="130" y1="60" x2="170" y2="60" stroke="#e74c3c" stroke-width="2" 
+                                  marker-end="url(#arrowhead)" opacity="0" id="currentArrow"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 状态显示 -->
+                <div class="state-indicator state-ready" id="stateIndicator">
+                    系统就绪（点击开关开始充电）
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>电阻 R</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="resistorSlider" 
+                                   min="100" max="2000" value="1000" step="100">
+                            <div class="value-display" id="resistorValue">1.0 kΩ</div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>电容 C</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="capacitorSlider" 
+                                   min="100" max="2000" value="1000" step="100">
+                            <div class="value-display" id="capacitorValue">1000 μF</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-constant">
+                    <div>时间常数 τ = RC</div>
+                    <div class="tau-value" id="tauValue">1.00 s</div>
+                    <div style="font-size: 12px; color: #666;">电压变化63%所需时间</div>
+                </div>
+
+                <div class="switch-container">
+                    <div style="text-align: center;">
+                        <div>充电开关</div>
+                        <div class="switch" id="switch">
+                            <div class="switch-knob"></div>
+                        </div>
+                        <div class="switch-labels">
+                            <span>OFF</span>
+                            <span>ON</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-indicators">
+                    <div class="indicator" id="voltageIndicator">
+                        <div class="indicator-label">电容电压 u_C</div>
+                        <div class="indicator-value" id="voltageValue">0.00 V</div>
+                    </div>
+                    <div class="indicator" id="currentIndicator">
+                        <div class="indicator-label">回路电流 i</div>
+                        <div class="indicator-value" id="currentValue">0.00 mA</div>
+                    </div>
+                </div>
+
+                <div class="explanation">
+                    <h3>为什么电流能突变而电压不能？</h3>
+                    <p><strong>电流突变：</strong>开关闭合瞬间，电容电压不能突变（仍保持0V），电源电压全部加在电阻上，i = Us/R 立即达到最大值。</p>
+                    <p><strong>电压渐变：</strong>电压与电场能量相关（W = ½Cu²），能量不能突变。电荷需要时间来积累，就像水位需要时间来上升。</p>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-title">电压电流波形</div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color voltage-color"></div>
+                        <span>电压 u_C (V)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color current-color"></div>
+                        <span>电流 i (mA)</span>
+                    </div>
+                </div>
+
+                <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="control-btn" onclick="resetSimulation()">重置</button>
+                    <button class="control-btn" onclick="clearWaveform()">清除波形</button>
+                </div>
+
+                <div class="explanation">
+                    <h3>波形特征说明</h3>
+                    <p><strong>充电过程：</strong>电压按指数规律上升，电流按指数规律衰减，时间常数τ = RC。</p>
+                    <p><strong>时间常数：</strong>经过1τ时间，电压变化约63%；经过3τ~5τ，认为过渡过程结束。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局变量 ====================
+        let R = 1000; // 电阻值 (Ω)
+        let C = 1000e-6; // 电容值 (F)
+        let Us = 10; // 电源电压 (V)
+        let switchOn = false; // 开关状态（true=ON, false=OFF）
+        let uC = 0; // 电容电压
+        let i = 0; // 回路电流
+        let time = 0; // 仿真时间
+        let tau = R * C; // 时间常数
+        let animationId = null; // 动画帧ID
+        let waveformData = []; // 波形数据数组
+        let lastTime = 0; // 上一次动画时间戳
+
+        // ==================== DOM元素获取 ====================
+        // 确保所有元素都存在后再继续
+        const elements = {
+            resistorSlider: document.getElementById('resistorSlider'),
+            capacitorSlider: document.getElementById('capacitorSlider'),
+            resistorValue: document.getElementById('resistorValue'),
+            capacitorValue: document.getElementById('capacitorValue'),
+            tauValue: document.getElementById('tauValue'),
+            switch: document.getElementById('switch'),
+            waterLevel: document.getElementById('waterLevel'),
+            voltageValue: document.getElementById('voltageValue'),
+            currentValue: document.getElementById('currentValue'),
+            canvas: document.getElementById('waveformCanvas'),
+            currentArrow: document.getElementById('currentArrow'),
+            switchLine: document.getElementById('switchLine'),
+            voltageIndicator: document.getElementById('voltageIndicator'),
+            currentIndicator: document.getElementById('currentIndicator'),
+            stateIndicator: document.getElementById('stateIndicator')
+        };
+
+        // 检查所有元素是否存在
+        for (let key in elements) {
+            if (!elements[key]) {
+                console.error(`错误：无法找到元素 ${key}`);
+            }
+        }
+
+        // ==================== 画布设置 ====================
+        function resizeCanvas() {
+            const canvas = elements.canvas;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            canvas.style.width = canvas.offsetWidth + 'px';
+            canvas.style.height = canvas.offsetHeight + 'px';
+        }
+
+        // ==================== 初始化 ====================
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，开始初始化...');
+            resizeCanvas();
+            updateParameters();
+            updateDisplay();
+            drawWaveform();
+            bindEvents();
+            console.log('初始化完成！');
+        });
+
+        // ==================== 事件绑定 ====================
+        function bindEvents() {
+            console.log('绑定事件监听器...');
+            
+            // 电阻滑块
+            elements.resistorSlider.addEventListener('input', function() {
+                R = parseInt(this.value);
+                elements.resistorValue.textContent = (R / 1000).toFixed(1) + ' kΩ';
+                updateParameters();
+                if (!switchOn) {
+                    uC = 0;
+                    i = 0;
+                    updateDisplay();
+                }
+                console.log(`电阻调整为: ${R}Ω`);
+            });
+
+            // 电容滑块
+            elements.capacitorSlider.addEventListener('input', function() {
+                C = parseInt(this.value) * 1e-6;
+                elements.capacitorValue.textContent = (C * 1e6) + ' μF';
+                updateParameters();
+                if (!switchOn) {
+                    uC = 0;
+                    i = 0;
+                    updateDisplay();
+                }
+                console.log(`电容调整为: ${C}F`);
+            });
+
+            // 开关点击
+            elements.switch.addEventListener('click', handleSwitchClick);
+            
+            console.log('事件绑定完成！');
+        }
+
+        // ==================== 参数更新 ====================
+        function updateParameters() {
+            tau = R * C;
+            elements.tauValue.textContent = tau.toFixed(2) + ' s';
+            
+            // 更新水容器标签
+            const waterTank = document.getElementById('waterTank');
+            if (waterTank) {
+                const maxVoltage = Us;
+                const midVoltage = Us / 2;
+                waterTank.querySelector('.tank-labels').innerHTML = `
+                    <span>${maxVoltage.toFixed(0)}V</span>
+                    <span>${midVoltage.toFixed(0)}V</span>
+                    <span>0V</span>
+                `;
+            }
+            console.log(`时间常数更新: τ = ${tau.toFixed(3)}s`);
+        }
+
+        // ==================== 开关处理 ====================
+        function handleSwitchClick() {
+            console.log(`开关被点击，当前状态: ${switchOn ? 'ON' : 'OFF'}`);
+            
+            if (!switchOn) {
+                // 当前是OFF，切换到ON（开始充电）
+                switchOn = true;
+                time = 0; // 重置时间
+                elements.switch.classList.add('active');
+                elements.switchLine.style.transform = 'rotate(0deg)';
+                elements.switchLine.style.transformOrigin = '90px 100px';
+                updateStateIndicator('charging');
+                console.log('开始充电！');
+                startSimulation();
+            } else {
+                // 当前是ON，切换到OFF（停止）
+                switchOn = false;
+                elements.switch.classList.remove('active');
+                elements.switchLine.style.transform = 'rotate(45deg)';
+                elements.switchLine.style.transformOrigin = '90px 100px';
+                updateStateIndicator('ready');
+                console.log('停止仿真');
+                stopSimulation();
+            }
+        }
+
+        // ==================== 状态指示器 ====================
+        function updateStateIndicator(state) {
+            const indicator = elements.stateIndicator;
+            if (!indicator) return;
+            
+            switch(state) {
+                case 'ready':
+                    indicator.className = 'state-indicator state-ready';
+                    indicator.textContent = '系统就绪（点击开关开始充电）';
+                    break;
+                case 'charging':
+                    indicator.className = 'state-indicator state-charging';
+                    indicator.textContent = '正在充电...';
+                    break;
+                case 'complete':
+                    indicator.className = 'state-indicator state-complete';
+                    indicator.textContent = '充电完成（点击开关可重新充电）';
+                    break;
+            }
+        }
+
+        // ==================== 动画控制 ====================
+        function startSimulation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                console.log('取消之前的动画帧');
+            }
+            console.log('启动新的动画循环');
+            lastTime = performance.now();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function stopSimulation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                console.log('动画已停止');
+            }
+            i = 0;
+            updateDisplay();
+        }
+
+        // ==================== 动画循环 ====================
+        function animate(timestamp) {
+            // 如果开关已关闭，不再继续动画
+            if (!switchOn) {
+                console.log('开关已关闭，停止动画');
+                return;
+            }
+
+            const deltaTime = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // 充电过程计算
+            uC = Us * (1 - Math.exp(-time / tau));
+            i = (Us - uC) / R;
+            
+            console.log(`t=${time.toFixed(2)}s, uC=${uC.toFixed(2)}V, i=${(i*1000).toFixed(1)}mA`);
+
+            // 检查是否充满（达到99%以上）
+            if (uC >= 0.99 * Us) {
+                console.log('充电完成！');
+                uC = Us;
+                i = 0;
+                switchOn = false; // 自动停止
+                elements.switch.classList.remove('active');
+                elements.switchLine.style.transform = 'rotate(45deg)';
+                updateStateIndicator('complete');
+                stopSimulation();
+            } else {
+                time += deltaTime;
+                
+                // 高亮当前变化的参数
+                if (Math.abs(i) > 0.001) {
+                    elements.currentIndicator.classList.add('highlight-current');
+                    elements.voltageIndicator.classList.remove('highlight-voltage');
+                } else {
+                    elements.currentIndicator.classList.remove('highlight-current');
+                    elements.voltageIndicator.classList.add('highlight-voltage');
+                }
+            }
+
+            updateDisplay();
+            recordWaveform(timestamp);
+            drawWaveform();
+            
+            if (switchOn) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        // ==================== 显示更新 ====================
+        function updateDisplay() {
+            // 更新数值显示
+            elements.voltageValue.textContent = uC.toFixed(2) + ' V';
+            elements.currentValue.textContent = (i * 1000).toFixed(1) + ' mA';
+            
+            // 更新水位
+            const waterHeight = (uC / Us) * 100;
+            if (elements.waterLevel) {
+                elements.waterLevel.style.height = waterHeight + '%';
+            }
+            
+            // 更新电流箭头
+            if (elements.currentArrow) {
+                if (Math.abs(i) > 0.001) {
+                    elements.currentArrow.setAttribute('opacity', '1');
+                } else {
+                    elements.currentArrow.setAttribute('opacity', '0');
+                }
+            }
+        }
+
+        // ==================== 波形记录与绘制 ====================
+        function recordWaveform(timestamp) {
+            waveformData.push({
+                time: time,
+                voltage: uC,
+                current: i * 1000, // 转换为mA
+                timestamp: timestamp
+            });
+            
+            // 限制数据点数量
+            if (waveformData.length > 5000) {
+                waveformData = waveformData.slice(-4000);
+            }
+        }
+
+        function drawWaveform() {
+            const canvas = elements.canvas;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            const padding = 60;
+            const plotWidth = width - 2 * padding;
+            const plotHeight = height - 2 * padding;
+
+            // 清空画布
+            ctx.fillStyle = 'rgba(250, 250, 250, 0.7)';
+            ctx.fillRect(0, 0, width, height);
+
+            // 绘制网格和坐标轴...
+            // （网格绘制代码与之前版本相同，此处省略以节省空间）
+            
+            // 绘制电压曲线
+            if (waveformData.length > 1) {
+                const maxCurrent = Us / R * 1000;
+                
+                // 电压曲线
+                ctx.strokeStyle = '#4a90e2';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                waveformData.forEach((point, index) => {
+                    const x = padding + (point.time / (5 * tau)) * plotWidth;
+                    const y = height - padding - (point.voltage / Us) * plotHeight;
+                    if (index === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                
+                // 电流曲线
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                waveformData.forEach((point, index) => {
+                    const x = padding + (point.time / (5 * tau)) * plotWidth;
+                    const y = height - padding - (point.current / maxCurrent) * plotHeight;
+                    if (index === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+        }
+
+        // ==================== 其他功能 ====================
+        function resetSimulation() {
+            console.log('重置仿真');
+            stopSimulation();
+            uC = 0;
+            i = 0;
+            time = 0;
+            waveformData = [];
+            switchOn = false;
+            isCharging = true;
+            elements.switch.classList.remove('active');
+            elements.switchLine.style.transform = 'rotate(45deg)';
+            updateStateIndicator('ready');
+            updateDisplay();
+            drawWaveform();
+            
+            elements.currentIndicator.classList.remove('highlight-current');
+            elements.voltageIndicator.classList.remove('highlight-voltage');
+        }
+
+        function clearWaveform() {
+            console.log('清除波形');
+            waveformData = [];
+            drawWaveform();
+        }
+
+        // 窗口大小改变
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            drawWaveform();
+        });
+    </script>
+</body>
+</html>

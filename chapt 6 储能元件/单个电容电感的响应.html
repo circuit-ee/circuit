@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电容与电感 · 激励-响应及瞬时功率 交互演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+    background: #f4f6fb;
+    color: #1a2540;
+    min-height: 100vh;
+    padding: 22px;
+    font-size: 18px;
+  }
+  h1 { text-align: center; font-size: 34px; margin-bottom: 10px; letter-spacing: 1px; color: #14213d; }
+  .sub { text-align: center; color: #55607a; font-size: 19px; margin-bottom: 20px; line-height: 1.6; }
+  .panel {
+    max-width: 1240px; margin: 0 auto 20px; background: #ffffff;
+    border: 1px solid #e0e6f0; border-radius: 16px; padding: 22px 26px;
+    box-shadow: 0 4px 18px rgba(20,33,61,0.06);
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: center; }
+  .ctrl { display: flex; flex-direction: column; gap: 8px; font-size: 17px; }
+  .ctrl label { color: #4a5568; font-weight: bold; font-size: 17px; }
+  select, input[type=number], button {
+    background: #fff; color: #1a2540; border: 2px solid #c7d0e0; border-radius: 10px;
+    padding: 9px 14px; font-size: 18px; outline: none;
+  }
+  select { min-width: 260px; }
+  input[type=range] { width: 190px; padding: 0; height: 30px; }
+  button { cursor: pointer; transition: .2s; background: #2f5dca; color: #fff; border-color: #2f5dca; font-weight: bold; padding: 10px 20px; }
+  button:hover { background: #234aab; border-color: #234aab; }
+  .val { color: #d23b5a; font-weight: bold; font-size: 19px; }
+  canvas { display: block; width: 100%; background: #ffffff; border-radius: 12px; border: 1px solid #e6eaf2; }
+  .canvas-wrap { position: relative; }
+  .legend { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; font-size: 18px; margin-top: 14px; color: #33405c; font-weight: bold; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 26px; height: 6px; border-radius: 3px; display: inline-block; }
+  .info { font-size: 18px; color: #55607a; text-align: center; margin-top: 14px; line-height: 1.8; }
+  .formula { font-family: "Cambria Math",serif; color: #2f5dca; font-weight: bold; font-size: 20px; }
+  footer { text-align: center; color: #8a93a8; font-size: 15px; margin-top: 18px; }
+  .note { font-size: 16px; color: #8a6070; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>⚡ 电容与电感 · 激励-响应及瞬时功率 交互演示</h1>
+<div class="sub">电容 i(t) = C·dv/dt（电压激励 → 电流响应）　电感 v(t) = L·di/dt（电流激励 → 电压响应）　p(t) = v(t)·i(t)</div>
+
+<div class="panel">
+  <div class="controls">
+    <div class="ctrl">
+      <label>元件类型</label>
+      <select id="elem">
+        <label>电容 C（电压激励 → 响应电流）</label>
+        <option value="C">电容 C（电压激励 → 响应电流）</option>
+        <option value="L">电感 L（电流激励 → 响应电压）</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>激励波形</label>
+      <select id="wave">
+        <option value="dc">直流 DC</option>
+        <option value="tri">三角波</option>
+        <option value="pulse">脉冲波</option>
+        <option value="sin">正弦波</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>幅值 A　<span class="val" id="Aval">10</span></label>
+      <input type="range" id="A" min="1" max="20" step="1" value="10">
+    </div>
+    <div class="ctrl">
+      <label>频率 f / Hz　<span class="val" id="Fval">1</span></label>
+      <input type="range" id="F" min="0.2" max="3" step="0.1" value="1">
+    </div>
+    <div class="ctrl">
+      <label>参数 C/μF 或 L/mH　<span class="val" id="Pval">100</span></label>
+      <input type="range" id="P" min="10" max="500" step="10" value="100">
+    </div>
+    <div class="ctrl">
+      <label>占空比(脉冲)　<span class="val" id="Dval">0.5</span></label>
+      <input type="range" id="D" min="0.1" max="0.9" step="0.05" value="0.5">
+    </div>
+    <div class="ctrl">
+      <label>&nbsp;</label>
+      <button id="pauseBtn">暂停 / 继续</button>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="swatch" style="background:#e0a800"></i>激励 x(t)</span>
+    <span><i class="swatch" style="background:#088a5b"></i>响应 y(t)</span>
+    <span><i class="swatch" style="background:#d9204a"></i>瞬时功率 p(t)</span>
+    <span><i class="swatch" style="background:#9aa3c0;height:3px"></i>零轴线</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="canvas-wrap">
+    <canvas id="cv" width="1200" height="900"></canvas>
+  </div>
+  <div class="info">
+    上方图：<span class="formula">x(t)</span>（黄，激励）与 <span class="formula">y(t)</span>（绿，响应）叠加，横轴覆盖 <b>两个周期</b>。<br>
+    下方图：瞬时功率 <span class="formula">p(t)=x(t)·y(t)</span>（红），与上方时间轴严格对齐。响应按"真实物理幅值"归一化显示，标题中标注实际数值。<br>
+    <span class="note">注：脉冲波跳变沿的微分（冲激）以"面积守恒的有限脉冲"近似显示，其面积 = C·Δv（电容）或 L·Δi（电感）；直流激励下响应与功率恒为 0。</span>
+  </div>
+  <div class="panel" style="margin-top:16px;">
+    <div style="font-size:19px;font-weight:bold;color:#14213d;margin-bottom:10px;">📖 物理关系速查（帮助学生对照波形理解）</div>
+    <table style="width:100%;border-collapse:collapse;font-size:17px;text-align:center;color:#33405c;">
+      <tr style="background:#eef2f9;font-weight:bold;">
+        <td style="padding:8px;border:1px solid #dbe0ea;">元件</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">激励 → 响应</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">核心关系</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">正弦稳态特征</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电容 C</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电压 v(t) → 电流 i(t)</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;" class="formula">i = C·dv/dt</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电流超前电压 90°</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电感 L</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电流 i(t) → 电压 v(t)</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;" class="formula">v = L·di/dt</td>
+        <td style="padding:8px;border:1px solid #dbe0ea;">电压超前电流 90°</td>
+      </tr>
+    </table>
+    <div style="font-size:16px;color:#5a657a;margin-top:12px;line-height:1.8;">
+      <b>读数建议：</b>观察右上角实时读数 (t, x, y, p) 随游标变化——
+      当 <b>p&gt;0</b> 时元件<b>吸收</b>功率（储能）；当 <b>p&lt;0</b> 时元件<b>释放</b>能量回电路。
+      对正弦激励，p(t) 正负交替且一周期内积分为 0，说明理想 C/L 在一个周期内<b>净储能变化为 0</b>（无有功损耗）。
+    </div>
+  </div>
+</div>
+
+<footer>拖动滑块实时更新 · 公式：i = C·dv/dt　v = L·di/dt　p = v·i　·　H5 + Canvas 动态绘制（解析微分）</footer>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const elem=document.getElementById('elem'), wave=document.getElementById('wave');
+const A=document.getElementById('A'), F=document.getElementById('F'), P=document.getElementById('P'), D=document.getElementById('D');
+const Aval=document.getElementById('Aval'),Fval=document.getElementById('Fval'),Pval=document.getElementById('Pval'),Dval=document.getElementById('Dval');
+A.value=10; F.value=1; P.value=100; D.value=0.5;
+const pauseBtn=document.getElementById('pauseBtn');
+
+let paused=false, t0=performance.now();
+pauseBtn.onclick=()=>{ paused=!paused; if(!paused)t0=performance.now()-elapsed; };
+[A,F,P,D].forEach(s=>s.oninput=updateLabels);
+function updateLabels(){
+  Aval.textContent=+A.value; Fval.textContent=+F.value; Pval.textContent=+P.value; Dval.textContent=+D.value;
+}
+updateLabels();
+
+// ===== 解析表达式（避免数值差分在拐点/跳变处产生虚假尖峰）=====
+// 激励 x(t)：三角波为对称三角(-A..A)；脉冲波为 0..A 方波（无直流偏移，便于功率观察）
+function source(t, w, amp, duty, type){
+  const T=1/w;
+  if(type==='dc') return amp;
+  let phase=t/T; phase=phase-Math.floor(phase);
+  if(type==='sin') return amp*Math.sin(2*Math.PI*phase-Math.PI/2);
+  if(type==='tri'){
+    // 0..0.5 上升 -A..A, 0.5..1 下降 A..-A
+    if(phase<0.5) return amp*(-1+4*phase);
+    else return amp*(1-4*(phase-0.5));
+  }
+  if(type==='pulse') return (phase<duty)? amp : 0;
+}
+// 解析微分 dx/dt（V/s 或 A/s）
+function dSource(t, w, amp, duty, type){
+  const T=1/w;
+  if(type==='dc') return 0;
+  let phase=t/T; phase=phase-Math.floor(phase);
+  if(type==='sin') return amp*2*Math.PI/T*Math.cos(2*Math.PI*phase-Math.PI/2);
+  if(type==='tri'){
+    if(phase<0.5) return 4*amp/T;
+    else return -4*amp/T;
+  }
+  // pulse：连续点导数为0；跳变沿在绘制中以窄脉冲近似冲激
+  return 0;
+}
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const W=cv.width, H=cv.height;
+  const topH=H*0.44, botH=H*0.44, gap=H*0.12;
+  const axY=46, axH=topH-64;
+  const bxY=topH+gap+24, bxH=botH-44;
+  const padL=110, padR=40;
+  const plotW=W-padL-padR;
+
+  const amp=+A.value, f=+F.value, param=+P.value, duty=+D.value;
+  const type=elem.value;
+  const w=f, T=1/f, tEnd=2*T;
+
+  // 计算序列
+  const N=2000;
+  const xs=[], ys=[], ps=[];
+  let xAbs=0, yAbs=0, pMax=-Infinity, pMin=Infinity;
+  for(let i=0;i<=N;i++){
+    const t=i/N*tEnd;
+    const x=source(t,w,amp,duty,wave.value);
+    let y;
+    if(type==='C') y=(param*1e-6)*dSource(t,w,amp,duty,wave.value);
+    else y=(param*1e-3)*dSource(t,w,amp,duty,wave.value);
+    // 脉冲跳变沿：用面积守恒的有限脉冲近似冲激
+    // 冲激强度 Q = (C 或 L) * 跳变量；以一个采样步 dt 为脉冲宽度，高度 = Q/dt，使面积 = Q
+    if(wave.value==='pulse'){
+      const phase=(t/T)-Math.floor(t/T);
+      const dt=tEnd/N; // 一个采样步长，作为冲激近似脉冲的半宽量级
+      const Q=(type==='C'?(param*1e-6):(param*1e-3))*amp; // 冲激强度
+      if(Math.abs(phase)<1e-4 || Math.abs(phase-1)<1e-4){
+        y=Q/dt; // 0->A 正冲激
+      } else if(Math.abs(phase-duty)<1e-4){
+        y=-Q/dt; // A->0 负冲激
+      }
+    }
+    const p=x*y;
+    xs.push(x); ys.push(y); ps.push(p);
+    if(Math.abs(x)>xAbs) xAbs=Math.abs(x);
+    if(Math.abs(y)>yAbs) yAbs=Math.abs(y);
+    if(p>pMax)pMax=p; if(p<pMin)pMin=p;
+  }
+  // 响应幅值若全为0(直流)，给一个基准避免除零
+  if(yAbs===0) yAbs=1;
+  // 坐标范围：x 与 y 各自按自身物理量的满幅显示（真实幅值标注在标题）
+  const xR=[-xAbs*1.18, xAbs*1.18];
+  const yR=[-yAbs*1.25, yAbs*1.25];
+  let pM=Math.max(Math.abs(pMin),Math.abs(pMax)); if(pM===0||!isFinite(pM)) pM=1;
+  const pR=[-pM*1.18, pM*1.18];
+
+  const cX='#e0a800', cY='#088a5b', cP='#d9204a', cAx='#9aa3c0';
+
+  function axes(yTop, h, vMin,vMax, title, unit, ticksV){
+    ctx.strokeStyle='#cdd5e0'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(padL,yTop); ctx.lineTo(padL,yTop+h); ctx.lineTo(padL+plotW,yTop+h); ctx.stroke();
+    ctx.strokeStyle='#b8c0d0'; ctx.setLineDash([6,5]);
+    const yz=yTop+h/2;
+    ctx.beginPath(); ctx.moveTo(padL,yz); ctx.lineTo(padL+plotW,yz); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#14213d'; ctx.font='bold 20px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(title, padL+8, yTop+6);
+    ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.font='16px sans-serif';
+    for(let k=0;k<=ticksV;k++){
+      const v=vMin+(vMax-vMin)*k/ticksV;
+      const yy=yTop+h-k/ticksV*h;
+      ctx.fillStyle='#5a657a';
+      ctx.fillText(formatVal(v)+(unit? ' '+unit:''), padL-14, yy);
+      ctx.strokeStyle='#eef1f6'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+plotW,yy); ctx.stroke();
+    }
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.font='16px sans-serif';
+    for(let k=0;k<=4;k++){
+      const tt=k/4*tEnd;
+      const xx=padL+k/4*plotW;
+      ctx.fillStyle='#5a657a';
+      ctx.fillText(tt.toFixed(2)+' s', xx, yTop+h+8);
+    }
+  }
+  function formatVal(v){
+    if(Math.abs(v)>=100) return v.toFixed(0);
+    if(Math.abs(v)>=10) return v.toFixed(1);
+    if(Math.abs(v)>=1) return v.toFixed(2);
+    return v.toExponential(1);
+  }
+  function plot(arr, vMin,vMax, yTop,h, color, lw){
+    ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.beginPath();
+    for(let i=0;i<=N;i++){
+      const x=padL+i/N*plotW;
+      const v=arr[i];
+      const y=yTop+h-(v-vMin)/(vMax-vMin)*h;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // 真实物理幅值文本
+  const unitX=(type==='C'?'V':'A'), unitY=(type==='C'?'A':'V');
+  let yAmpText;
+  if(type==='C'){
+    yAmpText=(yAbs>=1e-3)? (yAbs*1e3).toFixed(2)+' mA': (yAbs*1e6).toFixed(1)+' µA';
+  } else {
+    yAmpText=(yAbs>=1)? yAbs.toFixed(2)+' V': (yAbs*1e3).toFixed(1)+' mV';
+  }
+  const titleTop=(type==='C'?'电容 C = '+param+' μF · 电压激励 v(t)':'电感 L = '+param+' mH · 电流激励 i(t)')
+    +'　波形 '+{dc:'DC',tri:'三角波',pulse:'脉冲波',sin:'正弦波'}[wave.value]+'　f='+f+'Hz'
+    +'　|　响应幅值 ≈ '+yAmpText;
+  const titleBot='瞬时功率  p(t) = x(t)·y(t)　（'+unitX+' × '+unitY+' = W）';
+
+  axes(axY,axH,xR[0],xR[1],titleTop,'' ,4);
+  plot(xs,xR[0],xR[1],axY,axH,cX,3.2);
+  plot(ys,yR[0],yR[1],axY,axH,cY,3.2);
+
+  axes(bxY,bxH,pR[0],pR[1],titleBot,'' ,4);
+  plot(ps,pR[0],pR[1],bxY,bxH,cP,3.0);
+
+  // 图例（画布内左上区域下方小注）
+  const idx=Math.min(N, Math.floor((elapsed/1000)%tEnd/(tEnd)*N));
+  function readout(yy){
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.strokeStyle='#dbe0ea'; ctx.lineWidth=1.5;
+    ctx.fillRect(W-360,yy,330,92); ctx.strokeRect(W-360,yy,330,92);
+    ctx.fillStyle='#14213d'; ctx.font='17px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top';
+    const xNow=xs[idx], yNow=ys[idx], pNow=ps[idx];
+    const lines=[
+      't = '+(idx/N*tEnd).toFixed(3)+' s',
+      'x = '+formatVal(xNow)+unitX+'　y = '+formatVal(yNow)+unitY,
+      'p = '+formatVal(pNow)+' W'
+    ];
+    lines.forEach((ln,i)=>ctx.fillText(ln, W-346, yy+9+i*25));
+  }
+  readout(12);
+
+  // 动画游标
+  const cx=padL+idx/N*plotW;
+  ctx.strokeStyle='#14213d'; ctx.setLineDash([8,6]); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,axY); ctx.lineTo(cx,axY+axH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,bxY); ctx.lineTo(cx,bxY+bxH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  requestAnimationFrame(draw);
+}
+
+let elapsed=0;
+function tick(){ if(!paused) elapsed=performance.now()-t0; requestAnimationFrame(tick); }
+tick(); draw();
+</script>
+</body>
+</html>

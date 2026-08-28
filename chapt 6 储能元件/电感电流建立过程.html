@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电感电流建立过程动画演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #495057;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            max-width: 1200px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .control-group label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .control-group input[type="range"] {
+            width: 150px;
+            height: 5px;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            background: #e9ecef;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4dabf7;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .control-group span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #4dabf7, #339af0);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #339af0, #228be6);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #adb5bd, #868e96);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(to right, #868e96, #6c757d);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .animation-area {
+            display: flex;
+            gap: 30px;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
+        }
+        
+        .canvas-container {
+            position: relative;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .info-panel {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #4dabf7;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .info-panel h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-panel h3::before {
+            content: "•";
+            color: #4dabf7;
+            font-size: 2rem;
+            line-height: 0;
+        }
+        
+        .info-panel p {
+            color: #495057;
+            line-height: 1.7;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+        
+        .info-panel ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .info-panel li {
+            margin: 10px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        
+        .info-panel strong {
+            color: #c0392b;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .legend-item span {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .color-box {
+            width: 24px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .current-color {
+            background: linear-gradient(to right, #ff6b6b, #fa5252);
+        }
+        
+        .voltage-color {
+            background: linear-gradient(to right, #4dabf7, #339af0);
+        }
+        
+        .flywheel-color {
+            background: linear-gradient(to right, #40c057, #2f9e44);
+        }
+        
+        .emf-color {
+            background: linear-gradient(to right, #ffa94d, #ff922b);
+        }
+        
+        .status-display {
+            text-align: center;
+            font-weight: 600;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            color: #495057;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .switch-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-left: 10px;
+            box-shadow: 0 0 5px currentColor;
+        }
+        
+        .switch-on {
+            background: linear-gradient(to right, #40c057, #2f9e44);
+        }
+        
+        .switch-off {
+            background: linear-gradient(to right, #adb5bd, #868e96);
+        }
+        
+        .energy-display {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, #fff3bf 0%, #ffec99 100%);
+            border-radius: 8px;
+            color: #5c4800;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .formula {
+            font-size: 20px;
+            font-weight: bold;
+            color: #c0392b;
+            background: rgba(52, 152, 219, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .key-term {
+            font-weight: bold;
+            color: #c0392b;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>电感电流建立过程动画演示</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>电感量 (L)</label>
+                <input type="range" id="inductance" min="0.1" max="2" step="0.1" value="1">
+                <span id="inductance-value">1.0 H</span>
+            </div>
+            <div class="control-group">
+                <label>电压 (V)</label>
+                <input type="range" id="voltage" min="1" max="12" step="1" value="6">
+                <span id="voltage-value">6.0 V</span>
+            </div>
+            <div class="control-group">
+                <label>电阻 (R)</label>
+                <input type="range" id="resistance" min="1" max="10" step="0.5" value="3">
+                <span id="resistance-value">3.0 Ω</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-primary" onclick="startAnimation()">开始</button>
+            <button class="btn-secondary" onclick="stopAnimation()">停止</button>
+            <button class="btn-secondary" onclick="resetAnimation()">重置</button>
+        </div>
+        
+        <div class="status-display">
+            开关状态: <span id="switch-status">关闭</span>
+            <span class="switch-indicator switch-off" id="switch-indicator"></span>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box current-color"></div>
+                <span>电流 (I)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box voltage-color"></div>
+                <span>电感电压 (V_L)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box flywheel-color"></div>
+                <span>飞轮转速 (能量)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box emf-color"></div>
+                <span>自感电动势 (EMF)</span>
+            </div>
+        </div>
+        
+        <div class="energy-display" id="energy-display">
+            储能: 0.00 J
+        </div>
+        
+        <div class="animation-area">
+            <div class="canvas-container">
+                <canvas id="circuitCanvas" width="400" height="400"></canvas>
+            </div>
+            <div class="canvas-container">
+                <canvas id="waveformCanvas" width="400" height="400"></canvas>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>关键概念说明</h3>
+            <p><strong class="key-term">飞轮惯性类比：</strong>电感就像一个有质量的飞轮，需要时间来加速（建立电流），一旦转动起来就有动能储存（磁场能量）。</p>
+            <p><strong class="key-term">自感电动势方向：</strong>开关闭合瞬间，电感产生与电源相反的自感电动势阻碍电流变化；开关断开时，自感电动势试图维持原有电流方向。</p>
+            <p><strong class="key-term">时间常数：</strong><span class="formula">τ = L/R</span>，表示电流建立到63%所需时间。L越大，惯性越大，电流建立越慢。</p>
+            <p><strong class="key-term">储能公式：</strong><span class="formula">W = ½LI²</span>，飞轮转速对应电流大小，转速越快储存的能量越多。</p>
+        </div>
+        
+        <div class="info-panel">
+            <h3>操作说明</h3>
+            <ul>
+                <li>调节电感量观察飞轮惯性的变化</li>
+                <li>点击"开始"按钮模拟开关闭合过程</li>
+                <li>观察电流波形和飞轮转速的变化关系</li>
+                <li>注意自感电动势的方向指示</li>
+                <li>红色箭头表示自感电动势方向，蓝色箭头表示电源电压方向</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 获取画布和上下文
+        const circuitCanvas = document.getElementById('circuitCanvas');
+        const circuitCtx = circuitCanvas.getContext('2d');
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        
+        // 动画状态变量
+        let animationId = null;
+        let isRunning = false;
+        let startTime = null;
+        let time = 0;
+        let switchClosed = false;
+        
+        // 电路参数
+        let L = 1.0; // 电感 (H)
+        let V = 6.0; // 电压 (V)
+        let R = 3.0; // 电阻 (Ω)
+        
+        // 数据存储
+        const timeData = [];
+        const currentData = [];
+        const voltageData = [];
+        const maxDataPoints = 200;
+        
+        // 飞轮参数
+        let flywheelAngle = 0;
+        let flywheelSpeed = 0;
+        
+        // 获取控制元素
+        const inductanceSlider = document.getElementById('inductance');
+        const voltageSlider = document.getElementById('voltage');
+        const resistanceSlider = document.getElementById('resistance');
+        const inductanceValue = document.getElementById('inductance-value');
+        const voltageValue = document.getElementById('voltage-value');
+        const resistanceValue = document.getElementById('resistance-value');
+        const switchStatus = document.getElementById('switch-status');
+        const switchIndicator = document.getElementById('switch-indicator');
+        const energyDisplay = document.getElementById('energy-display');
+        
+        // 监听滑块变化
+        inductanceSlider.addEventListener('input', (e) => {
+            L = parseFloat(e.target.value);
+            inductanceValue.textContent = L.toFixed(1) + ' H';
+        });
+        
+        voltageSlider.addEventListener('input', (e) => {
+            V = parseFloat(e.target.value);
+            voltageValue.textContent = V.toFixed(1) + ' V';
+        });
+        
+        resistanceSlider.addEventListener('input', (e) => {
+            R = parseFloat(e.target.value);
+            resistanceValue.textContent = R.toFixed(1) + ' Ω';
+        });
+        
+        // 计算电流和电压
+        function calculateCurrent(t) {
+            if (!switchClosed) return 0;
+            const tau = L / R;
+            const I_max = V / R;
+            return I_max * (1 - Math.exp(-t / tau));
+        }
+        
+        function calculateVoltage(t) {
+            if (!switchClosed) return 0;
+            const tau = L / R;
+            return V * Math.exp(-t / tau);
+        }
+        
+        // 绘制电路图
+        function drawCircuit(current, voltage, emf) {
+            circuitCtx.clearRect(0, 0, circuitCanvas.width, circuitCanvas.height);
+            
+            const centerX = circuitCanvas.width / 2;
+            const centerY = circuitCanvas.height / 2;
+            
+            // 绘制电池
+            circuitCtx.strokeStyle = '#2c3e50';
+            circuitCtx.lineWidth = 2;
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(50, centerY);
+            circuitCtx.lineTo(80, centerY);
+            circuitCtx.moveTo(70, centerY - 15);
+            circuitCtx.lineTo(70, centerY + 15);
+            circuitCtx.moveTo(75, centerY - 10);
+            circuitCtx.lineTo(75, centerY + 10);
+            circuitCtx.stroke();
+            
+            // 绘制电阻
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(150, centerY - 20);
+            circuitCtx.lineTo(150, centerY + 20);
+            circuitCtx.lineTo(160, centerY + 10);
+            circuitCtx.lineTo(160, centerY - 10);
+            circuitCtx.lineTo(170, centerY + 10);
+            circuitCtx.lineTo(170, centerY - 10);
+            circuitCtx.lineTo(180, centerY + 20);
+            circuitCtx.lineTo(180, centerY - 20);
+            circuitCtx.stroke();
+            
+            // 绘制开关
+            const switchX = 250;
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(switchX, centerY - 20);
+            circuitCtx.lineTo(switchX, centerY);
+            if (switchClosed) {
+                circuitCtx.lineTo(switchX + 20, centerY);
+            } else {
+                circuitCtx.lineTo(switchX + 15, centerY - 15);
+            }
+            circuitCtx.stroke();
+            
+            // 绘制电感（线圈）
+            const coilX = 320;
+            circuitCtx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                circuitCtx.arc(coilX + i * 8, centerY, 8, 0, Math.PI);
+                circuitCtx.arc(coilX + i * 8, centerY, 8, Math.PI, 0);
+            }
+            circuitCtx.stroke();
+            
+            // 绘制连接线
+            circuitCtx.beginPath();
+            circuitCtx.moveTo(80, centerY);
+            circuitCtx.lineTo(150, centerY);
+            circuitCtx.moveTo(180, centerY);
+            circuitCtx.lineTo(switchX, centerY);
+            circuitCtx.moveTo(switchX + 20, centerY);
+            circuitCtx.lineTo(coilX - 10, centerY);
+            circuitCtx.moveTo(coilX + 35, centerY);
+            circuitCtx.lineTo(370, centerY);
+            circuitCtx.lineTo(370, centerY + 100);
+            circuitCtx.lineTo(50, centerY + 100);
+            circuitCtx.lineTo(50, centerY);
+            circuitCtx.stroke();
+            
+            // 绘制电流方向箭头
+            if (current > 0.01) {
+                circuitCtx.fillStyle = '#ff6b6b';
+                circuitCtx.beginPath();
+                circuitCtx.moveTo(200, centerY - 10);
+                circuitCtx.lineTo(210, centerY - 10);
+                circuitCtx.lineTo(205, centerY - 15);
+                circuitCtx.lineTo(215, centerY - 10);
+                circuitCtx.lineTo(205, centerY - 5);
+                circuitCtx.closePath();
+                circuitCtx.fill();
+            }
+            
+            // 绘制自感电动势方向（红色箭头）
+            if (emf > 0.1) {
+                circuitCtx.fillStyle = '#ffa94d';
+                const emfHeight = Math.min(emf * 10, 40);
+                circuitCtx.beginPath();
+                circuitCtx.moveTo(coilX + 15, centerY - 40);
+                circuitCtx.lineTo(coilX + 15, centerY - 40 - emfHeight);
+                circuitCtx.lineTo(coilX + 10, centerY - 35 - emfHeight);
+                circuitCtx.lineTo(coilX + 15, centerY - 30 - emfHeight);
+                circuitCtx.lineTo(coilX + 20, centerY - 35 - emfHeight);
+                circuitCtx.closePath();
+                circuitCtx.fill();
+                
+                circuitCtx.font = '12px Microsoft YaHei';
+                circuitCtx.fillText('EMF', coilX - 5, centerY - 45);
+            }
+            
+            // 绘制电感电压方向（蓝色箭头）
+            if (voltage > 0.1) {
+                circuitCtx.fillStyle = '#4dabf7';
+                const voltHeight = Math.min(voltage * 10, 40);
+                circuitCtx.beginPath();
+                circuitCtx.moveTo(coilX + 15, centerY + 40);
+                circuitCtx.lineTo(coilX + 15, centerY + 40 + voltHeight);
+                circuitCtx.lineTo(coilX + 10, centerY + 45 + voltHeight);
+                circuitCtx.lineTo(coilX + 15, centerY + 50 + voltHeight);
+                circuitCtx.lineTo(coilX + 20, centerY + 45 + voltHeight);
+                circuitCtx.closePath();
+                circuitCtx.fill();
+                
+                circuitCtx.font = '12px Microsoft YaHei';
+                circuitCtx.fillText('V_L', coilX - 5, centerY + 65);
+            }
+            
+            // 显示数值
+            circuitCtx.font = '14px Microsoft YaHei';
+            circuitCtx.fillStyle = '#495057';
+            circuitCtx.fillText(`I = ${current.toFixed(2)} A`, 20, 30);
+            circuitCtx.fillText(`V_L = ${voltage.toFixed(2)} V`, 20, 50);
+            circuitCtx.fillText(`EMF = ${emf.toFixed(2)} V`, 20, 70);
+            circuitCtx.fillText(`τ = ${(L/R).toFixed(2)} s`, 20, 90);
+            
+            // 绘制飞轮
+            drawFlywheel(current);
+        }
+        
+        // 绘制飞轮
+        function drawFlywheel(current) {
+            const flywheelX = circuitCanvas.width - 100;
+            const flywheelY = 100;
+            const radius = 40;
+            
+            // 更新飞轮速度（与电流成正比）
+            const targetSpeed = current * 5;
+            flywheelSpeed += (targetSpeed - flywheelSpeed) * 0.1;
+            flywheelAngle += flywheelSpeed * 0.1;
+            
+            // 绘制飞轮外圈
+            circuitCtx.strokeStyle = '#495057';
+            circuitCtx.lineWidth = 3;
+            circuitCtx.beginPath();
+            circuitCtx.arc(flywheelX, flywheelY, radius, 0, 2 * Math.PI);
+            circuitCtx.stroke();
+            
+            // 绘制飞轮辐条
+            circuitCtx.strokeStyle = '#495057';
+            circuitCtx.lineWidth = 2;
+            for (let i = 0; i < 8; i++) {
+                const angle = flywheelAngle + (i * Math.PI / 4);
+                circuitCtx.beginPath();
+                circuitCtx.moveTo(flywheelX, flywheelY);
+                circuitCtx.lineTo(
+                    flywheelX + Math.cos(angle) * radius * 0.8,
+                    flywheelY + Math.sin(angle) * radius * 0.8
+                );
+                circuitCtx.stroke();
+            }
+            
+            // 绘制飞轮中心
+            circuitCtx.fillStyle = '#495057';
+            circuitCtx.beginPath();
+            circuitCtx.arc(flywheelX, flywheelY, 8, 0, 2 * Math.PI);
+            circuitCtx.fill();
+            
+            // 显示飞轮转速
+            circuitCtx.font = '12px Microsoft YaHei';
+            circuitCtx.fillStyle = '#495057';
+            circuitCtx.fillText(`转速: ${flywheelSpeed.toFixed(1)} rad/s`, flywheelX - 40, flywheelY + 70);
+            
+            // 绘制能量条
+            const energy = 0.5 * L * current * current;
+            const energyPercent = Math.min(energy * 50, 100);
+            circuitCtx.fillStyle = '#f1f3f5';
+            circuitCtx.fillRect(flywheelX - 40, flywheelY + 80, 80, 10);
+            circuitCtx.fillStyle = '#40c057';
+            circuitCtx.fillRect(flywheelX - 40, flywheelY + 80, energyPercent * 0.8, 10);
+            circuitCtx.strokeStyle = '#495057';
+            circuitCtx.strokeRect(flywheelX - 40, flywheelY + 80, 80, 10);
+            
+            energyDisplay.textContent = `储能: ${energy.toFixed(3)} J`;
+        }
+        
+        // 绘制波形图
+        function drawWaveform() {
+            waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            
+            const padding = 50;
+            const graphWidth = waveformCanvas.width - 2 * padding;
+            const graphHeight = waveformCanvas.height - 2 * padding;
+            
+            // 绘制坐标轴
+            waveformCtx.strokeStyle = '#495057';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(padding, padding);
+            waveformCtx.lineTo(padding, waveformCanvas.height - padding);
+            waveformCtx.lineTo(waveformCanvas.width - padding, waveformCanvas.height - padding);
+            waveformCtx.stroke();
+            
+            // 绘制网格
+            waveformCtx.strokeStyle = '#e9ecef';
+            waveformCtx.lineWidth = 1;
+            for (let i = 1; i < 5; i++) {
+                const y = padding + (i * graphHeight / 5);
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(padding, y);
+                waveformCtx.lineTo(waveformCanvas.width - padding, y);
+                waveformCtx.stroke();
+            }
+            
+            // 绘制标签
+            waveformCtx.font = '12px Microsoft YaHei';
+            waveformCtx.fillStyle = '#495057';
+            waveformCtx.fillText('电流 I (A)', padding + 5, padding - 15);
+            waveformCtx.fillText('电压 V_L (V)', padding + 80, padding - 15);
+            waveformCtx.fillText('时间 (s)', waveformCanvas.width - padding - 50, waveformCanvas.height - padding + 20);
+            
+            // 绘制波形
+            if (timeData.length > 1) {
+                // 绘制电流波形
+                waveformCtx.strokeStyle = '#ff6b6b';
+                waveformCtx.lineWidth = 2;
+                waveformCtx.beginPath();
+                for (let i = 0; i < timeData.length; i++) {
+                    const x = padding + (i / maxDataPoints) * graphWidth;
+                    const y = waveformCanvas.height - padding - (currentData[i] / (V/R)) * graphHeight * 0.8;
+                    if (i === 0) {
+                        waveformCtx.moveTo(x, y);
+                    } else {
+                        waveformCtx.lineTo(x, y);
+                    }
+                }
+                waveformCtx.stroke();
+                
+                // 绘制电压波形
+                waveformCtx.strokeStyle = '#4dabf7';
+                waveformCtx.lineWidth = 2;
+                waveformCtx.beginPath();
+                for (let i = 0; i < timeData.length; i++) {
+                    const x = padding + (i / maxDataPoints) * graphWidth;
+                    const y = waveformCanvas.height - padding - (voltageData[i] / V) * graphHeight * 0.8;
+                    if (i === 0) {
+                        waveformCtx.moveTo(x, y);
+                    } else {
+                        waveformCtx.lineTo(x, y);
+                    }
+                }
+                waveformCtx.stroke();
+                
+                // 绘制当前时间点
+                if (timeData.length > 0) {
+                    const currentX = padding + ((timeData.length - 1) / maxDataPoints) * graphWidth;
+                    waveformCtx.strokeStyle = '#495057';
+                    waveformCtx.lineWidth = 1;
+                    waveformCtx.setLineDash([5, 5]);
+                    waveformCtx.beginPath();
+                    waveformCtx.moveTo(currentX, padding);
+                    waveformCtx.lineTo(currentX, waveformCanvas.height - padding);
+                    waveformCtx.stroke();
+                    waveformCtx.setLineDash([]);
+                    
+                    // 显示当前值
+                    const currentI = currentData[currentData.length - 1];
+                    const currentV = voltageData[voltageData.length - 1];
+                    waveformCtx.font = '12px Microsoft YaHei';
+                    waveformCtx.fillStyle = '#495057';
+                    waveformCtx.fillText(`I = ${currentI.toFixed(2)} A`, currentX + 5, waveformCanvas.height - padding - 50);
+                    waveformCtx.fillText(`V_L = ${currentV.toFixed(2)} V`, currentX + 5, waveformCanvas.height - padding - 30);
+                }
+            }
+            
+            // 绘制时间常数标记
+            const tau = L / R;
+            const tauX = padding + (tau / 10) * graphWidth; // 假设显示10秒
+            if (tauX < waveformCanvas.width - padding) {
+                waveformCtx.strokeStyle = '#ffa94d';
+                waveformCtx.lineWidth = 1;
+                waveformCtx.setLineDash([3, 3]);
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(tauX, padding);
+                waveformCtx.lineTo(tauX, waveformCanvas.height - padding);
+                waveformCtx.stroke();
+                waveformCtx.setLineDash([]);
+                
+                waveformCtx.font = '10px Microsoft YaHei';
+                waveformCtx.fillStyle = '#ffa94d';
+                waveformCtx.fillText('τ', tauX - 3, padding - 5);
+            }
+        }
+        
+        // 动画循环
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            time = (timestamp - startTime) / 1000; // 转换为秒
+            
+            // 计算当前值
+            const current = calculateCurrent(time);
+            const voltage = calculateVoltage(time);
+            const emf = voltage; // 自感电动势大小等于电感电压
+            
+            // 存储数据
+            timeData.push(time);
+            currentData.push(current);
+            voltageData.push(voltage);
+            
+            // 限制数据点数量
+            if (timeData.length > maxDataPoints) {
+                timeData.shift();
+                currentData.shift();
+                voltageData.shift();
+            }
+            
+            // 绘制图形
+            drawCircuit(current, voltage, emf);
+            drawWaveform();
+            
+            if (isRunning) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        // 控制函数
+        function startAnimation() {
+            if (!isRunning) {
+                isRunning = true;
+                switchClosed = true;
+                switchStatus.textContent = '闭合';
+                switchIndicator.className = 'switch-indicator switch-on';
+                startTime = null;
+                time = 0;
+                animate(0);
+            }
+        }
+        
+        function stopAnimation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+        
+        function resetAnimation() {
+            stopAnimation();
+            switchClosed = false;
+            switchStatus.textContent = '断开';
+            switchIndicator.className = 'switch-indicator switch-off';
+            time = 0;
+            flywheelSpeed = 0;
+            flywheelAngle = 0;
+            timeData.length = 0;
+            currentData.length = 0;
+            voltageData.length = 0;
+            drawCircuit(0, 0, 0);
+            drawWaveform();
+        }
+        
+        // 初始化
+        drawCircuit(0, 0, 0);
+        drawWaveform();
+    </script>
+</body>
+</html>
