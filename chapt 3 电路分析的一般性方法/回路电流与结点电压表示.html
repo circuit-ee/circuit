@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回路电流法与结点电压法原理演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .circuit-line {
+            stroke: #475569;
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .current-arrow {
+            fill: #3b82f6;
+            animation: flow 2s linear infinite;
+        }
+        
+        .loop-current-arrow {
+            fill: #ef4444;
+            animation: rotate 3s linear infinite;
+        }
+        
+        .voltage-node {
+            fill: #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes flow {
+            0% { stroke-dashoffset: 20; }
+            100% { stroke-dashoffset: 0; }
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        .math-text {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+        
+        .highlight-box {
+            transition: all 0.3s ease;
+        }
+        
+        .highlight-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .current-path {
+            stroke-dasharray: 5, 5;
+            animation: dash 1s linear infinite;
+        }
+        
+        @keyframes dash {
+            to { stroke-dashoffset: -10; }
+        }
+        
+        .polarity-plus { fill: #dc2626; }
+        .polarity-minus { fill: #2563eb; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 p-4 md:p-8">
+
+    <!-- 标题区 -->
+    <header class="text-center mb-10 fade-in">
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4 tracking-tight">
+            电路分析方法原理演示
+        </h1>
+        <p class="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            深入理解回路电流法与结点电压法的数学本质
+        </p>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="max-w-7xl mx-auto space-y-8">
+
+        <!-- 第一部分：回路电流法 -->
+        <section class="glass-panel rounded-3xl p-8 fade-in" style="animation-delay: 0.2s">
+            <div class="flex items-center mb-6">
+                <div class="w-2 h-12 bg-red-500 rounded-full mr-4"></div>
+                <h2 class="text-3xl font-bold text-slate-800">回路电流法 (Mesh Current Method)</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- 左侧：可视化 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-inner relative overflow-hidden" style="min-height: 420px;">
+                        <svg viewBox="0 0 400 380" class="w-full h-full">
+                            <!-- 电路图：两个网孔 -->
+                            <!-- 左网孔 -->
+                            <rect x="50" y="50" width="120" height="200" class="circuit-line" fill="none"/>
+                            <!-- 右网孔 -->
+                            <rect x="170" y="50" width="120" height="200" class="circuit-line" fill="none"/>
+                            
+                            <!-- 电阻 R1 (左上横支) -->
+                            <rect x="100" y="40" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+                            <text x="110" y="35" text-anchor="middle" class="text-sm font-bold fill-slate-600">R₁</text>
+                            
+                            <!-- 电阻 R2 (右上横支) -->
+                            <rect x="220" y="40" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+                            <text x="230" y="35" text-anchor="middle" class="text-sm font-bold fill-slate-600">R₂</text>
+                            
+                            <!-- 电阻 R3 (中间竖支) - 位置调整 -->
+                            <rect x="160" y="140" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+                            <text x="170" y="180" text-anchor="middle" class="text-sm font-bold fill-slate-600">R₃</text>
+                            
+                            <!-- 电压源 V1 -->
+                            <circle cx="110" cy="250" r="15" fill="#60a5fa" stroke="#2563eb" stroke-width="2"/>
+                            <text x="110" y="255" text-anchor="middle" class="text-sm font-bold fill-white">+</text>
+                            <text x="110" y="285" text-anchor="middle" class="text-sm font-bold fill-slate-600">V₁</text>
+                            
+                            <!-- 电压源 V2 -->
+                            <circle cx="230" cy="250" r="15" fill="#60a5fa" stroke="#2563eb" stroke-width="2"/>
+                            <text x="230" y="255" text-anchor="middle" class="text-sm font-bold fill-white">+</text>
+                            <text x="230" y="285" text-anchor="middle" class="text-sm font-bold fill-slate-600">V₂</text>
+
+                            <!-- 支路电流标注 (蓝色) - I3修正为向下 -->
+                            <g id="branch-currents" class="transition-opacity duration-500">
+                                <!-- I1: 左支路向下 -->
+                                <path d="M 110 70 L 110 100" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowblue)"/>
+                                <text x="130" y="90" class="text-xl font-bold fill-blue-600 math-text">I₁</text>
+                                
+                                <!-- I2: 右支路向下 -->
+                                <path d="M 230 70 L 230 100" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowblue)"/>
+                                <text x="250" y="90" class="text-xl font-bold fill-blue-600 math-text">I₂</text>
+                                
+                                <!-- I3: 中间支路向下 (修正) -->
+                                <path d="M 170 150 L 170 180" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowblue)"/>
+                                <text x="190" y="170" class="text-xl font-bold fill-blue-600 math-text">I₃</text>
+                            </g>
+
+                            <!-- 回路电流 (红色虚线圆) -->
+                            <g id="loop-currents" class="opacity-0 transition-opacity duration-500">
+                                <!-- 左回路电流 I_a (顺时针) -->
+                                <path d="M 80 80 Q 40 150 80 220 Q 120 150 80 80" stroke="#ef4444" stroke-width="3" fill="none" stroke-dasharray="8,4" class="current-path"/>
+                                <text x="55" y="150" class="text-2xl font-bold fill-red-600 math-text">Iₐ</text>
+                                <!-- 顺时针箭头 -->
+                                <path d="M 115 150 L 105 145 M 115 150 L 105 155" stroke="#ef4444" stroke-width="2" fill="none"/>
+                                
+                                <!-- 右回路电流 I_b (顺时针) -->
+                                <path d="M 260 80 Q 300 150 260 220 Q 220 150 260 80" stroke="#ef4444" stroke-width="3" fill="none" stroke-dasharray="8,4" class="current-path"/>
+                                <text x="275" y="150" class="text-2xl font-bold fill-red-600 math-text">Iᵦ</text>
+                                <!-- 顺时针箭头 -->
+                                <path d="M 225 150 L 235 145 M 225 150 L 235 155" stroke="#ef4444" stroke-width="2" fill="none"/>
+                            </g>
+
+                            <!-- 箭头定义 -->
+                            <defs>
+                                <marker id="arrowblue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                    <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+                                </marker>
+                                <marker id="arrowred" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                    <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                        
+                        <!-- 控制按钮 -->
+                        <div class="absolute bottom-4 left-4 right-4 flex gap-2">
+                            <button onclick="toggleMeshMode('branch')" id="btn-branch" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl transition-colors shadow-lg">
+                                显示支路电流
+                            </button>
+                            <button onclick="toggleMeshMode('loop')" id="btn-loop" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded-xl transition-colors">
+                                显示回路电流
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：原理说明 -->
+                <div class="space-y-4">
+                    <div class="highlight-box bg-white rounded-2xl p-6 shadow-md">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 text-blue-600">1</span>
+                            支路电流 vs 回路电流
+                        </h3>
+                        <div class="space-y-3 text-lg leading-relaxed">
+                            <p class="text-slate-600">
+                                <strong class="text-blue-600">支路电流</strong>：流过每条支路的实际电流，方向已标注（I₃向下）。
+                            </p>
+                            <p class="text-slate-600">
+                                <strong class="text-red-600">回路电流</strong>：假想的沿回路顺时针流动的电流。
+                            </p>
+                            <div class="bg-slate-50 p-4 rounded-xl border-l-4 border-red-500 mt-4">
+                                <p class="font-mono text-base text-slate-700">
+                                    I₁ = Iₐ<br>
+                                    I₂ = Iᵦ<br>
+                                    <span class="text-red-600 font-bold">I₃ = Iₐ - Iᵦ</span> <span class="text-sm text-slate-500">(当Iₐ>Iᵦ时向下)</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 shadow-md border border-red-100">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3 text-red-600">2</span>
+                            为什么KCL自动满足？
+                        </h3>
+                        <div class="space-y-3 text-lg leading-relaxed text-slate-700">
+                            <p>在上结点应用KCL（流入=流出）：</p>
+                            <div class="bg-white/70 p-4 rounded-xl font-mono text-center text-xl my-3 shadow-inner">
+                                I₁ = I₂ + I₃
+                            </div>
+                            <p>代入回路电流表达式：</p>
+                            <div class="bg-white/70 p-4 rounded-xl font-mono text-center text-xl my-3 shadow-inner text-red-700">
+                                Iₐ = Iᵦ + (Iₐ - Iᵦ) = Iₐ ✓
+                            </div>
+                            <p class="text-base mt-4 bg-red-100/50 p-3 rounded-lg">
+                                <strong>关键洞察：</strong>每个回路电流流入结点的同时也流出结点，因此<strong class="text-red-700">自动满足KCL</strong>，无需额外方程！
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-200">
+                        <p class="text-base text-blue-800">
+                            <strong>变量数对比：</strong><br>
+                            支路电流法：3个未知量 + 2个KCL方程<br>
+                            回路电流法：<strong class="text-red-600">仅2个未知量</strong>，无需KCL方程
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二部分：结点电压法 -->
+        <section class="glass-panel rounded-3xl p-8 fade-in" style="animation-delay: 0.4s">
+            <div class="flex items-center mb-6">
+                <div class="w-2 h-12 bg-emerald-500 rounded-full mr-4"></div>
+                <h2 class="text-3xl font-bold text-slate-800">结点电压法 (Nodal Voltage Method)</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- 左侧：可视化 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-inner relative overflow-hidden" style="min-height: 450px;">
+                        <svg viewBox="0 0 400 400" class="w-full h-full">
+                            <!-- 电路图：三个结点 -->
+                            <!-- 参考结点 (地) -->
+                            <line x1="50" y1="320" x2="350" y2="320" class="circuit-line" stroke-width="4"/>
+                            <line x1="100" y1="330" x2="300" y2="330" class="circuit-line" stroke-width="3"/>
+                            <line x1="150" y1="340" x2="250" y2="340" class="circuit-line" stroke-width="2"/>
+                            <text x="200" y="360" text-anchor="middle" class="text-lg font-bold fill-slate-500">参考结点 (0V)</text>
+
+                            <!-- 结点1 -->
+                            <circle cx="100" cy="150" r="8" fill="#10b981" stroke="#059669" stroke-width="3"/>
+                            <text x="100" y="130" text-anchor="middle" class="text-lg font-bold fill-emerald-600">结点 1</text>
+                            
+                            <!-- 结点2 -->
+                            <circle cx="300" cy="150" r="8" fill="#10b981" stroke="#059669" stroke-width="3"/>
+                            <text x="300" y="130" text-anchor="middle" class="text-lg font-bold fill-emerald-600">结点 2</text>
+
+                            <!-- 支路连接 -->
+                            <line x1="100" y1="158" x2="100" y2="320" class="circuit-line"/>
+                            <line x1="300" y1="158" x2="300" y2="320" class="circuit-line"/>
+                            <line x1="108" y1="150" x2="292" y2="150" class="circuit-line"/>
+
+                            <!-- 电阻 R1 (左竖支) -->
+                            <rect x="90" y="220" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2" transform="rotate(90 100 230)"/>
+                            <text x="60" y="235" class="text-sm font-bold fill-slate-600">R₁</text>
+                            
+                            <!-- 电阻 R2 (右竖支) -->
+                            <rect x="290" y="220" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2" transform="rotate(90 300 230)"/>
+                            <text x="340" y="235" class="text-sm font-bold fill-slate-600">R₂</text>
+                            
+                            <!-- 电阻 R3 (上横支) -->
+                            <rect x="190" y="140" width="20" height="20" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+                            <text x="200" y="125" class="text-sm font-bold fill-slate-600">R₃</text>
+
+                            <!-- 电流源 I_s1 -->
+                            <circle cx="100" cy="80" r="15" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+                            <text x="100" y="85" text-anchor="middle" class="text-lg font-bold fill-white">↑</text>
+                            <text x="70" y="85" class="text-sm font-bold fill-slate-600">Iₛ₁</text>
+                            
+                            <!-- 电流源 I_s2 -->
+                            <circle cx="300" cy="80" r="15" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+                            <text x="300" y="85" text-anchor="middle" class="text-lg font-bold fill-white">↑</text>
+                            <text x="330" y="85" class="text-sm font-bold fill-slate-600">Iₛ₂</text>
+
+                            <!-- 支路电压标注 (紫色) + 参考方向 -->
+                            <g id="branch-voltages" class="transition-opacity duration-500">
+                                <!-- V_R1: 上正下负 -->
+                                <text x="125" y="200" class="text-lg font-bold fill-purple-600 math-text">V_R₁</text>
+                                <text x="125" y="215" class="text-xs fill-red-600 font-bold">+</text>
+                                <text x="125" y="260" class="text-xs fill-blue-600 font-bold">−</text>
+                                <line x1="120" y1="210" x2="120" y2="250" stroke="#a855f7" stroke-width="1" stroke-dasharray="2,2"/>
+                                
+                                <!-- V_R2: 上正下负 -->
+                                <text x="275" y="200" class="text-lg font-bold fill-purple-600 math-text">V_R₂</text>
+                                <text x="275" y="215" class="text-xs fill-red-600 font-bold">+</text>
+                                <text x="275" y="260" class="text-xs fill-blue-600 font-bold">−</text>
+                                <line x1="280" y1="210" x2="280" y2="250" stroke="#a855f7" stroke-width="1" stroke-dasharray="2,2"/>
+                                
+                                <!-- V_R3: 左正右负 -->
+                                <text x="200" y="115" class="text-lg font-bold fill-purple-600 math-text">V_R₃</text>
+                                <text x="175" y="115" class="text-xs fill-red-600 font-bold">+</text>
+                                <text x="225" y="115" class="text-xs fill-blue-600 font-bold">−</text>
+                                <line x1="180" y1="110" x2="220" y2="110" stroke="#a855f7" stroke-width="1" stroke-dasharray="2,2"/>
+                            </g>
+
+                            <!-- 结点电压标注 (绿色) -->
+                            <g id="node-voltages" class="opacity-0 transition-opacity duration-500">
+                                <text x="100" y="105" text-anchor="middle" class="text-2xl font-bold fill-emerald-600 math-text">V₁</text>
+                                <text x="300" y="105" text-anchor="middle" class="text-2xl font-bold fill-emerald-600 math-text">V₂</text>
+                                
+                                <!-- 电压指示线 -->
+                                <line x1="100" y1="150" x2="100" y2="320" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4" opacity="0.5"/>
+                                <line x1="300" y1="150" x2="300" y2="320" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4" opacity="0.5"/>
+                                
+                                <!-- 参考方向与结点电压关系标注 -->
+                                <g opacity="0.8">
+                                    <text x="140" y="230" class="text-sm fill-emerald-700 font-mono">V_R₁=V₁−0=V₁</text>
+                                    <text x="240" y="230" class="text-sm fill-emerald-700 font-mono">V_R₂=V₂−0=V₂</text>
+                                    <text x="200" y="95" class="text-sm fill-emerald-700 font-mono">V_R₃=V₁−V₂</text>
+                                </g>
+                            </g>
+
+                            <!-- 电势高度可视化 -->
+                            <g id="potential-bars" class="opacity-0 transition-opacity duration-500">
+                                <rect x="85" y="150" width="30" height="170" fill="url(#grad1)" opacity="0.3"/>
+                                <rect x="285" y="150" width="30" height="170" fill="url(#grad2)" opacity="0.3"/>
+                                
+                                <defs>
+                                    <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.8" />
+                                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.1" />
+                                    </linearGradient>
+                                    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.6" />
+                                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.1" />
+                                    </linearGradient>
+                                </defs>
+                            </g>
+                        </svg>
+
+                        <!-- 控制按钮 -->
+                        <div class="absolute bottom-4 left-4 right-4 flex gap-2">
+                            <button onclick="toggleNodeMode('branch')" id="btn-branch-v" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-xl transition-colors shadow-lg">
+                                显示支路电压
+                            </button>
+                            <button onclick="toggleNodeMode('node')" id="btn-node" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded-xl transition-colors">
+                                显示结点电压
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：原理说明 -->
+                <div class="space-y-4">
+                    <div class="highlight-box bg-white rounded-2xl p-6 shadow-md">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3 text-purple-600">1</span>
+                            支路电压 vs 结点电压
+                        </h3>
+                        <div class="space-y-3 text-lg leading-relaxed">
+                            <p class="text-slate-600">
+                                <strong class="text-purple-600">支路电压</strong>：支路两端的电位差，带参考方向（<span class="text-red-600 font-bold">+</span> → <span class="text-blue-600 font-bold">−</span>）。
+                            </p>
+                            <div class="grid grid-cols-3 gap-2 text-center text-sm my-3 bg-slate-50 p-3 rounded-xl">
+                                <div>
+                                    <div class="text-red-600 font-bold mb-1">V_R₁</div>
+                                    <div class="text-xs">上(+)下(−)</div>
+                                </div>
+                                <div>
+                                    <div class="text-red-600 font-bold mb-1">V_R₂</div>
+                                    <div class="text-xs">上(+)下(−)</div>
+                                </div>
+                                <div>
+                                    <div class="text-red-600 font-bold mb-1">V_R₃</div>
+                                    <div class="text-xs">左(+)右(−)</div>
+                                </div>
+                            </div>
+                            <p class="text-slate-600">
+                                <strong class="text-emerald-600">结点电压</strong>：结点相对于参考点的电位，是绝对量。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 shadow-md border border-emerald-100">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3 text-emerald-600">2</span>
+                            为什么KVL自动满足？
+                        </h3>
+                        <div class="space-y-3 text-lg leading-relaxed text-slate-700">
+                            <p>对左侧网孔应用KVL（顺时针）：</p>
+                            <div class="bg-white/70 p-4 rounded-xl font-mono text-center text-base my-3 shadow-inner">
+                                −V_R₁ + V_R₃ + V_R₂ = 0 ?
+                            </div>
+                            <p>代入结点电压表达式：</p>
+                            <div class="bg-white/70 p-4 rounded-xl font-mono text-center text-base my-3 shadow-inner text-emerald-700">
+                                −V₁ + (V₁−V₂) + V₂ = 0 ✓<br>
+                                <span class="text-sm mt-2 block">= −V₁ + V₁ − V₂ + V₂ = 0</span>
+                            </div>
+                            <p class="text-base mt-4 bg-emerald-100/50 p-3 rounded-lg">
+                                <strong>关键洞察：</strong>结点电压是<strong class="text-emerald-700">单值函数</strong>，沿任何闭合回路回到起点，电位变化总和必为零，因此<strong class="text-emerald-700">自动满足KVL</strong>！
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-200">
+                        <p class="text-base text-emerald-800">
+                            <strong>物理意义：</strong><br>
+                            结点电压类似于"海拔高度"，支路电压类似于"高度差"。无论走哪条路径从A点到B点，高度差总是确定的，绕一圈回到起点总高度变化为零。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 对比总结 -->
+        <section class="glass-panel rounded-3xl p-8 fade-in" style="animation-delay: 0.6s">
+            <h2 class="text-3xl font-bold text-slate-800 mb-6 text-center">方法对比总结</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 border-2 border-red-200">
+                    <h3 class="text-2xl font-bold text-red-700 mb-4 text-center">回路电流法</h3>
+                    <ul class="space-y-3 text-lg text-slate-700">
+                        <li class="flex items-start">
+                            <span class="text-red-500 mr-2">•</span>
+                            <span>以<strong>假想回路电流</strong>为变量（顺时针）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-red-500 mr-2">•</span>
+                            <span>自动满足 <strong>KCL</strong>（电流连续性）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-red-500 mr-2">•</span>
+                            <span>只需列写 <strong>KVL</strong> 方程</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-red-500 mr-2">•</span>
+                            <span>适合<strong>少回路、多结点</strong>的电路</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+                    <h3 class="text-2xl font-bold text-emerald-700 mb-4 text-center">结点电压法</h3>
+                    <ul class="space-y-3 text-lg text-slate-700">
+                        <li class="flex items-start">
+                            <span class="text-emerald-500 mr-2">•</span>
+                            <span>以<strong>结点电位</strong>为变量（对参考点）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-emerald-500 mr-2">•</span>
+                            <span>自动满足 <strong>KVL</strong>（电位单值性）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-emerald-500 mr-2">•</span>
+                            <span>只需列写 <strong>KCL</strong> 方程</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-emerald-500 mr-2">•</span>
+                            <span>适合<strong>少结点、多回路</strong>的电路</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-slate-800 text-white rounded-2xl p-6 text-center">
+                <p class="text-xl font-medium">
+                    💡 <strong>核心思想：</strong>通过引入特定的潜在变量（回路电流/结点电压），将电路约束条件（KCL/KVL）隐式满足，从而减少独立方程数量，简化计算。
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // 回路电流法切换
+        function toggleMeshMode(mode) {
+            const branchGroup = document.getElementById('branch-currents');
+            const loopGroup = document.getElementById('loop-currents');
+            const btnBranch = document.getElementById('btn-branch');
+            const btnLoop = document.getElementById('btn-loop');
+
+            if (mode === 'branch') {
+                branchGroup.style.opacity = '1';
+                loopGroup.style.opacity = '0';
+                btnBranch.classList.remove('bg-slate-200', 'text-slate-700');
+                btnBranch.classList.add('bg-blue-500', 'text-white');
+                btnLoop.classList.remove('bg-red-500', 'text-white');
+                btnLoop.classList.add('bg-slate-200', 'text-slate-700');
+            } else {
+                branchGroup.style.opacity = '0.2';
+                loopGroup.style.opacity = '1';
+                btnLoop.classList.remove('bg-slate-200', 'text-slate-700');
+                btnLoop.classList.add('bg-red-500', 'text-white');
+                btnBranch.classList.remove('bg-blue-500', 'text-white');
+                btnBranch.classList.add('bg-slate-200', 'text-slate-700');
+            }
+        }
+
+        // 结点电压法切换
+        function toggleNodeMode(mode) {
+            const branchGroup = document.getElementById('branch-voltages');
+            const nodeGroup = document.getElementById('node-voltages');
+            const potentialBars = document.getElementById('potential-bars');
+            const btnBranch = document.getElementById('btn-branch-v');
+            const btnNode = document.getElementById('btn-node');
+
+            if (mode === 'branch') {
+                branchGroup.style.opacity = '1';
+                nodeGroup.style.opacity = '0';
+                potentialBars.style.opacity = '0';
+                btnBranch.classList.remove('bg-slate-200', 'text-slate-700');
+                btnBranch.classList.add('bg-purple-500', 'text-white');
+                btnNode.classList.remove('bg-emerald-500', 'text-white');
+                btnNode.classList.add('bg-slate-200', 'text-slate-700');
+            } else {
+                branchGroup.style.opacity = '0.2';
+                nodeGroup.style.opacity = '1';
+                potentialBars.style.opacity = '1';
+                btnNode.classList.remove('bg-slate-200', 'text-slate-700');
+                btnNode.classList.add('bg-emerald-500', 'text-white');
+                btnBranch.classList.remove('bg-purple-500', 'text-white');
+                btnBranch.classList.add('bg-slate-200', 'text-slate-700');
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleMeshMode('branch');
+            toggleNodeMode('branch');
+        });
+    </script>
+</body>
+</html>
