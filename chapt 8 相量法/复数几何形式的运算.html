@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复数运算动态过程可视化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+        }
+        
+        .math-text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .operation-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .operation-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        canvas {
+            touch-action: none;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb {
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+            border: 3px solid white;
+            transition: transform 0.2s;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .step-card {
+            transition: all 0.4s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .step-card.active {
+            border-left-color: currentColor;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, #ffffff 100%);
+            transform: translateX(8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="min-h-screen text-slate-800 p-4 md:p-6">
+
+    <!-- 标题 -->
+    <header class="max-w-[1600px] mx-auto mb-6 text-center">
+        <h1 class="text-4xl md:text-6xl font-black text-slate-900 mb-3">
+            复数运算的<span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">动态几何过程</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-slate-600 font-light">
+            逐步展示运算的每一步几何变换
+        </p>
+    </header>
+
+    <main class="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        <!-- 左侧：主画布 -->
+        <section class="xl:col-span-8 space-y-4">
+            
+            <!-- 运算选择 -->
+            <div class="glass-panel rounded-2xl p-4 flex flex-wrap gap-3 justify-center">
+                <button onclick="setOperation('add')" id="btn-add" class="operation-btn active px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center gap-2">
+                    <span>➕</span> 加法
+                </button>
+                <button onclick="setOperation('sub')" id="btn-sub" class="operation-btn px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center gap-2">
+                    <span>➖</span> 减法
+                </button>
+                <button onclick="setOperation('mul')" id="btn-mul" class="operation-btn px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center gap-2">
+                    <span>✕</span> 乘法
+                </button>
+                <button onclick="setOperation('div')" id="btn-div" class="operation-btn px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center gap-2">
+                    <span>÷</span> 除法
+                </button>
+                
+                <div class="h-8 w-px bg-slate-300 mx-2"></div>
+                
+                <button onclick="togglePlay()" id="playBtn" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all">
+                    <span id="btnIcon">▶</span>
+                    <span id="btnText">播放</span>
+                </button>
+                <button onclick="resetAnim()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold">
+                    重置
+                </button>
+            </div>
+
+            <!-- 画布 -->
+            <div class="glass-panel rounded-3xl p-4 relative shadow-2xl">
+                <div class="absolute top-4 left-4 z-10 bg-white/95 px-4 py-3 rounded-xl shadow-lg border border-slate-200 max-w-md">
+                    <h2 id="op-title" class="text-xl font-bold text-slate-800">加法：三角形法则</h2>
+                    <p id="step-desc" class="text-slate-600 text-sm mt-1">准备就绪，点击播放开始动画</p>
+                </div>
+
+                <!-- 步骤进度 -->
+                <div class="absolute top-4 right-4 z-10 flex items-center gap-3 bg-white/95 px-4 py-2 rounded-xl shadow-lg border border-slate-200">
+                    <div id="ind1" class="w-10 h-10 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-lg shadow-lg">1</div>
+                    <div class="w-8 h-1 bg-slate-300 rounded"></div>
+                    <div id="ind2" class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-lg">2</div>
+                    <div class="w-8 h-1 bg-slate-300 rounded"></div>
+                    <div id="ind3" class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-lg">3</div>
+                </div>
+                
+                <canvas id="mainCanvas" class="w-full h-[600px] rounded-2xl bg-white shadow-inner"></canvas>
+                
+                <!-- 图例 -->
+                <div class="absolute bottom-4 left-4 right-4 flex flex-wrap gap-4 justify-center bg-white/95 p-3 rounded-xl shadow-lg border border-slate-200 text-sm font-medium">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-full bg-sky-500"></div>
+                        <span>z₁</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-full bg-indigo-500"></div>
+                        <span>z₂</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-full bg-amber-500"></div>
+                        <span>中间态</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-full bg-rose-500 animate-pulse"></div>
+                        <span class="font-bold">结果</span>
+                    </div>
+                    <div class="h-4 w-px bg-slate-300"></div>
+                    <span class="text-slate-400 text-xs">拖拽圆点改变位置</span>
+                </div>
+            </div>
+
+            <!-- 进度控制 -->
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4">
+                <span class="text-slate-600 font-bold">进度：</span>
+                <input type="range" id="progressSlider" min="0" max="100" value="0" step="0.1"
+                       class="flex-1 h-3 bg-slate-200 rounded-full appearance-none cursor-pointer slider-thumb">
+                <span id="progressText" class="text-slate-600 font-mono w-16 text-right text-lg font-bold">0%</span>
+            </div>
+        </section>
+
+        <!-- 右侧：控制面板 -->
+        <section class="xl:col-span-4 space-y-4">
+            
+            <!-- z₁ 控制 -->
+            <div class="glass-panel rounded-2xl p-5 bg-sky-50 border-2 border-sky-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-sky-500 text-white flex items-center justify-center font-bold">z₁</div>
+                        <span class="font-bold text-sky-700">被操作数</span>
+                    </div>
+                    <span class="text-sm font-mono">|z₁| = <span id="mag1">3.61</span></span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-xs font-bold text-sky-600">实部</label>
+                        <input type="range" id="re1" min="-4" max="4" step="0.1" value="2" class="w-full h-2 bg-sky-200 rounded-full appearance-none cursor-pointer slider-thumb">
+                        <div class="text-center font-mono font-bold text-sky-700" id="re1val">2.0</div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-indigo-600">虚部</label>
+                        <input type="range" id="im1" min="-4" max="4" step="0.1" value="3" class="w-full h-2 bg-indigo-200 rounded-full appearance-none cursor-pointer slider-thumb">
+                        <div class="text-center font-mono font-bold text-indigo-700" id="im1val">3.0</div>
+                    </div>
+                </div>
+                <div class="text-center font-mono text-lg font-bold bg-white rounded-lg py-1" id="disp1">2.0 + 3.0i</div>
+            </div>
+
+            <!-- z₂ 控制 -->
+            <div class="glass-panel rounded-2xl p-5 bg-indigo-50 border-2 border-indigo-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold">z₂</div>
+                        <span class="font-bold text-indigo-700">操作数</span>
+                    </div>
+                    <span class="text-sm font-mono">|z₂| = <span id="mag2">2.24</span></span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-xs font-bold text-sky-600">实部</label>
+                        <input type="range" id="re2" min="-4" max="4" step="0.1" value="2" class="w-full h-2 bg-sky-200 rounded-full appearance-none cursor-pointer slider-thumb">
+                        <div class="text-center font-mono font-bold text-sky-700" id="re2val">2.0</div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-indigo-600">虚部</label>
+                        <input type="range" id="im2" min="-4" max="4" step="0.1" value="1" class="w-full h-2 bg-indigo-200 rounded-full appearance-none cursor-pointer slider-thumb">
+                        <div class="text-center font-mono font-bold text-indigo-700" id="im2val">1.0</div>
+                    </div>
+                </div>
+                <div class="text-center font-mono text-lg font-bold bg-white rounded-lg py-1" id="disp2">2.0 + 1.0i</div>
+            </div>
+
+            <!-- 步骤说明 -->
+            <div class="glass-panel rounded-2xl p-5 space-y-3">
+                <h3 class="text-xl font-bold text-slate-800">运算步骤</h3>
+                
+                <div id="card1" class="step-card active bg-white rounded-xl p-4 shadow-md border-l-sky-500">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-sm">1</div>
+                        <h4 class="font-bold text-lg">初始状态</h4>
+                    </div>
+                    <p class="text-slate-600 text-sm pl-11">两个向量从原点出发</p>
+                </div>
+
+                <div id="card2" class="step-card bg-white rounded-xl p-4 shadow-md border-l-slate-300">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div id="num2" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">2</div>
+                        <h4 class="font-bold text-lg">第一步变换</h4>
+                    </div>
+                    <p class="text-slate-600 text-sm pl-11">等待播放...</p>
+                </div>
+
+                <div id="card3" class="step-card bg-white rounded-xl p-4 shadow-md border-l-slate-300">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div id="num3" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">3</div>
+                        <h4 class="font-bold text-lg">第二步变换</h4>
+                    </div>
+                    <p class="text-slate-600 text-sm pl-11">等待播放...</p>
+                </div>
+
+                <!-- 结果 -->
+                <div class="bg-rose-50 rounded-xl p-4 border-2 border-rose-200">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold animate-pulse">=</div>
+                        <span class="font-bold text-rose-700">结果</span>
+                    </div>
+                    <div class="text-center font-mono text-2xl font-bold text-rose-700 bg-white rounded-lg py-2 mb-2" id="res">4.0 + 4.0i</div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="bg-white rounded-lg p-2 text-center">
+                            <div class="text-slate-500">模</div>
+                            <div class="font-mono font-bold" id="resMag">5.66</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 text-center">
+                            <div class="text-slate-500">幅角</div>
+                            <div class="font-mono font-bold" id="resArg">45.0°</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 几何法则 -->
+            <div class="glass-panel rounded-2xl p-5 bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800 mb-2">核心法则</h3>
+                <div id="geoRule" class="text-slate-700 text-sm space-y-2">
+                    <p><strong class="text-sky-700">三角形法则：</strong>平移 z₂ 使起点与 z₁ 终点重合，连接原点与 z₂ 新终点的向量即为和。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ==================== 全局状态 ====================
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height, scale, originX, originY;
+        let z1 = { re: 2, im: 3 };
+        let z2 = { re: 2, im: 1 };
+        let currentOp = 'add';
+        
+        // 动画状态
+        let animState = {
+            progress: 0,        // 0-100
+            isPlaying: false,   // 是否正在播放
+            startTime: 0,       // 开始时间戳
+            rafId: null         // requestAnimationFrame ID
+        };
+        
+        let dragTarget = null;
+
+        // ==================== 运算配置 ====================
+        const config = {
+            add: {
+                title: '加法：三角形法则',
+                color: 'sky',
+                steps: ['初始状态', '平移 z₂', '连接结果'],
+                desc: [
+                    '两个向量 z₁ 和 z₂ 都从原点出发',
+                    '将 z₂ 平行移动，使其起点与 z₁ 终点重合',
+                    '从原点指向平移后 z₂ 终点的向量即为和'
+                ],
+                geo: '三角形法则：平移 z₂ 使起点与 z₁ 终点重合，连接原点与 z₂ 新终点的向量即为和。'
+            },
+            sub: {
+                title: '减法：反向量加法', 
+                color: 'rose',
+                steps: ['初始状态', '构造 -z₂', '相加得差'],
+                desc: [
+                    '两个向量 z₁ 和 z₂ 都从原点出发',
+                    '将 z₂ 反向（旋转180°）得到 -z₂',
+                    'z₁ + (-z₂) 即为差向量'
+                ],
+                geo: '减法即加反向量：z₁ - z₂ = z₁ + (-z₂)。几何上是从 z₂ 终点指向 z₁ 终点的向量。'
+            },
+            mul: {
+                title: '乘法：先伸缩后旋转',
+                color: 'amber', 
+                steps: ['初始状态', '伸缩模长', '旋转角度'],
+                desc: [
+                    'z₁ 为被乘数，z₂ 为乘数',
+                    '将 z₁ 的模乘以 |z₂|，保持方向不变',
+                    '将伸缩后的向量逆时针旋转 arg(z₂)'
+                ],
+                geo: '模相乘，幅角相加（逆时针旋转）。'
+            },
+            div: {
+                title: '除法：先收缩后顺时针旋转',
+                color: 'emerald',
+                steps: ['初始状态', '收缩模长', '顺时针旋转'],
+                desc: [
+                    'z₁ 为被除数，z₂ 为除数', 
+                    '将 z₁ 的模除以 |z₂|，保持方向不变',
+                    '将收缩后的向量顺时针旋转 arg(z₂)'
+                ],
+                geo: '模相除，幅角相减（顺时针旋转）。'
+            }
+        };
+
+        // ==================== 工具函数 ====================
+        function fmt(z) {
+            const sign = z.im >= 0 ? '+' : '-';
+            return `${z.re.toFixed(1)} ${sign} ${Math.abs(z.im).toFixed(1)}i`;
+        }
+        function mag(z) { return Math.sqrt(z.re*z.re + z.im*z.im); }
+        function arg(z) { return Math.atan2(z.im, z.re) * 180 / Math.PI; }
+
+        function getResult() {
+            switch(currentOp) {
+                case 'add': return { re: z1.re + z2.re, im: z1.im + z2.im };
+                case 'sub': return { re: z1.re - z2.re, im: z1.im - z2.im };
+                case 'mul': {
+                    const r = mag(z1) * mag(z2);
+                    const th = Math.atan2(z1.im, z1.re) + Math.atan2(z2.im, z2.re);
+                    return { re: r * Math.cos(th), im: r * Math.sin(th) };
+                }
+                case 'div': {
+                    const r = mag(z1) / mag(z2);
+                    const th = Math.atan2(z1.im, z1.re) - Math.atan2(z2.im, z2.re);
+                    return { re: r * Math.cos(th), im: r * Math.sin(th) };
+                }
+            }
+        }
+
+        // ==================== 画布初始化 ====================
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            width = rect.width;
+            height = rect.height;
+            scale = Math.min(width, height) / 12;
+            originX = width / 2;
+            originY = height / 2;
+            draw();
+        }
+
+        function toCanvas(z) {
+            return { x: originX + z.re * scale, y: originY - z.im * scale };
+        }
+
+        function toMath(x, y) {
+            return { re: (x - originX) / scale, im: (originY - y) / scale };
+        }
+
+        // ==================== 绘制函数 ====================
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // 网格
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for (let i = -6; i <= 6; i++) {
+                const px = toCanvas({re:i, im:0});
+                ctx.beginPath(); ctx.moveTo(px.x, 0); ctx.lineTo(px.x, height); ctx.stroke();
+                const py = toCanvas({re:0, im:i});
+                ctx.beginPath(); ctx.moveTo(0, py.y); ctx.lineTo(width, py.y); ctx.stroke();
+            }
+            
+            // 坐标轴
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(width, originY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, height); ctx.stroke();
+            
+            // 箭头
+            ctx.fillStyle = '#475569';
+            ctx.beginPath(); ctx.moveTo(width-12, originY-6); ctx.lineTo(width, originY); ctx.lineTo(width-12, originY+6); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(originX-6, 12); ctx.lineTo(originX, 0); ctx.lineTo(originX+6, 12); ctx.fill();
+            
+            // 标签
+            ctx.font = 'bold 16px "Noto Sans SC"';
+            ctx.fillStyle = '#334155';
+            ctx.fillText('Re', width-35, originY+25);
+            ctx.fillText('Im', originX+12, 20);
+            ctx.fillText('O', originX-20, originY+20);
+            
+            // 绘制运算特定内容
+            const p1 = toCanvas(z1);
+            const p2 = toCanvas(z2);
+            const origin = toCanvas({re:0, im:0});
+            const result = getResult();
+            const pRes = toCanvas(result);
+            const prog = animState.progress / 100;
+            
+            switch(currentOp) {
+                case 'add': drawAdd(p1, p2, pRes, origin, prog); break;
+                case 'sub': drawSub(p1, p2, pRes, origin, prog); break;
+                case 'mul': drawMul(p1, p2, pRes, origin, prog); break;
+                case 'div': drawDiv(p1, p2, pRes, origin, prog); break;
+            }
+            
+            // 绘制点
+            drawPoint(p1, '#0ea5e9', 'z₁');
+            drawPoint(p2, '#6366f1', 'z₂');
+            if (prog > 0.95) drawPoint(pRes, '#f43f5e', '结果', true);
+            
+            // 更新UI
+            updateUI(prog);
+        }
+
+        function drawVector(from, to, color, width, arrow, dashed, glow) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.setLineDash(dashed ? [8, 4] : []);
+            ctx.shadowBlur = glow ? 15 : 0;
+            ctx.shadowColor = glow ? color : 'transparent';
+            
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+            
+            if (arrow) {
+                const ang = Math.atan2(to.y - from.y, to.x - from.x);
+                const len = 15;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(to.x, to.y);
+                ctx.lineTo(to.x - len*Math.cos(ang-Math.PI/6), to.y - len*Math.sin(ang-Math.PI/6));
+                ctx.lineTo(to.x - len*Math.cos(ang+Math.PI/6), to.y - len*Math.sin(ang+Math.PI/6));
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawPoint(pos, color, label, glow) {
+            if (glow) {
+                const g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 30);
+                g.addColorStop(0, color + '60');
+                g.addColorStop(1, color + '00');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, 30, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(pos.x, pos.y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.font = 'bold 16px "JetBrains Mono"';
+            ctx.fillStyle = color;
+            ctx.fillText(label, pos.x + 15, pos.y - 15);
+        }
+
+        // ==================== 各运算绘制 ====================
+        function drawAdd(p1, p2, pRes, origin, prog) {
+            drawVector(origin, p1, '#0ea5e9', 4, true);
+            drawVector(origin, p2, '#6366f1', 4, true);
+            
+            if (prog > 0.33) {
+                const t = Math.min((prog - 0.33) / 0.33, 1);
+                const tx = p2.x + (p1.x - origin.x) * t;
+                const ty = p2.y + (p1.y - origin.y) * t;
+                
+                // 平移轨迹
+                ctx.strokeStyle = 'rgba(99,102,241,0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(tx, ty); ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 平移后的z2
+                drawVector({x:p1.x, y:p1.y}, {x:tx, y:ty}, '#f59e0b', 3, true, true);
+                
+                // 结果线
+                if (t > 0.5) {
+                    ctx.strokeStyle = 'rgba(244,63,94,0.5)';
+                    ctx.setLineDash([8, 4]);
+                    ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(tx, ty); ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+            
+            if (prog > 0.66) {
+                const t = Math.min((prog - 0.66) / 0.34, 1);
+                const cx = origin.x + (pRes.x - origin.x) * t;
+                const cy = origin.y + (pRes.y - origin.y) * t;
+                drawVector(origin, {x:cx, y:cy}, '#f43f5e', 5, true, false, true);
+                
+                // 平行四边形
+                ctx.fillStyle = 'rgba(14,165,233,0.1)';
+                ctx.strokeStyle = 'rgba(14,165,233,0.3)';
+                ctx.beginPath();
+                ctx.moveTo(origin.x, origin.y);
+                ctx.lineTo(p1.x, p1.y);
+                ctx.lineTo(pRes.x, pRes.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+            }
+        }
+
+        function drawSub(p1, p2, pRes, origin, prog) {
+            const negP2 = {x: origin.x - (p2.x - origin.x), y: origin.y - (p2.y - origin.y)};
+            
+            drawVector(origin, p1, '#0ea5e9', 4, true);
+            drawVector(origin, p2, '#6366f1', 4, true);
+            
+            if (prog > 0.33) {
+                const t = Math.min((prog - 0.33) / 0.33, 1);
+                ctx.globalAlpha = t;
+                drawVector(origin, negP2, '#f59e0b', 4, true, false, true);
+                ctx.globalAlpha = 1;
+                
+                // 连接线
+                ctx.strokeStyle = 'rgba(99,102,241,0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(negP2.x, negP2.y); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            if (prog > 0.66) {
+                const t = Math.min((prog - 0.66) / 0.34, 1);
+                const tx = negP2.x + (p1.x - origin.x) * t;
+                const ty = negP2.y + (p1.y - origin.y) * t;
+                drawVector({x:p1.x, y:p1.y}, {x:tx, y:ty}, 'rgba(245,158,11,0.5)', 2, true, true);
+                
+                const cx = origin.x + (pRes.x - origin.x) * t;
+                const cy = origin.y + (pRes.y - origin.y) * t;
+                drawVector(origin, {x:cx, y:cy}, '#f43f5e', 5, true, false, true);
+                
+                if (t > 0.5) {
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.setLineDash([8, 4]);
+                    ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+        }
+
+        function drawMul(p1, p2, pRes, origin, prog) {
+            const r1 = mag(z1), r2 = mag(z2);
+            const th1 = Math.atan2(z1.im, z1.re);
+            const th2 = Math.atan2(z2.im, z2.re);
+            
+            drawVector(origin, p1, '#0ea5e9', 4, true);
+            drawVector(origin, p2, '#6366f1', 4, true);
+            
+            // z2圆
+            ctx.strokeStyle = 'rgba(99,102,241,0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.arc(origin.x, origin.y, r2*scale, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            if (prog > 0.33) {
+                const t = Math.min((prog - 0.33) / 0.33, 1);
+                const curR = r1 + (r1*r2 - r1) * t;
+                const sx = origin.x + curR*scale*Math.cos(th1);
+                const sy = origin.y - curR*scale*Math.sin(th1);
+                drawVector(origin, {x:sx, y:sy}, '#f59e0b', 4, true, false, true);
+                
+                // 标注
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillText(`×${r2.toFixed(2)}`, sx+15, sy);
+            }
+            
+            if (prog > 0.66) {
+                const t = Math.min((prog - 0.66) / 0.34, 1);
+                const curTh = th1 + th2*t;
+                const fx = origin.x + r1*r2*scale*Math.cos(curTh);
+                const fy = origin.y - r1*r2*scale*Math.sin(curTh);
+                drawVector(origin, {x:fx, y:fy}, '#f43f5e', 5, true, false, true);
+                
+                // 旋转弧
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(origin.x, origin.y, 50, -th1, -curTh, th2<0);
+                ctx.stroke();
+            }
+        }
+
+        function drawDiv(p1, p2, pRes, origin, prog) {
+            const r1 = mag(z1), r2 = mag(z2);
+            const th1 = Math.atan2(z1.im, z1.re);
+            const th2 = Math.atan2(z2.im, z2.re);
+            
+            drawVector(origin, p1, '#0ea5e9', 4, true);
+            drawVector(origin, p2, '#6366f1', 4, true);
+            
+            ctx.strokeStyle = 'rgba(99,102,241,0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.arc(origin.x, origin.y, r2*scale, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            if (prog > 0.33) {
+                const t = Math.min((prog - 0.33) / 0.33, 1);
+                const curR = r1 - (r1 - r1/r2) * t;
+                const sx = origin.x + curR*scale*Math.cos(th1);
+                const sy = origin.y - curR*scale*Math.sin(th1);
+                drawVector(origin, {x:sx, y:sy}, '#10b981', 4, true, false, true);
+                
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillStyle = '#10b981';
+                ctx.fillText(`÷${r2.toFixed(2)}`, sx+15, sy);
+            }
+            
+            if (prog > 0.66) {
+                const t = Math.min((prog - 0.66) / 0.34, 1);
+                const curTh = th1 - th2*t;
+                const fx = origin.x + (r1/r2)*scale*Math.cos(curTh);
+                const fy = origin.y - (r1/r2)*scale*Math.sin(curTh);
+                drawVector(origin, {x:fx, y:fy}, '#f43f5e', 5, true, false, true);
+                
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(origin.x, origin.y, 50, -th1, -curTh, th2>0);
+                ctx.stroke();
+            }
+        }
+
+        // ==================== UI更新 ====================
+        function updateUI(prog) {
+            const step = prog < 0.33 ? 1 : prog < 0.66 ? 2 : 3;
+            const cfg = config[currentOp];
+            
+            // 步骤指示器
+            [1, 2, 3].forEach(i => {
+                const el = document.getElementById(`ind${i}`);
+                if (i <= step) {
+                    el.className = 'w-10 h-10 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-lg shadow-lg';
+                } else {
+                    el.className = 'w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-lg';
+                }
+            });
+            
+            // 步骤卡片
+            [1, 2, 3].forEach(i => {
+                const card = document.getElementById(`card${i}`);
+                const num = document.getElementById(i===2 ? 'num2' : i===3 ? 'num3' : null);
+                
+                if (i === step) {
+                    card.classList.add('active');
+                    card.classList.remove('border-slate-300');
+                    card.classList.add(`border-${cfg.color}-500`);
+                } else {
+                    card.classList.remove('active', `border-${cfg.color}-500`);
+                    card.classList.add('border-slate-300');
+                }
+                
+                if (i <= step) {
+                    const p = card.querySelector('p');
+                    p.textContent = cfg.desc[i-1];
+                    if (num) {
+                        num.className = `w-8 h-8 rounded-full bg-${cfg.color}-500 text-white flex items-center justify-center font-bold text-sm`;
+                    }
+                }
+            });
+            
+            document.getElementById('step-desc').textContent = `步骤${step}：${cfg.desc[step-1]}`;
+        }
+
+        function updateValues() {
+            document.getElementById('re1val').textContent = z1.re.toFixed(1);
+            document.getElementById('im1val').textContent = z1.im.toFixed(1);
+            document.getElementById('mag1').textContent = mag(z1).toFixed(2);
+            document.getElementById('disp1').textContent = fmt(z1);
+            
+            document.getElementById('re2val').textContent = z2.re.toFixed(1);
+            document.getElementById('im2val').textContent = z2.im.toFixed(1);
+            document.getElementById('mag2').textContent = mag(z2).toFixed(2);
+            document.getElementById('disp2').textContent = fmt(z2);
+            
+            const r = getResult();
+            document.getElementById('res').textContent = fmt(r);
+            document.getElementById('resMag').textContent = mag(r).toFixed(2);
+            document.getElementById('resArg').textContent = arg(r).toFixed(1) + '°';
+            
+            document.getElementById('re1').value = z1.re;
+            document.getElementById('im1').value = z1.im;
+            document.getElementById('re2').value = z2.re;
+            document.getElementById('im2').value = z2.im;
+            
+            draw();
+        }
+
+        // ==================== 动画控制 ====================
+        function togglePlay() {
+            console.log('togglePlay, isPlaying:', animState.isPlaying, 'progress:', animState.progress);
+            
+            if (animState.isPlaying) {
+                // 暂停
+                pauseAnim();
+            } else {
+                // 播放
+                if (animState.progress >= 100) {
+                    resetAnim();
+                    setTimeout(startAnim, 50);
+                } else {
+                    startAnim();
+                }
+            }
+        }
+
+        function startAnim() {
+            console.log('startAnim called');
+            if (animState.isPlaying) return;
+            
+            animState.isPlaying = true;
+            animState.startTime = performance.now() - (animState.progress / 100) * 4000;
+            
+            updateBtn();
+            loop();
+        }
+
+        function loop() {
+            if (!animState.isPlaying) return;
+            
+            const now = performance.now();
+            const elapsed = now - animState.startTime;
+            animState.progress = Math.min((elapsed / 4000) * 100, 100);
+            
+            // 更新UI
+            document.getElementById('progressSlider').value = animState.progress;
+            document.getElementById('progressText').textContent = Math.floor(animState.progress) + '%';
+            
+            draw();
+            
+            if (animState.progress >= 100) {
+                animState.isPlaying = false;
+                updateBtn();
+            } else {
+                animState.rafId = requestAnimationFrame(loop);
+            }
+        }
+
+        function pauseAnim() {
+            console.log('pauseAnim called');
+            animState.isPlaying = false;
+            if (animState.rafId) {
+                cancelAnimationFrame(animState.rafId);
+                animState.rafId = null;
+            }
+            updateBtn();
+        }
+
+        function resetAnim() {
+            console.log('resetAnim called');
+            pauseAnim();
+            animState.progress = 0;
+            document.getElementById('progressSlider').value = 0;
+            document.getElementById('progressText').textContent = '0%';
+            updateBtn();
+            draw();
+        }
+
+        function updateBtn() {
+            const icon = document.getElementById('btnIcon');
+            const text = document.getElementById('btnText');
+            
+            if (animState.isPlaying) {
+                icon.textContent = '⏸';
+                text.textContent = '暂停';
+            } else {
+                icon.textContent = '▶';
+                text.textContent = animState.progress >= 100 ? '重播' : '播放';
+            }
+        }
+
+        // ==================== 事件处理 ====================
+        function setOperation(op) {
+            currentOp = op;
+            resetAnim();
+            
+            document.querySelectorAll('.operation-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${op}`).classList.add('active');
+            
+            const cfg = config[op];
+            document.getElementById('op-title').textContent = cfg.title;
+            document.getElementById('geoRule').innerHTML = `<p><strong class="text-${cfg.color}-700">${cfg.geo}</strong></p>`;
+            
+            updateValues();
+        }
+
+        // 滑块事件
+        document.getElementById('re1').addEventListener('input', (e) => { z1.re = parseFloat(e.target.value); updateValues(); });
+        document.getElementById('im1').addEventListener('input', (e) => { z1.im = parseFloat(e.target.value); updateValues(); });
+        document.getElementById('re2').addEventListener('input', (e) => { z2.re = parseFloat(e.target.value); updateValues(); });
+        document.getElementById('im2').addEventListener('input', (e) => { z2.im = parseFloat(e.target.value); updateValues(); });
+
+        document.getElementById('progressSlider').addEventListener('input', (e) => {
+            animState.progress = parseFloat(e.target.value);
+            document.getElementById('progressText').textContent = Math.floor(animState.progress) + '%';
+            if (animState.isPlaying) pauseAnim();
+            else updateBtn();
+            draw();
+        });
+
+        // 画布拖拽
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const p1 = toCanvas(z1);
+            const p2 = toCanvas(z2);
+            
+            if (Math.hypot(x-p1.x, y-p1.y) < 30) dragTarget = 'z1';
+            else if (Math.hypot(x-p2.x, y-p2.y) < 30) dragTarget = 'z2';
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!dragTarget) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const p1 = toCanvas(z1);
+                const p2 = toCanvas(z2);
+                canvas.style.cursor = Math.hypot(x-p1.x, y-p1.y) < 30 || Math.hypot(x-p2.x, y-p2.y) < 30 ? 'grab' : 'crosshair';
+                return;
+            }
+            
+            const rect = canvas.getBoundingClientRect();
+            const newZ = toMath(e.clientX - rect.left, e.clientY - rect.top);
+            newZ.re = Math.max(-4, Math.min(4, newZ.re));
+            newZ.im = Math.max(-4, Math.min(4, newZ.im));
+            
+            if (dragTarget === 'z1') z1 = newZ;
+            else z2 = newZ;
+            
+            updateValues();
+        });
+
+        canvas.addEventListener('mouseup', () => { dragTarget = null; canvas.style.cursor = 'crosshair'; });
+        canvas.addEventListener('mouseleave', () => { dragTarget = null; });
+
+        // 触摸
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const p1 = toCanvas(z1);
+            const p2 = toCanvas(z2);
+            const x = t.clientX - rect.left;
+            const y = t.clientY - rect.top;
+            
+            if (Math.hypot(x-p1.x, y-p1.y) < 40) dragTarget = 'z1';
+            else if (Math.hypot(x-p2.x, y-p2.y) < 40) dragTarget = 'z2';
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!dragTarget) return;
+            const t = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const newZ = toMath(t.clientX - rect.left, t.clientY - rect.top);
+            newZ.re = Math.max(-4, Math.min(4, newZ.re));
+            newZ.im = Math.max(-4, Math.min(4, newZ.im));
+            
+            if (dragTarget === 'z1') z1 = newZ;
+            else z2 = newZ;
+            
+            updateValues();
+        });
+
+        canvas.addEventListener('touchend', () => { dragTarget = null; });
+
+        window.addEventListener('resize', resize);
+
+        // 初始化
+        resize();
+        updateValues();
+        updateBtn();
+    </script>
+</body>
+</html>

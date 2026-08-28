@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦量相位与初相位交互演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.8rem;
+            color: #1a252f;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #5d6d7e;
+            margin-bottom: 30px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .panel-title {
+            font-size: 1.6rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: #3498db;
+            border-radius: 2px;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            background: #fafbfc;
+            border: 2px solid #e8ecef;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] {
+            width: 250px;
+            height: 10px;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border: 3px solid #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .value-display {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2980b9;
+            min-width: 80px;
+            text-align: center;
+            background: #ebf5fb;
+            padding: 8px 15px;
+            border-radius: 10px;
+        }
+        
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            border-left: 5px solid #3498db;
+        }
+        
+        .info-card h3 {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .info-card p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: #5d6d7e;
+        }
+        
+        .formula {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            color: #e74c3c;
+            text-align: center;
+            margin: 15px 0;
+            border: 2px dashed #bdc3c7;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .legend-color {
+            width: 24px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #ffeaa7 0%, #ffeaa7 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 4px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .phase-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .zero-line {
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>正弦量相位与初相位交互演示</h1>
+        <p class="subtitle">理解不同时间起点(t=0)对初相位的影响 | 余弦函数表示法</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <span class="control-label">时间起点位置 (t=0)</span>
+                    <div class="slider-container">
+                        <input type="range" id="timeOrigin" min="-180" max="180" value="0" step="15">
+                        <span class="value-display" id="timeOriginValue">0°</span>
+                    </div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">角频率 ω</span>
+                    <div class="slider-container">
+                        <input type="range" id="omega" min="1" max="5" value="2" step="0.5">
+                        <span class="value-display" id="omegaValue">2 rad/s</span>
+                    </div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">振幅 A</span>
+                    <div class="slider-container">
+                        <input type="range" id="amplitude" min="1" max="5" value="3" step="0.5">
+                        <span class="value-display" id="amplitudeValue">3</span>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="startAnimation()">开始动画</button>
+                <button class="btn-secondary" onclick="pauseAnimation()">暂停</button>
+                <button class="btn-secondary" onclick="resetAnimation()">重置</button>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="panel">
+                <h2 class="panel-title">波形图 (时域)</h2>
+                <canvas id="waveCanvas"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3498db;"></div>
+                        <span>正弦波形</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e74c3c;"></div>
+                        <span>t=0 位置</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2ecc71;"></div>
+                        <span>旋转矢量</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">旋转矢量图 (相量)</h2>
+                <canvas id="phasorCanvas"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9b59b6;"></div>
+                        <span>矢量在 t=0 时的位置 (初相)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f39c12;"></div>
+                        <span>当前时刻矢量位置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-cards">
+            <div class="info-card">
+                <h3>📐 数学表达式</h3>
+                <div class="formula">x(t) = A·cos(ωt + φ)</div>
+                <p>其中 <span class="highlight">φ</span> 为初相位，由时间起点 t=0 的选择决定。当 t=0 时，x(0) = A·cos(φ)。</p>
+            </div>
+            
+            <div class="info-card">
+                <h3>⏱️ 相位与初相位的区别</h3>
+                <p><strong>相位</strong>：ωt + φ，随时间变化的瞬时角度<br>
+                <strong>初相位</strong>：t=0 时的相位角 φ<br>
+                <strong>关键</strong>：改变时间起点，φ 改变，但波形本身不变</p>
+            </div>
+            
+            <div class="info-card">
+                <h3>🔄 时间起点的影响</h3>
+                <p>当时间起点向右移动（延迟计时），初相位 φ 增大（正值）；<br>
+                当时间起点向左移动（提前计时），初相位 φ 减小（负值）。<br>
+                取值范围：-180° ≤ φ ≤ +180°</p>
+            </div>
+            
+            <div class="info-card">
+                <h3>📊 当前参数值</h3>
+                <table class="comparison-table">
+                    <tr>
+                        <th>参数</th>
+                        <th>数值</th>
+                    </tr>
+                    <tr>
+                        <td>初相位 φ</td>
+                        <td id="phiDisplay">0°</td>
+                    </tr>
+                    <tr>
+                        <td>t=0 时刻瞬时值</td>
+                        <td id="initialValue">3.00</td>
+                    </tr>
+                    <tr>
+                        <td>周期 T</td>
+                        <td id="periodDisplay">3.14 s</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const waveCanvas = document.getElementById('waveCanvas');
+        const phasorCanvas = document.getElementById('phasorCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        const phasorCtx = phasorCanvas.getContext('2d');
+        
+        let animationId = null;
+        let currentTime = 0;
+        let isAnimating = false;
+        
+        // 设置画布大小
+        function resizeCanvas() {
+            waveCanvas.width = waveCanvas.offsetWidth * 2;
+            waveCanvas.height = waveCanvas.offsetHeight * 2;
+            phasorCanvas.width = phasorCanvas.offsetWidth * 2;
+            phasorCanvas.height = phasorCanvas.offsetHeight * 2;
+            waveCtx.scale(2, 2);
+            phasorCtx.scale(2, 2);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 获取参数
+        function getParams() {
+            const timeOriginDeg = parseFloat(document.getElementById('timeOrigin').value);
+            const omega = parseFloat(document.getElementById('omega').value);
+            const A = parseFloat(document.getElementById('amplitude').value);
+            const phi = -timeOriginDeg * Math.PI / 180; // 时间起点移动方向与初相位相反
+            return { timeOriginDeg, omega, A, phi };
+        }
+        
+        // 更新显示值
+        function updateDisplays() {
+            const { timeOriginDeg, omega, A, phi } = getParams();
+            document.getElementById('timeOriginValue').textContent = timeOriginDeg + '°';
+            document.getElementById('omegaValue').textContent = omega + ' rad/s';
+            document.getElementById('amplitudeValue').textContent = A;
+            
+            const phiDeg = Math.round(phi * 180 / Math.PI);
+            document.getElementById('phiDisplay').textContent = phiDeg + '°';
+            document.getElementById('initialValue').textContent = (A * Math.cos(phi)).toFixed(2);
+            document.getElementById('periodDisplay').textContent = (2 * Math.PI / omega).toFixed(2) + ' s';
+        }
+        
+        // 绘制波形图
+        function drawWave() {
+            const { omega, A, phi, timeOriginDeg } = getParams();
+            const width = waveCanvas.offsetWidth;
+            const height = waveCanvas.offsetHeight;
+            const centerY = height / 2;
+            const scaleX = width / (4 * Math.PI); // 显示2个周期
+            const scaleY = (height / 2 - 40) / 5;
+            
+            waveCtx.clearRect(0, 0, width, height);
+            
+            // 绘制坐标轴
+            waveCtx.strokeStyle = '#bdc3c7';
+            waveCtx.lineWidth = 2;
+            waveCtx.beginPath();
+            waveCtx.moveTo(0, centerY);
+            waveCtx.lineTo(width, centerY);
+            waveCtx.stroke();
+            
+            // 绘制时间轴刻度
+            waveCtx.fillStyle = '#7f8c8d';
+            waveCtx.font = '14px sans-serif';
+            waveCtx.textAlign = 'center';
+            for (let i = -2; i <= 6; i++) {
+                const x = width/2 + i * Math.PI * scaleX;
+                waveCtx.fillText(i + 'π', x, centerY + 25);
+                waveCtx.beginPath();
+                waveCtx.moveTo(x, centerY - 5);
+                waveCtx.lineTo(x, centerY + 5);
+                waveCtx.stroke();
+            }
+            
+            // 绘制波形 (余弦函数)
+            waveCtx.strokeStyle = '#3498db';
+            waveCtx.lineWidth = 4;
+            waveCtx.beginPath();
+            for (let x = 0; x < width; x++) {
+                const t = (x - width/2) / scaleX;
+                const y = centerY - A * Math.cos(omega * t + phi) * scaleY;
+                if (x === 0) waveCtx.moveTo(x, y);
+                else waveCtx.lineTo(x, y);
+            }
+            waveCtx.stroke();
+            
+            // 绘制 t=0 位置线 (红色虚线)
+            const t0X = width / 2;
+            waveCtx.strokeStyle = '#e74c3c';
+            waveCtx.lineWidth = 3;
+            waveCtx.setLineDash([8, 8]);
+            waveCtx.beginPath();
+            waveCtx.moveTo(t0X, 20);
+            waveCtx.lineTo(t0X, height - 20);
+            waveCtx.stroke();
+            waveCtx.setLineDash([]);
+            
+            // 标记 t=0
+            waveCtx.fillStyle = '#e74c3c';
+            waveCtx.font = 'bold 16px sans-serif';
+            waveCtx.fillText('t = 0', t0X, 35);
+            
+            // 绘制当前时刻点
+            const currentX = width/2 + currentTime * scaleX;
+            const currentY = centerY - A * Math.cos(omega * currentTime + phi) * scaleY;
+            
+            // 绘制从 t=0 到当前时刻的连接线
+            waveCtx.strokeStyle = 'rgba(46, 204, 113, 0.5)';
+            waveCtx.lineWidth = 2;
+            waveCtx.beginPath();
+            waveCtx.moveTo(t0X, centerY - A * Math.cos(phi) * scaleY);
+            waveCtx.lineTo(currentX, currentY);
+            waveCtx.stroke();
+            
+            // 绘制当前点
+            waveCtx.fillStyle = '#2ecc71';
+            waveCtx.beginPath();
+            waveCtx.arc(currentX, currentY, 8, 0, Math.PI * 2);
+            waveCtx.fill();
+            
+            // 绘制投影线
+            waveCtx.strokeStyle = 'rgba(46, 204, 113, 0.3)';
+            waveCtx.lineWidth = 1;
+            waveCtx.beginPath();
+            waveCtx.moveTo(currentX, currentY);
+            waveCtx.lineTo(currentX, centerY);
+            waveCtx.stroke();
+            
+            // 标注相位角
+            waveCtx.fillStyle = '#2c3e50';
+            waveCtx.font = 'bold 14px sans-serif';
+            const phaseDeg = Math.round((omega * currentTime + phi) * 180 / Math.PI) % 360;
+            waveCtx.fillText('相位: ' + phaseDeg + '°', currentX + 15, currentY - 15);
+        }
+        
+        // 绘制相量图
+        function drawPhasor() {
+            const { omega, A, phi } = getParams();
+            const width = phasorCanvas.offsetWidth;
+            const height = phasorCanvas.offsetHeight;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const maxRadius = Math.min(width, height) / 2 - 60;
+            const scale = maxRadius / 5;
+            
+            phasorCtx.clearRect(0, 0, width, height);
+            
+            // 绘制圆
+            phasorCtx.strokeStyle = '#ecf0f1';
+            phasorCtx.lineWidth = 2;
+            phasorCtx.beginPath();
+            phasorCtx.arc(centerX, centerY, A * scale, 0, Math.PI * 2);
+            phasorCtx.stroke();
+            
+            // 绘制坐标轴
+            phasorCtx.strokeStyle = '#bdc3c7';
+            phasorCtx.lineWidth = 2;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX - maxRadius, centerY);
+            phasorCtx.lineTo(centerX + maxRadius, centerY);
+            phasorCtx.moveTo(centerX, centerY - maxRadius);
+            phasorCtx.lineTo(centerX, centerY + maxRadius);
+            phasorCtx.stroke();
+            
+            // 标注坐标轴
+            phasorCtx.fillStyle = '#7f8c8d';
+            phasorCtx.font = '14px sans-serif';
+            phasorCtx.fillText('Re', centerX + maxRadius - 20, centerY + 20);
+            phasorCtx.fillText('Im', centerX + 10, centerY - maxRadius + 20);
+            
+            // 绘制 t=0 时的矢量位置 (初相) - 紫色
+            const initialAngle = phi;
+            const initialX = centerX + A * scale * Math.cos(initialAngle);
+            const initialY = centerY - A * scale * Math.sin(initialAngle);
+            
+            phasorCtx.strokeStyle = '#9b59b6';
+            phasorCtx.lineWidth = 4;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, centerY);
+            phasorCtx.lineTo(initialX, initialY);
+            phasorCtx.stroke();
+            
+            // 绘制初相矢量端点
+            phasorCtx.fillStyle = '#9b59b6';
+            phasorCtx.beginPath();
+            phasorCtx.arc(initialX, initialY, 8, 0, Math.PI * 2);
+            phasorCtx.fill();
+            
+            // 标注初相
+            phasorCtx.fillStyle = '#9b59b6';
+            phasorCtx.font = 'bold 14px sans-serif';
+            const phiDeg = Math.round(phi * 180 / Math.PI);
+            phasorCtx.fillText('初相 φ=' + phiDeg + '°', initialX + 15, initialY);
+            
+            // 绘制当前时刻的旋转矢量 - 橙色
+            const currentAngle = omega * currentTime + phi;
+            const currentX = centerX + A * scale * Math.cos(currentAngle);
+            const currentY = centerY - A * scale * Math.sin(currentAngle);
+            
+            phasorCtx.strokeStyle = '#f39c12';
+            phasorCtx.lineWidth = 4;
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(centerX, centerY);
+            phasorCtx.lineTo(currentX, currentY);
+            phasorCtx.stroke();
+            
+            // 绘制当前矢量端点
+            phasorCtx.fillStyle = '#f39c12';
+            phasorCtx.beginPath();
+            phasorCtx.arc(currentX, currentY, 8, 0, Math.PI * 2);
+            phasorCtx.fill();
+            
+            // 绘制旋转弧线
+            phasorCtx.strokeStyle = 'rgba(243, 156, 18, 0.3)';
+            phasorCtx.lineWidth = 3;
+            phasorCtx.beginPath();
+            phasorCtx.arc(centerX, centerY, A * scale * 0.3, -initialAngle, -currentAngle, currentAngle < initialAngle);
+            phasorCtx.stroke();
+            
+            // 标注当前相位
+            const phaseDeg = Math.round(currentAngle * 180 / Math.PI) % 360;
+            phasorCtx.fillStyle = '#f39c12';
+            phasorCtx.font = 'bold 14px sans-serif';
+            phasorCtx.fillText('当前相位: ' + phaseDeg + '°', currentX + 15, currentY + 20);
+            
+            // 绘制投影到实轴的线 (对应瞬时值)
+            phasorCtx.strokeStyle = 'rgba(52, 152, 219, 0.5)';
+            phasorCtx.lineWidth = 2;
+            phasorCtx.setLineDash([5, 5]);
+            phasorCtx.beginPath();
+            phasorCtx.moveTo(currentX, currentY);
+            phasorCtx.lineTo(currentX, centerY);
+            phasorCtx.stroke();
+            phasorCtx.setLineDash([]);
+            
+            // 标注瞬时值
+            const instantaneousValue = A * Math.cos(currentAngle);
+            phasorCtx.fillStyle = '#3498db';
+            phasorCtx.font = 'bold 14px sans-serif';
+            phasorCtx.fillText('x(t)=' + instantaneousValue.toFixed(2), currentX, centerY + (currentY > centerY ? 25 : -15));
+        }
+        
+        // 动画循环
+        function animate() {
+            if (!isAnimating) return;
+            
+            const { omega } = getParams();
+            currentTime += 0.05;
+            
+            drawWave();
+            drawPhasor();
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function startAnimation() {
+            if (!isAnimating) {
+                isAnimating = true;
+                animate();
+            }
+        }
+        
+        function pauseAnimation() {
+            isAnimating = false;
+            if (animationId) cancelAnimationFrame(animationId);
+        }
+        
+        function resetAnimation() {
+            pauseAnimation();
+            currentTime = 0;
+            drawWave();
+            drawPhasor();
+        }
+        
+        // 事件监听
+        document.getElementById('timeOrigin').addEventListener('input', () => {
+            updateDisplays();
+            drawWave();
+            drawPhasor();
+        });
+        
+        document.getElementById('omega').addEventListener('input', () => {
+            updateDisplays();
+            drawWave();
+            drawPhasor();
+        });
+        
+        document.getElementById('amplitude').addEventListener('input', () => {
+            updateDisplays();
+            drawWave();
+            drawPhasor();
+        });
+        
+        // 初始化
+        updateDisplays();
+        drawWave();
+        drawPhasor();
+        startAnimation();
+    </script>
+</body>
+</html>

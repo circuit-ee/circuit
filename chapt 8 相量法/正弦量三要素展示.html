@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦量三要素交互演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Inter', 'Noto Serif SC', sans-serif;
+                background: #f8fafc;
+                color: #1e293b;
+            }
+        }
+        @layer components {
+            .glass-panel {
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(226, 232, 240, 0.8);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            }
+            .control-slider {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 100%;
+                height: 8px;
+                border-radius: 4px;
+                background: #e2e8f0;
+                outline: none;
+                transition: background 0.3s;
+            }
+            .control-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #3b82f6;
+                cursor: pointer;
+                border: 3px solid white;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .control-slider::-webkit-slider-thumb:hover {
+                transform: scale(1.15);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+            }
+            .control-slider::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #3b82f6;
+                cursor: pointer;
+                border: 3px solid white;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+            }
+            .math-display {
+                font-family: 'Noto Serif SC', serif;
+                font-feature-settings: "kern" 1;
+            }
+            .wave-path {
+                stroke-dasharray: 2000;
+                stroke-dashoffset: 2000;
+                animation: dash 2s ease-out forwards;
+            }
+            @keyframes dash {
+                to { stroke-dashoffset: 0; }
+            }
+            .pulse-glow {
+                animation: pulse-glow 2s ease-in-out infinite;
+            }
+            @keyframes pulse-glow {
+                0%, 100% { filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3)); }
+                50% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); }
+            }
+            .float-animation {
+                animation: float 6s ease-in-out infinite;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+            .grid-bg {
+                background-image: 
+                    linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+                background-size: 40px 40px;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="min-h-screen bg-slate-50 grid-bg">
+
+    <!-- Header -->
+    <header class="w-full py-8 px-4 text-center">
+        <h1 class="text-5xl md:text-6xl font-black text-slate-800 tracking-tight mb-3">
+            正弦量三要素
+        </h1>
+        <p class="text-xl text-slate-500 font-light">
+            幅值 · 角频率 · 初相位 —— 交互式探索
+        </p>
+        <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span class="text-sm text-slate-600 font-medium">实时渲染中</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 pb-16 space-y-8">
+        
+        <!-- Formula Display -->
+        <section class="glass-panel rounded-3xl p-8 md:p-12 text-center float-animation">
+            <div class="math-display text-3xl md:text-5xl lg:text-6xl text-slate-800 leading-relaxed">
+                <span class="text-blue-600 font-bold" id="formula-A">A</span>
+                <span class="text-slate-400 mx-1">·</span>
+                <span class="text-slate-600">cos(</span>
+                <span class="text-emerald-600 font-bold" id="formula-omega">ω</span>
+                <span class="text-slate-600">t</span>
+                <span class="text-slate-400 mx-1">+</span>
+                <span class="text-amber-600 font-bold" id="formula-phi">φ</span>
+                <span class="text-slate-600">)</span>
+            </div>
+            <div class="mt-6 flex flex-wrap justify-center gap-6 text-lg">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    <span class="text-slate-600">幅值 <span class="font-bold text-blue-600" id="val-A-disp">1.0</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                    <span class="text-slate-600">角频率 <span class="font-bold text-emerald-600" id="val-omega-disp">1.0</span> rad/s</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span class="text-slate-600">初相位 <span class="font-bold text-amber-600" id="val-phi-disp">0°</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualization Canvas -->
+        <section class="glass-panel rounded-3xl p-4 md:p-8">
+            <div class="relative w-full" style="height: 450px;">
+                <canvas id="waveCanvas" class="w-full h-full rounded-2xl bg-white/50"></canvas>
+                
+                <!-- Overlay Labels -->
+                <div class="absolute top-4 left-4 flex flex-col gap-2">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-blue-700 shadow-sm">
+                        幅值 A = <span id="label-A">1.0</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-sm">
+                        角频率 ω = <span id="label-omega">1.0</span> rad/s
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-amber-700 shadow-sm">
+                        初相位 φ = <span id="label-phi">0°</span>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="absolute bottom-4 right-4 flex flex-col gap-2 bg-white/90 backdrop-blur rounded-xl p-3 border border-slate-200 shadow-lg">
+                    <div class="flex items-center gap-2 text-sm">
+                        <div class="w-8 h-0.5 bg-blue-500 rounded"></div>
+                        <span class="text-slate-600">当前波形</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <div class="w-8 h-0.5 bg-slate-300 dashed border-t border-dashed border-slate-400"></div>
+                        <span class="text-slate-500">参考波形 (A=1, ω=1, φ=0)</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span class="text-slate-600">当前位置</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Amplitude Control -->
+            <div class="glass-panel rounded-2xl p-6 md:p-8 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800">幅值 Amplitude</h3>
+                    <span class="text-3xl font-black text-blue-600" id="control-val-A">1.0</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm text-slate-500 font-medium">
+                        <span>0.1</span>
+                        <span>3.0</span>
+                    </div>
+                    <input type="range" id="slider-A" min="0.1" max="3.0" step="0.1" value="1.0" class="control-slider">
+                    <p class="text-sm text-slate-500 leading-relaxed mt-2">
+                        控制波形的最大高度。增大幅值使波形在垂直方向上拉伸，表示信号强度或电压峰值。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Angular Frequency Control -->
+            <div class="glass-panel rounded-2xl p-6 md:p-8 border-l-4 border-emerald-500">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800">角频率 ω</h3>
+                    <span class="text-3xl font-black text-emerald-600" id="control-val-omega">1.0</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm text-slate-500 font-medium">
+                        <span>0.2</span>
+                        <span>5.0</span>
+                    </div>
+                    <input type="range" id="slider-omega" min="0.2" max="5.0" step="0.1" value="1.0" class="control-slider">
+                    <p class="text-sm text-slate-500 leading-relaxed mt-2">
+                        控制波形振荡的快慢。角频率越大，周期越短，波形越密集。ω = 2πf，其中 f 为频率。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Phase Control -->
+            <div class="glass-panel rounded-2xl p-6 md:p-8 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800">初相位 Phase</h3>
+                    <span class="text-3xl font-black text-amber-600" id="control-val-phi">0°</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm text-slate-500 font-medium">
+                        <span>-180°</span>
+                        <span>+180°</span>
+                    </div>
+                    <input type="range" id="slider-phi" min="-180" max="180" step="5" value="0" class="control-slider">
+                    <p class="text-sm text-slate-500 leading-relaxed mt-2">
+                        控制波形的水平位移。正相位向左移动，负相位向右移动，表示 t=0 时刻的初始角度。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Mode -->
+        <section class="glass-panel rounded-3xl p-6 md:p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">对比模式</h3>
+                <div class="flex gap-2">
+                    <button id="btn-compare-ref" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition text-sm">
+                        参考波形
+                    </button>
+                    <button id="btn-compare-prev" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition text-sm">
+                        上一步
+                    </button>
+                    <button id="btn-clear-compare" class="px-4 py-2 rounded-lg bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition text-sm">
+                        清除对比
+                    </button>
+                </div>
+            </div>
+            <div id="compare-container" class="space-y-3">
+                <p class="text-slate-500 text-sm">点击上方按钮添加对比波形，或调整参数后自动记录历史。</p>
+            </div>
+        </section>
+
+        <!-- Educational Info -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-blue-50/80 rounded-2xl p-6 border border-blue-100">
+                <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-4">A</div>
+                <h4 class="text-xl font-bold text-slate-800 mb-2">幅值 (Amplitude)</h4>
+                <p class="text-slate-600 leading-relaxed">
+                    正弦量所能达到的最大值，决定波形的"高度"。在电路中对应电压或电流的峰值。
+                </p>
+            </div>
+            <div class="bg-emerald-50/80 rounded-2xl p-6 border border-emerald-100">
+                <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-4">ω</div>
+                <h4 class="text-xl font-bold text-slate-800 mb-2">角频率 (Angular Frequency)</h4>
+                <p class="text-slate-600 leading-relaxed">
+                    单位时间内变化的角度，ω = 2πf。决定波形的"疏密程度"，即振荡快慢。
+                </p>
+            </div>
+            <div class="bg-amber-50/80 rounded-2xl p-6 border border-amber-100">
+                <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-4">φ</div>
+                <h4 class="text-xl font-bold text-slate-800 mb-2">初相位 (Initial Phase)</h4>
+                <p class="text-slate-600 leading-relaxed">
+                    t = 0 时刻的相位角，决定波形的起始位置。用于描述多个正弦量之间的相位关系。
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // State
+        const state = {
+            A: 1.0,
+            omega: 1.0,
+            phi: 0, // degrees
+            t: 0,
+            compareWaves: [],
+            history: []
+        };
+
+        // Canvas setup
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // DOM Elements
+        const sliderA = document.getElementById('slider-A');
+        const sliderOmega = document.getElementById('slider-omega');
+        const sliderPhi = document.getElementById('slider-phi');
+        
+        const valA = document.getElementById('control-val-A');
+        const valOmega = document.getElementById('control-val-omega');
+        const valPhi = document.getElementById('control-val-phi');
+        
+        const formulaA = document.getElementById('formula-A');
+        const formulaOmega = document.getElementById('formula-omega');
+        const formulaPhi = document.getElementById('formula-phi');
+        
+        const valADisp = document.getElementById('val-A-disp');
+        const valOmegaDisp = document.getElementById('val-omega-disp');
+        const valPhiDisp = document.getElementById('val-phi-disp');
+        
+        const labelA = document.getElementById('label-A');
+        const labelOmega = document.getElementById('label-omega');
+        const labelPhi = document.getElementById('label-phi');
+
+        // Update functions
+        function updateState() {
+            state.A = parseFloat(sliderA.value);
+            state.omega = parseFloat(sliderOmega.value);
+            state.phi = parseInt(sliderPhi.value);
+            
+            // Update displays
+            valA.textContent = state.A.toFixed(1);
+            valOmega.textContent = state.omega.toFixed(1);
+            valPhi.textContent = state.phi + '°';
+            
+            formulaA.textContent = state.A.toFixed(1);
+            formulaOmega.textContent = state.omega.toFixed(1);
+            formulaPhi.textContent = state.phi + '°';
+            
+            valADisp.textContent = state.A.toFixed(1);
+            valOmegaDisp.textContent = state.omega.toFixed(1);
+            valPhiDisp.textContent = state.phi + '°';
+            
+            labelA.textContent = state.A.toFixed(1);
+            labelOmega.textContent = state.omega.toFixed(1);
+            labelPhi.textContent = state.phi + '°';
+        }
+
+        function drawWave(A, omega, phiDeg, color, lineWidth = 3, opacity = 1, isReference = false) {
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            const centerY = height / 2;
+            const scaleX = width / (4 * Math.PI); // Show 2 full periods at omega=1
+            const scaleY = (height / 2 - 40) / 3; // Max amplitude 3 fits in view
+            
+            const phiRad = phiDeg * Math.PI / 180;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.globalAlpha = opacity;
+            
+            if (isReference) {
+                ctx.setLineDash([5, 5]);
+            } else {
+                ctx.setLineDash([]);
+            }
+            
+            let first = true;
+            for (let px = 0; px <= width; px += 2) {
+                const t = (px / scaleX) - (2 * Math.PI); // Center the view
+                const y = A * Math.cos(omega * t + phiRad);
+                const py = centerY - y * scaleY;
+                
+                if (first) {
+                    ctx.moveTo(px, py);
+                    first = false;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+        }
+
+        function drawGrid() {
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            const centerY = height / 2;
+            
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            // Horizontal center line
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+            
+            // Vertical lines at key points
+            const scaleX = width / (4 * Math.PI);
+            const markers = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2];
+            markers.forEach(m => {
+                const x = width/2 + m * Math.PI * scaleX;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+                
+                // Labels
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '12px Inter';
+                ctx.textAlign = 'center';
+                let label = m === 0 ? '0' : m + 'π';
+                if (m === 1) label = 'π';
+                if (m === -1) label = '-π';
+                if (m === 2) label = '2π';
+                if (m === -2) label = '-2π';
+                ctx.fillText(label, x, height - 10);
+            });
+            
+            // Amplitude markers
+            ctx.textAlign = 'left';
+            for (let i = -3; i <= 3; i++) {
+                if (i === 0) continue;
+                const y = centerY - i * ((height / 2 - 40) / 3);
+                ctx.fillText(i.toFixed(0), 10, y + 4);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.strokeStyle = '#f1f5f9';
+                ctx.stroke();
+            }
+        }
+
+        function drawCurrentPoint() {
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            const centerY = height / 2;
+            const scaleX = width / (4 * Math.PI);
+            const scaleY = (height / 2 - 40) / 3;
+            
+            const phiRad = state.phi * Math.PI / 180;
+            const t = state.t;
+            const y = state.A * Math.cos(state.omega * t + phiRad);
+            
+            const px = width/2 + t * scaleX;
+            const py = centerY - y * scaleY;
+            
+            // Draw point
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            ctx.strokeStyle = '#fee2e2';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Draw projection lines
+            ctx.beginPath();
+            ctx.setLineDash([2, 4]);
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1;
+            ctx.moveTo(px, centerY);
+            ctx.lineTo(px, py);
+            ctx.lineTo(0, py);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Value label
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 14px Inter';
+            ctx.textAlign = 'left';
+            ctx.fillText(y.toFixed(2), 10, py - 10);
+        }
+
+        function draw() {
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            drawGrid();
+            
+            // Draw reference wave (A=1, omega=1, phi=0)
+            drawWave(1, 1, 0, '#cbd5e1', 2, 0.6, true);
+            
+            // Draw comparison waves
+            state.compareWaves.forEach((wave, idx) => {
+                const colors = ['#8b5cf6', '#ec4899', '#f97316', '#06b6d4'];
+                drawWave(wave.A, wave.omega, wave.phi, colors[idx % colors.length], 2, 0.7);
+            });
+            
+            // Draw current wave
+            drawWave(state.A, state.omega, state.phi, '#3b82f6', 4, 1, false);
+            
+            // Draw current moving point
+            drawCurrentPoint();
+        }
+
+        function animate() {
+            state.t += 0.02;
+            if (state.t > 2 * Math.PI) state.t -= 4 * Math.PI;
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        sliderA.addEventListener('input', () => {
+            updateState();
+            saveToHistory();
+        });
+        sliderOmega.addEventListener('input', () => {
+            updateState();
+            saveToHistory();
+        });
+        sliderPhi.addEventListener('input', () => {
+            updateState();
+            saveToHistory();
+        });
+
+        function saveToHistory() {
+            state.history.push({...state, time: Date.now()});
+            if (state.history.length > 10) state.history.shift();
+        }
+
+        // Comparison buttons
+        document.getElementById('btn-compare-ref').addEventListener('click', () => {
+            addCompareWave(1, 1, 0, '参考波形');
+        });
+
+        document.getElementById('btn-compare-prev').addEventListener('click', () => {
+            if (state.history.length >= 2) {
+                const prev = state.history[state.history.length - 2];
+                addCompareWave(prev.A, prev.omega, prev.phi, `历史: A=${prev.A}, ω=${prev.omega}, φ=${prev.phi}°`);
+            }
+        });
+
+        document.getElementById('btn-clear-compare').addEventListener('click', () => {
+            state.compareWaves = [];
+            updateCompareDisplay();
+        });
+
+        function addCompareWave(A, omega, phi, label) {
+            // Check if already exists
+            const exists = state.compareWaves.some(w => 
+                w.A === A && w.omega === omega && w.phi === phi
+            );
+            if (!exists) {
+                state.compareWaves.push({A, omega, phi, label});
+                if (state.compareWaves.length > 4) state.compareWaves.shift();
+                updateCompareDisplay();
+            }
+        }
+
+        function updateCompareDisplay() {
+            const container = document.getElementById('compare-container');
+            if (state.compareWaves.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-sm">点击上方按钮添加对比波形，或调整参数后自动记录历史。</p>';
+                return;
+            }
+            
+            const colors = ['bg-violet-500', 'bg-pink-500', 'bg-orange-500', 'bg-cyan-500'];
+            container.innerHTML = state.compareWaves.map((wave, idx) => `
+                <div class="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3 border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-4 h-4 rounded-full ${colors[idx % colors.length]}"></div>
+                        <span class="text-sm font-medium text-slate-700">${wave.label}</span>
+                    </div>
+                    <div class="text-sm text-slate-500">
+                        A=${wave.A} · cos(${wave.omega}t + ${wave.phi}°)
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        updateState();
+        saveToHistory();
+        animate();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                // Reset to reference
+                sliderA.value = 1;
+                sliderOmega.value = 1;
+                sliderPhi.value = 0;
+                updateState();
+            }
+        });
+    </script>
+</body>
+</html>

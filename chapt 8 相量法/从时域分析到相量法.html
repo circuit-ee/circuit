@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC电路：从时域到相量域</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .step-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .step-card.active {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+        }
+        
+        .circuit-line {
+            stroke: #475569;
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .formula-box {
+            font-family: 'Times New Roman', 'Noto Sans SC', serif;
+            font-style: italic;
+        }
+        
+        .highlight-text {
+            background: linear-gradient(120deg, #fef3c7 0%, #fef3c7 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 4px;
+        }
+        
+        .comparison-table td, .comparison-table th {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s;
+        }
+        
+        .slider-thumb::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .phasor-triangle {
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- 标题区 -->
+    <div class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-5xl md:text-6xl font-bold text-gray-800 mb-4 tracking-tight">
+            RC电路分析
+        </h1>
+        <p class="text-2xl text-gray-600 font-light">
+            从时域微分方程到相量变换的完整推导
+        </p>
+    </div>
+
+    <!-- 步骤导航 -->
+    <div class="max-w-7xl mx-auto mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="step-card active glass-panel p-6 rounded-2xl" onclick="showStep(1)" id="step1-btn">
+            <div class="text-4xl mb-2">🔧</div>
+            <div class="text-xl font-bold text-gray-800">1. 电路建模</div>
+            <div class="text-sm text-gray-500 mt-1">建立微分方程</div>
+        </div>
+        <div class="step-card glass-panel p-6 rounded-2xl" onclick="showStep(2)" id="step2-btn">
+            <div class="text-4xl mb-2">📐</div>
+            <div class="text-xl font-bold text-gray-800">2. 时域求解</div>
+            <div class="text-sm text-gray-500 mt-1">解微分方程</div>
+        </div>
+        <div class="step-card glass-panel p-6 rounded-2xl" onclick="showStep(3)" id="step3-btn">
+            <div class="text-4xl mb-2">🔄</div>
+            <div class="text-xl font-bold text-gray-800">3. 稳态分析</div>
+            <div class="text-sm text-gray-500 mt-1">观察正弦稳态</div>
+        </div>
+        <div class="step-card glass-panel p-6 rounded-2xl" onclick="showStep(4)" id="step4-btn">
+            <div class="text-4xl mb-2">⚡</div>
+            <div class="text-xl font-bold text-gray-800">4. 相量变换</div>
+            <div class="text-sm text-gray-500 mt-1">时域→频域</div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="max-w-7xl mx-auto glass-panel p-8 rounded-3xl min-h-[600px]">
+        
+        <!-- 步骤1：电路建模与微分方程 -->
+        <div id="step1-content" class="step-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl">1</span>
+                        电路模型与KVL方程
+                    </h2>
+                    
+                    <div class="bg-blue-50 rounded-2xl p-6 mb-6 border-l-4 border-blue-500">
+                        <p class="text-xl text-gray-700 mb-4">
+                            考虑一个由电阻 <span class="font-bold">R</span> 和电容 <span class="font-bold">C</span> 组成的串联电路，接入正弦交流电源：
+                        </p>
+                        <div class="formula-box text-2xl text-center my-4 text-blue-800 bg-white rounded-lg p-4">
+                            u<sub>s</sub>(t) = U<sub>m</sub> cos(ωt)
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-lg text-gray-700">
+                        <p class="flex items-start gap-3">
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold mt-1">KVL</span>
+                            <span>根据基尔霍夫电压定律，回路电压满足：</span>
+                        </p>
+                        <div class="formula-box bg-gray-100 rounded-xl p-4 text-center text-2xl">
+                            u<sub>R</sub>(t) + u<sub>C</sub>(t) = u<sub>s</sub>(t)
+                        </div>
+                        
+                        <p class="flex items-start gap-3 mt-4">
+                            <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-bold mt-1">元件</span>
+                            <span>代入元件特性方程：</span>
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-red-50 rounded-lg p-3">
+                                <div class="formula-box text-xl text-red-700">u<sub>R</sub> = R·i</div>
+                                <div class="text-sm text-gray-600">电阻：欧姆定律</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-3">
+                                <div class="formula-box text-xl text-yellow-700">i = C·du<sub>C</sub>/dt</div>
+                                <div class="text-sm text-gray-600">电容：微分关系</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <!-- 修正后的电路图：电源、电阻、电容串联 -->
+                    <svg width="500" height="200" viewBox="0 0 500 200" class="mb-4">
+                        <!-- 串联回路：电源→电阻→电容→回到电源 -->
+                        <!-- 下方导线 -->
+                        <path d="M 50 150 L 450 150" class="circuit-line"/>
+                        <!-- 左侧电源 -->
+                        <path d="M 50 150 L 50 100" class="circuit-line"/>
+                        <circle cx="50" cy="75" r="25" fill="none" stroke="#3b82f6" stroke-width="3"/>
+                        <path d="M 40 75 Q 50 65 60 75" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                        <path d="M 50 50 L 50 30 L 150 30" class="circuit-line"/>
+                        <!-- 电阻 -->
+                        <rect x="150" y="10" width="60" height="40" fill="none" stroke="#ef4444" stroke-width="3"/>
+                        <text x="180" y="0" text-anchor="middle" class="text-2xl font-bold fill-red-600">R</text>
+                        <!-- 电阻到电容 -->
+                        <path d="M 210 30 L 350 30" class="circuit-line"/>
+                        <!-- 电容 -->
+                        <line x1="350" y1="15" x2="350" y2="45" stroke="#eab308" stroke-width="3"/>
+                        <line x1="370" y1="15" x2="370" y2="45" stroke="#eab308" stroke-width="3"/>
+                        <text x="390" y="35" class="text-2xl font-bold fill-yellow-600">C</text>
+                        <!-- 电容回到电源 -->
+                        <path d="M 370 30 L 450 30 L 450 150" class="circuit-line"/>
+                        
+                        <!-- 电流方向标注 -->
+                        <path d="M 100 140 L 120 140" stroke="#10b981" stroke-width="3" marker-end="url(#arrowhead)"/>
+                        <text x="110" y="130" class="text-lg font-bold fill-green-600">i(t)</text>
+                        
+                        <!-- 电压标注 -->
+                        <text x="50" y="100" text-anchor="middle" class="text-lg fill-blue-600 font-bold">u<sub>s</sub></text>
+                        <text x="180" y="70" text-anchor="middle" class="text-lg fill-red-600">u<sub>R</sub></text>
+                        <text x="360" y="70" text-anchor="middle" class="text-lg fill-yellow-600">u<sub>C</sub></text>
+                        
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L9,3 z" fill="#10b981"/>
+                            </marker>
+                        </defs>
+                    </svg>
+
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-6 w-full">
+                        <h3 class="text-xl font-bold mb-3">📋 时域微分方程</h3>
+                        <div class="formula-box text-2xl text-center bg-white/20 rounded-lg p-4">
+                            RC·du<sub>C</sub>/dt + u<sub>C</sub> = U<sub>m</sub> cos(ωt)
+                        </div>
+                        <p class="text-center mt-3 text-blue-100">
+                            这是一个一阶线性非齐次微分方程
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤2：求解微分方程 -->
+        <div id="step2-content" class="step-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center text-xl">2</span>
+                        时域方程求解
+                    </h2>
+
+                    <div class="space-y-6">
+                        <div class="bg-green-50 rounded-2xl p-6 border-l-4 border-green-500">
+                            <h3 class="text-xl font-bold text-gray-800 mb-3">通解结构</h3>
+                            <p class="text-lg text-gray-700 mb-3">
+                                非齐次方程的解 = 齐次解 + 特解
+                            </p>
+                            <div class="formula-box text-2xl text-center bg-white rounded-lg p-3">
+                                u<sub>C</sub>(t) = u<sub>Ch</sub>(t) + u<sub>Cp</sub>(t)
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-xl">①</div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800">齐次解（暂态响应）</p>
+                                    <div class="formula-box text-lg text-gray-600 bg-gray-50 rounded p-2 mt-1">
+                                        u<sub>Ch</sub> = A·e<sup>-t/τ</sup>, &nbsp; τ = RC
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl">②</div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800">特解（稳态响应）</p>
+                                    <p class="text-gray-600 mb-2">设特解形式与激励同频率：</p>
+                                    <div class="formula-box text-lg bg-blue-50 rounded p-2">
+                                        u<sub>Cp</sub> = U<sub>Cm</sub>·cos(ωt + φ)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                            <p class="text-lg text-gray-700">
+                                <span class="font-bold text-yellow-800">关键观察：</span>
+                                稳态解也是<span class="highlight-text">同频率的正弦量</span>，只是幅度和相位发生了变化！
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">代入求解过程</h3>
+                        <div class="space-y-3 text-lg text-gray-700">
+                            <p>将特解代入微分方程：</p>
+                            <div class="formula-box bg-gray-50 p-3 rounded-lg text-center">
+                                -RCωU<sub>Cm</sub>sin(ωt + φ) + U<sub>Cm</sub>cos(ωt + φ) = U<sub>m</sub>cos(ωt)
+                            </div>
+                            <p>利用三角恒等式合并：</p>
+                            <div class="formula-box bg-gray-50 p-3 rounded-lg text-center">
+                                √(1+(RCω)²)·U<sub>Cm</sub>·cos(ωt + φ + θ) = U<sub>m</sub>cos(ωt)
+                            </div>
+                            <p>其中 <span class="formula-box">tan θ = ωRC</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-2xl p-6">
+                        <h3 class="text-xl font-bold mb-4">🎯 稳态解结果</h3>
+                        <div class="space-y-3 text-lg">
+                            <div class="bg-white/20 rounded-lg p-3">
+                                <p class="text-sm opacity-80 mb-2">幅度关系</p>
+                                <div class="formula-box text-xl">
+                                    U<sub>Cm</sub> = U<sub>m</sub> / √(1+(ωRC)²)
+                                </div>
+                            </div>
+                            <div class="bg-white/20 rounded-lg p-3">
+                                <p class="text-sm opacity-80 mb-2">相位关系</p>
+                                <div class="formula-box text-xl">
+                                    φ = -arctan(ωRC)
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-purple-100">
+                            电容电压<span class="font-bold">滞后</span>电源电压，滞后角取决于频率和RC乘积
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤3：稳态可视化 -->
+        <div id="step3-content" class="step-content hidden">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                    <span class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl">3</span>
+                    稳态响应可视化
+                </h2>
+                <p class="text-xl text-gray-600">
+                    观察暂态过程如何衰减，最终只留下与激励同频的稳态正弦响应
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl p-4 shadow-inner">
+                        <canvas id="transientCanvas" width="800" height="400" class="w-full rounded-lg"></canvas>
+                    </div>
+                    
+                    <div class="mt-4 flex flex-wrap gap-4 justify-center">
+                        <button onclick="toggleAnimation()" class="px-6 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition shadow-lg" id="playBtn">
+                            ▶ 开始仿真
+                        </button>
+                        <button onclick="resetSimulation()" class="px-6 py-3 bg-gray-600 text-white rounded-full font-bold hover:bg-gray-700 transition shadow-lg">
+                            ↺ 重置
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">参数调节</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">时间常数 τ = RC</label>
+                            <input type="range" min="0.1" max="2" step="0.1" value="0.5" class="slider-thumb" id="tauSlider" oninput="updateParams()">
+                            <div class="flex justify-between text-sm text-gray-500 mt-1">
+                                <span>快</span>
+                                <span id="tauValue" class="font-bold text-blue-600">0.5s</span>
+                                <span>慢</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">电源频率 ω</label>
+                            <input type="range" min="1" max="5" step="0.5" value="2" class="slider-thumb" id="omegaSlider" oninput="updateParams()">
+                            <div class="flex justify-between text-sm text-gray-500 mt-1">
+                                <span>低频</span>
+                                <span id="omegaValue" class="font-bold text-blue-600">2 rad/s</span>
+                                <span>高频</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">初始电压 u<sub>C</sub>(0)</label>
+                            <input type="range" min="0" max="10" step="1" value="0" class="slider-thumb" id="initSlider" oninput="updateParams()">
+                            <div class="text-center text-sm text-blue-600 font-bold mt-1" id="initValue">0 V</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-orange-50 rounded-2xl p-6 border-l-4 border-orange-500">
+                        <h3 class="font-bold text-orange-800 mb-2">物理意义</h3>
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-500">●</span>
+                                <span><strong>红色</strong>：电源电压 u<sub>s</sub>(t)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-500">●</span>
+                                <span><strong>蓝色</strong>：电容电压 u<sub>C</sub>(t)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-500">---</span>
+                                <span><strong>绿色虚线</strong>：稳态分量</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-purple-500">---</span>
+                                <span><strong>紫色虚线</strong>：暂态分量</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-600 text-white rounded-2xl p-6">
+                        <h3 class="font-bold mb-2">稳态特征</h3>
+                        <p class="text-blue-100 text-sm leading-relaxed">
+                            当 t > 5τ 时，暂态分量衰减至初始值的0.7%以下，电路进入<span class="font-bold text-white">正弦稳态</span>。
+                            此时 u<sub>C</sub>(t) 是与 u<sub>s</sub>(t) <span class="font-bold text-white">同频率</span>的正弦波。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤4：相量变换 -->
+        <div id="step4-content" class="step-content hidden">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                    <span class="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center text-xl">4</span>
+                    时域到相量域的变换
+                </h2>
+                <p class="text-xl text-gray-600">
+                    利用"同频正弦量"这一特点，将微分运算转化为代数运算
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 左侧：变换规则 -->
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+                        <h3 class="text-2xl font-bold text-purple-800 mb-4">🔄 相量变换定义</h3>
+                        <p class="text-lg text-gray-700 mb-4">
+                            对于正弦量 <span class="formula-box">u(t) = U<sub>m</sub> cos(ωt + φ)</span>，定义其相量为：
+                        </p>
+                        <div class="bg-white rounded-xl p-4 text-center shadow-sm">
+                            <div class="formula-box text-3xl text-purple-700 mb-2">
+                                U̇ = U<sub>m</sub>∠φ = U<sub>m</sub>·e<sup>jφ</sup>
+                            </div>
+                            <p class="text-sm text-gray-500">包含幅度和相位信息，省略了时间因子 e<sup>jωt</sup></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">⚡ 微分运算的相量对应</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 p-3 bg-red-50 rounded-lg">
+                                <div class="text-2xl">📍</div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800">时域：微分运算</p>
+                                    <div class="formula-box text-lg text-red-600">
+                                        du/dt &nbsp;⇒&nbsp; jω·U̇
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-center">
+                                <div class="text-3xl text-purple-500">↓</div>
+                            </div>
+
+                            <div class="flex items-center gap-4 p-3 bg-blue-50 rounded-lg">
+                                <div class="text-2xl">🎯</div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800">相量域：代数乘法</p>
+                                    <div class="formula-box text-lg text-blue-600">
+                                        d/dt &nbsp;↔&nbsp; jω
+                                    </div>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        微分 → 乘以 jω（幅度×ω，相位+90°）
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 rounded-2xl p-6 border-l-4 border-yellow-500">
+                        <h3 class="font-bold text-yellow-800 mb-2">💡 关键优势</h3>
+                        <p class="text-gray-700">
+                            将<span class="highlight-text">微分方程</span>转化为<span class="highlight-text">复数代数方程</span>，
+                            避免了求解微分方程的复杂过程，直接通过复数运算得到幅度和相位关系。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 右侧：对比与相量三角形 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">📊 方程形式对比</h3>
+                        <table class="w-full comparison-table text-left">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="font-bold text-gray-800">特性</th>
+                                    <th class="font-bold text-blue-700">时域方程</th>
+                                    <th class="font-bold text-purple-700">相量方程</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">
+                                <tr>
+                                    <td class="font-medium">变量</td>
+                                    <td>u<sub>C</sub>(t) [时间函数]</td>
+                                    <td>U̇<sub>C</sub> [复数常数]</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-medium">微分项</td>
+                                    <td class="formula-box">RC·du<sub>C</sub>/dt</td>
+                                    <td class="formula-box">jωRC·U̇<sub>C</sub></td>
+                                </tr>
+                                <tr>
+                                    <td class="font-medium">方程类型</td>
+                                    <td><span class="text-red-600 font-bold">微分方程</span></td>
+                                    <td><span class="text-green-600 font-bold">代数方程</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="font-medium">求解难度</td>
+                                    <td>需要积分/微分技巧</td>
+                                    <td>复数四则运算</td>
+                                </tr>
+                                <tr class="bg-blue-50">
+                                    <td class="font-bold">RC方程</td>
+                                    <td class="formula-box text-sm">RC·u<sub>C</sub>' + u<sub>C</sub> = U<sub>m</sub>cos(ωt)</td>
+                                    <td class="formula-box text-sm">(1+jωRC)U̇<sub>C</sub> = U̇<sub>s</sub></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 电压相量三角形</h3>
+                        <p class="text-gray-600 mb-4 text-center">KVL相量形式：U̇<sub>R</sub> + U̇<sub>C</sub> = U̇<sub>s</sub></p>
+                        <div class="flex justify-center mb-4">
+                            <svg width="340" height="300" viewBox="0 0 340 300" class="phasor-triangle">
+                                <!-- 坐标轴 -->
+                                <line x1="30" y1="260" x2="320" y2="260" stroke="#e2e8f0" stroke-width="2"/>
+                                <line x1="30" y1="260" x2="30" y2="20" stroke="#e2e8f0" stroke-width="2"/>
+                                <text x="310" y="250" class="text-sm fill-gray-400">实轴（参考方向）</text>
+                                <text x="40" y="30" class="text-sm fill-gray-400">虚轴</text>
+                                
+                                <!-- 电压相量三角形 -->
+                                <!-- 以U_C为参考（水平向右），因为通常取电容电压为参考相量 -->
+                                <!-- 或者：以U_s为参考，U_C滞后，U_R超前90度 -->
+                                
+                                <!-- 这里采用：U_s水平向右（参考），U_C滞后φ角，U_R垂直向上 -->
+                                <!-- 点A(30,260)为原点 -->
+                                <!-- U_C沿水平方向（与U_s同相但滞后，实际上U_C是水平的，U_R垂直，U_s斜边） -->
+                                
+                                <!-- 重新绘制：以U_C为水平参考 -->
+                                <!-- U_C：水平向右 -->
+                                <line x1="30" y1="260" x2="200" y2="260" stroke="#eab308" stroke-width="4" marker-end="url(#arrowyellow)"/>
+                                <text x="210" y="270" class="text-xl font-bold fill-yellow-600">U̇<sub>C</sub></text>
+                                <text x="115" y="280" class="text-sm fill-yellow-600">U<sub>Cm</sub></text>
+                                
+                                <!-- U_R：垂直向上（超前U_C 90°） -->
+                                <line x1="200" y1="260" x2="200" y2="100" stroke="#ef4444" stroke-width="4" marker-end="url(#arrowred)"/>
+                                <text x="210" y="90" class="text-xl font-bold fill-red-600">U̇<sub>R</sub></text>
+                                <text x="215" y="180" class="text-sm fill-red-600">U<sub>Rm</sub></text>
+                                
+                                <!-- U_s：斜边（合成） -->
+                                <line x1="30" y1="260" x2="200" y2="100" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrowblue)"/>
+                                <text x="100" y="160" class="text-xl font-bold fill-blue-600">U̇<sub>s</sub></text>
+                                <text x="80" y="190" class="text-sm fill-blue-600">U<sub>m</sub></text>
+                                
+                                <!-- 直角标记（在U_C和U_R交点处） -->
+                                <rect x="190" y="250" width="10" height="10" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                                
+                                <!-- 相位角 φ 标记（U_s与U_C的夹角） -->
+                                <path d="M 30 260 Q 70 260 90 240" fill="none" stroke="#10b981" stroke-width="2"/>
+                                <text x="70" y="255" class="text-lg font-bold fill-green-600">φ</text>
+                                <text x="95" y="235" class="text-sm fill-gray-500">滞后角</text>
+                                
+                                <!-- 电流标注（与U_R同相） -->
+                                <text x="240" y="130" class="text-xl font-bold fill-green-600">İ</text>
+                                <line x1="220" y1="140" x2="240" y2="120" stroke="#10b981" stroke-width="3" marker-end="url(#arrowgreen)"/>
+                                <text x="250" y="125" class="text-sm fill-green-600">与U̇<sub>R</sub>同相</text>
+                                
+                                <!-- 角度关系说明 -->
+                                <text x="30" y="295" class="text-xs fill-gray-500">U̇<sub>C</sub>滞后U̇<sub>s</sub>角度φ，U̇<sub>R</sub>超前U̇<sub>C</sub> 90°</text>
+                                
+                                <defs>
+                                    <marker id="arrowblue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+                                    </marker>
+                                    <marker id="arrowred" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
+                                    </marker>
+                                    <marker id="arrowyellow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L9,3 z" fill="#eab308"/>
+                                    </marker>
+                                    <marker id="arrowgreen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L9,3 z" fill="#10b981"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 text-center space-y-2">
+                            <div class="formula-box text-xl text-gray-800">
+                                电压三角形：U̇<sub>R</sub> + U̇<sub>C</sub> = U̇<sub>s</sub>
+                            </div>
+                            <div class="formula-box text-lg text-blue-700">
+                                U<sub>m</sub>² = U<sub>Rm</sub>² + U<sub>Cm</sub>²
+                            </div>
+                            <div class="formula-box text-lg text-purple-700">
+                                tan|φ| = U<sub>Rm</sub>/U<sub>Cm</sub> = ωRC = I<sub>m</sub>R / (I<sub>m</sub>/ωC) = R/X<sub>C</sub>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-center text-gray-600 text-sm space-y-1">
+                            <p>电容电压 U̇<sub>C</sub> 滞后电源电压 U̇<sub>s</sub>，滞后角 φ = -arctan(ωRC)</p>
+                            <p>电阻电压 U̇<sub>R</sub> 与电流 İ 同相，超前电容电压 90°</p>
+                            <p>阻抗三角形与电压三角形相似，阻抗角等于电压相位差</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-6">
+                        <h3 class="text-xl font-bold mb-3">🎓 总结</h3>
+                        <ul class="space-y-2 text-indigo-100">
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold">1.</span>
+                                <span>正弦稳态下，所有电压电流都是<span class="text-white font-bold">同频正弦量</span></span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold">2.</span>
+                                <span>相量将时域微分转化为频域代数：<span class="formula-box">d/dt → jω</span></span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold">3.</span>
+                                <span>电容表现为复阻抗：<span class="formula-box">Z<sub>C</sub> = 1/(jωC) = -jX<sub>C</sub></span></span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold">4.</span>
+                                <span>电压相量三角形直观展示KVL的相量关系</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航提示 -->
+    <div class="max-w-7xl mx-auto mt-8 text-center">
+        <p class="text-gray-500 text-lg">
+            点击上方步骤卡片或自动播放查看完整推导过程 →
+        </p>
+        <div class="mt-4 flex justify-center gap-2">
+            <button onclick="prevStep()" class="px-6 py-2 bg-white rounded-full shadow-md hover:shadow-lg transition text-gray-700 font-medium">
+                ← 上一步
+            </button>
+            <button onclick="nextStep()" class="px-6 py-2 bg-blue-600 text-white rounded-full shadow-md hover:shadow-lg transition font-medium">
+                下一步 →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+        let animationRunning = false;
+        let animationId;
+        let simTime = 0;
+        
+        // 参数
+        let tau = 0.5;
+        let omega = 2;
+        let uC0 = 0;
+        const Um = 10;
+
+        function showStep(n) {
+            // 隐藏所有内容
+            document.querySelectorAll('.step-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            document.querySelectorAll('.step-card').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 显示当前步骤
+            document.getElementById(`step${n}-content`).classList.remove('hidden');
+            document.getElementById(`step${n}-btn`).classList.add('active');
+            currentStep = n;
+            
+            // 如果进入步骤3，初始化画布
+            if (n === 3) {
+                setTimeout(initTransientCanvas, 100);
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                showStep(currentStep + 1);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+
+        // 步骤3的Canvas动画
+        function initTransientCanvas() {
+            const canvas = document.getElementById('transientCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const width = canvas.width;
+                const height = canvas.height;
+                const centerY = height / 2;
+                
+                // 绘制网格
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < width; i += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, height);
+                    ctx.stroke();
+                }
+                for (let i = 0; i < height; i += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(width, i);
+                    ctx.stroke();
+                }
+                
+                // 绘制坐标轴
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                ctx.lineTo(width, centerY);
+                ctx.stroke();
+                
+                // 时间轴标签
+                ctx.fillStyle = '#64748b';
+                ctx.font = '14px sans-serif';
+                for (let t = 0; t <= 10; t += 2) {
+                    const x = (t / 10) * width;
+                    ctx.fillText(t + 's', x, height - 10);
+                }
+                
+                // 计算并绘制曲线
+                const points = [];
+                const steadyPoints = [];
+                const transientPoints = [];
+                
+                for (let px = 0; px < width; px++) {
+                    const t = (px / width) * 10; // 10秒时间范围
+                    
+                    // 电源电压
+                    const us = Um * Math.cos(omega * t);
+                    
+                    // 稳态解
+                    const phi = -Math.atan(omega * tau);
+                    const Ucm = Um / Math.sqrt(1 + Math.pow(omega * tau, 2));
+                    const steady = Ucm * Math.cos(omega * t + phi);
+                    
+                    // 暂态解（假设初始条件）
+                    const A = uC0 - Ucm * Math.cos(phi); // 初始条件确定常数
+                    const transient = A * Math.exp(-t / tau);
+                    
+                    // 全响应
+                    const uc = steady + transient;
+                    
+                    points.push({x: px, y: centerY - uc * 15, us: centerY - us * 15});
+                    steadyPoints.push({x: px, y: centerY - steady * 15});
+                    transientPoints.push({x: px, y: centerY - transient * 15});
+                }
+                
+                // 绘制电源电压（红色）
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < points.length; i++) {
+                    if (i === 0) ctx.moveTo(points[i].x, points[i].us);
+                    else ctx.lineTo(points[i].x, points[i].us);
+                }
+                ctx.stroke();
+                
+                // 绘制稳态分量（绿色虚线）
+                ctx.strokeStyle = '#10b981';
+                ctx.setLineDash([8, 4]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < steadyPoints.length; i++) {
+                    if (i === 0) ctx.moveTo(steadyPoints[i].x, steadyPoints[i].y);
+                    else ctx.lineTo(steadyPoints[i].x, steadyPoints[i].y);
+                }
+                ctx.stroke();
+                
+                // 绘制暂态分量（紫色虚线，偏移显示）
+                ctx.strokeStyle = '#a855f7';
+                ctx.beginPath();
+                for (let i = 0; i < transientPoints.length; i++) {
+                    const y = transientPoints[i].y + centerY; // 偏移到下方显示
+                    if (i === 0) ctx.moveTo(transientPoints[i].x, y);
+                    else ctx.lineTo(transientPoints[i].x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 绘制电容电压（蓝色，全响应）
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let i = 0; i < points.length; i++) {
+                    if (i === 0) ctx.moveTo(points[i].x, points[i].y);
+                    else ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+                
+                // 绘制当前时间线（如果动画运行）
+                if (animationRunning) {
+                    const curX = (simTime % 10) / 10 * width;
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(curX, 0);
+                    ctx.lineTo(curX, height);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // 标注当前值
+                    const idx = Math.floor(curX);
+                    if (idx < points.length) {
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.beginPath();
+                        ctx.arc(curX, points[idx].y, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                // 图例
+                const legendY = 30;
+                ctx.font = 'bold 14px sans-serif';
+                
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(20, legendY - 10, 20, 3);
+                ctx.fillText('电源电压 u_s', 45, legendY);
+                
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(150, legendY - 10, 20, 3);
+                ctx.fillText('电容电压 u_C', 175, legendY);
+                
+                ctx.fillStyle = '#10b981';
+                ctx.setLineDash([5, 3]);
+                ctx.beginPath();
+                ctx.moveTo(280, legendY - 8);
+                ctx.lineTo(300, legendY - 8);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillText('稳态分量', 305, legendY);
+                
+                ctx.fillStyle = '#a855f7';
+                ctx.setLineDash([5, 3]);
+                ctx.beginPath();
+                ctx.moveTo(390, legendY - 8);
+                ctx.lineTo(410, legendY - 8);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillText('暂态分量', 415, legendY);
+            }
+            
+            draw();
+            
+            if (animationRunning) {
+                simTime += 0.05;
+                animationId = requestAnimationFrame(initTransientCanvas);
+            }
+        }
+
+        function toggleAnimation() {
+            animationRunning = !animationRunning;
+            const btn = document.getElementById('playBtn');
+            if (animationRunning) {
+                btn.textContent = '⏸ 暂停仿真';
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-orange-600');
+                initTransientCanvas();
+            } else {
+                btn.textContent = '▶ 继续仿真';
+                btn.classList.remove('bg-orange-600');
+                btn.classList.add('bg-blue-600');
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resetSimulation() {
+            simTime = 0;
+            animationRunning = false;
+            document.getElementById('playBtn').textContent = '▶ 开始仿真';
+            document.getElementById('playBtn').classList.remove('bg-orange-600');
+            document.getElementById('playBtn').classList.add('bg-blue-600');
+            initTransientCanvas();
+        }
+
+        function updateParams() {
+            tau = parseFloat(document.getElementById('tauSlider').value);
+            omega = parseFloat(document.getElementById('omegaSlider').value);
+            uC0 = parseFloat(document.getElementById('initSlider').value);
+            
+            document.getElementById('tauValue').textContent = tau + 's';
+            document.getElementById('omegaValue').textContent = omega + ' rad/s';
+            document.getElementById('initValue').textContent = uC0 + ' V';
+            
+            if (!animationRunning) {
+                initTransientCanvas();
+            }
+        }
+
+        // 初始化
+        window.onload = function() {
+            showStep(1);
+        };
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextStep();
+            if (e.key === 'ArrowLeft') prevStep();
+        });
+    </script>
+</body>
+</html>
