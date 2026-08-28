@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>正弦稳态电路分析 · 3D 交互演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f0f9ff; color: #1e293b;
+    user-select: none; -webkit-user-select: none;
+  }
+  #app { position: relative; width: 100vw; height: 100vh; }
+  #scene { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .panel {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 18px 20px;
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.12);
+  }
+
+  #title-bar { top: 18px; left: 18px; max-width: 420px; }
+  #title-bar h1 { font-size: 22px; font-weight: 700; color: #1e40af; margin-bottom: 6px; letter-spacing: 0.3px; }
+  #title-bar .subtitle { font-size: 14px; color: #475569; margin-bottom: 8px; line-height: 1.5; }
+  #title-bar .case-desc {
+    font-size: 13px; color: #64748b; line-height: 1.6;
+    background: rgba(219, 234, 254, 0.5); border-radius: 8px; padding: 8px 12px;
+    border-left: 3px solid #3b82f6;
+  }
+
+  #right-sidebar {
+    position: absolute;
+    top: 18px; right: 18px; bottom: 80px;
+    width: 340px;
+    display: flex; flex-direction: column; gap: 10px;
+    z-index: 10;
+  }
+
+  .panel-title {
+    font-size: 13px; color: #3b82f6;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 10px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .panel-title::before { content: ''; width: 3px; height: 14px; background: #3b82f6; border-radius: 2px; }
+
+  #data-panel { flex-shrink: 0; overflow-y: auto; max-height: 52%; }
+  #data-panel::-webkit-scrollbar { width: 5px; }
+  #data-panel::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+
+  .data-section { margin-bottom: 14px; }
+  .data-section:last-child { margin-bottom: 0; }
+  .data-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+  }
+  .data-row:last-child { border-bottom: none; }
+  .data-label { font-size: 14px; color: #64748b; }
+  .data-value {
+    font-size: 16px; font-weight: 700; font-family: "SF Mono", Menlo, monospace;
+    color: #1e293b;
+  }
+  .data-value.good { color: #16a34a; }
+  .data-value.warn { color: #ea580c; }
+  .data-value.bad { color: #dc2626; }
+  .data-value.highlight {
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    padding: 2px 10px; border-radius: 6px; font-size: 18px;
+  }
+
+  .pf-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .pf-good { background: rgba(22, 163, 74, 0.15); color: #16a34a; }
+  .pf-warn { background: rgba(234, 88, 12, 0.15); color: #ea580c; }
+  .pf-bad  { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
+
+  #control-panel { flex: 1; overflow-y: auto; }
+  #control-panel::-webkit-scrollbar { width: 5px; }
+  #control-panel::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+
+  .ctrl-row { margin-bottom: 14px; }
+  .ctrl-row:last-child { margin-bottom: 0; }
+  .ctrl-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .ctrl-label .name { font-size: 14px; color: #475569; font-weight: 600; }
+  .ctrl-label .val { font-size: 16px; font-family: "SF Mono", Menlo, monospace; font-weight: 700; color: #1e40af; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: linear-gradient(to right, #dbeafe, #bfdbfe);
+    border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px;
+    background: #3b82f6; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    border: 3px solid #fff;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    background: #3b82f6; border-radius: 50%; cursor: pointer;
+    border: 3px solid #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  }
+
+  #toolbar {
+    position: absolute;
+    bottom: 18px; left: 18px; right: 18px;
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    z-index: 10;
+  }
+  .btn {
+    padding: 10px 18px;
+    border: 1.5px solid rgba(59, 130, 246, 0.35);
+    background: rgba(255, 255, 255, 0.9);
+    color: #1e40af;
+    border-radius: 10px; cursor: pointer;
+    font-size: 15px; font-weight: 600;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
+    transition: all 0.2s;
+  }
+  .btn:hover { background: rgba(59, 130, 246, 0.1); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  #labels-layer {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 5;
+  }
+  .label-3d {
+    position: absolute; transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 11px; font-weight: 700; font-family: "SF Mono", Menlo, monospace;
+    white-space: nowrap; pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    line-height: 1.2;
+  }
+  .label-voltage { border-color: #dc2626; color: #dc2626; }
+  .label-il { border-color: #16a34a; color: #16a34a; }
+  .label-ic { border-color: #ea580c; color: #ea580c; }
+  .label-is { border-color: #2563eb; color: #2563eb; }
+  .label-p { border-color: #dc2626; color: #dc2626; }
+  .label-q { border-color: #16a34a; color: #16a34a; }
+  .label-s { border-color: #2563eb; color: #2563eb; }
+  .label-comp { border-color: #64748b; color: #475569; }
+
+  #loading {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #f0f9ff; z-index: 100; gap: 16px;
+  }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid #dbeafe; border-top-color: #3b82f6;
+    border-radius: 50%; animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .formula-box {
+    font-size: 13px; color: #475569;
+    background: rgba(219, 234, 254, 0.4); border-radius: 8px;
+    padding: 8px 12px; margin-top: 8px;
+    font-family: "SF Mono", Menlo, monospace; line-height: 1.6;
+  }
+
+  @media (max-width: 800px) {
+    #title-bar { max-width: calc(100vw - 36px); }
+    #title-bar h1 { font-size: 18px; }
+    #right-sidebar { width: calc(100vw - 36px); max-width: 300px; bottom: 72px; }
+    .data-value { font-size: 14px; }
+    .btn { padding: 8px 14px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div class="panel" id="title-bar">
+    <h1>⚡ 正弦稳态电路分析</h1>
+    <div class="subtitle">邱关源《电路》第六版 · 第九章应用</div>
+    <div class="case-desc">
+      <b>工程案例：</b>工厂变电所 220V/50Hz 供电系统，感应电动机（R-L 串联负载）功率因数低。
+      通过并联电容器进行<b>无功补偿</b>，提高功率因数，降低线路电流与输电损耗。
+    </div>
+    <div class="formula-box">
+      Z_L = R + jωL &nbsp;|&nbsp; I_C = jωCU<br>
+      S = P + jQ &nbsp;|&nbsp; cosφ = P/S<br>
+      C = P(tanφ_L − tanφ) / (ωU²)
+    </div>
+  </div>
+
+  <div id="right-sidebar">
+    <div class="panel" id="data-panel">
+      <div class="panel-title">电路参数</div>
+      <div class="data-section">
+        <div class="data-row"><span class="data-label">电源电压 U</span><span class="data-value">220.0 V</span></div>
+        <div class="data-row"><span class="data-label">频率 f</span><span class="data-value">50.0 Hz</span></div>
+        <div class="data-row"><span class="data-label">角频率 ω</span><span class="data-value">314.2 rad/s</span></div>
+        <div class="data-row"><span class="data-label">感抗 X_L</span><span class="data-value" id="d-xl">15.7 Ω</span></div>
+        <div class="data-row"><span class="data-label">容抗 X_C</span><span class="data-value" id="d-xc">— Ω</span></div>
+      </div>
+
+      <div class="panel-title" style="margin-top:14px">负载（电动机）</div>
+      <div class="data-section">
+        <div class="data-row"><span class="data-label">阻抗 |Z_L|</span><span class="data-value" id="d-zl">18.6 Ω</span></div>
+        <div class="data-row"><span class="data-label">阻抗角 φ_L</span><span class="data-value" id="d-phil">57.5°</span></div>
+        <div class="data-row"><span class="data-label">负载电流 I_L</span><span class="data-value" id="d-il">11.8 A</span></div>
+        <div class="data-row"><span class="data-label">cosφ_L</span><span class="data-value" id="d-cosphil">0.539</span></div>
+      </div>
+
+      <div class="panel-title" style="margin-top:14px">补偿后系统</div>
+      <div class="data-section">
+        <div class="data-row"><span class="data-label">电容电流 I_C</span><span class="data-value" id="d-ic">0.0 A</span></div>
+        <div class="data-row"><span class="data-label">电源电流 I_S</span><span class="data-value" id="d-is">11.8 A</span></div>
+        <div class="data-row"><span class="data-label">功率因数角 φ</span><span class="data-value" id="d-phi">57.5°</span></div>
+        <div class="data-row"><span class="data-label">功率因数 cosφ</span><span class="data-value highlight" id="d-cosphi">0.539</span></div>
+        <div class="data-row"><span class="data-label">补偿状态</span><span id="d-status"><span class="pf-badge pf-bad">欠补偿</span></span></div>
+      </div>
+
+      <div class="panel-title" style="margin-top:14px">功率</div>
+      <div class="data-section">
+        <div class="data-row"><span class="data-label">有功 P</span><span class="data-value" id="d-p">1.40 kW</span></div>
+        <div class="data-row"><span class="data-label">感性无功 Q_L</span><span class="data-value" id="d-ql">2.19 kvar</span></div>
+        <div class="data-row"><span class="data-label">容性无功 Q_C</span><span class="data-value" id="d-qc">0.00 kvar</span></div>
+        <div class="data-row"><span class="data-label">总无功 Q</span><span class="data-value" id="d-q">2.19 kvar</span></div>
+        <div class="data-row"><span class="data-label">视在功率 S</span><span class="data-value" id="d-s">2.59 kVA</span></div>
+        <div class="data-row"><span class="data-label">线路损耗↓</span><span class="data-value" id="d-loss">0%</span></div>
+      </div>
+    </div>
+
+    <div class="panel" id="control-panel">
+      <div class="panel-title">参数调节</div>
+      <div class="ctrl-row">
+        <div class="ctrl-label"><span class="name">负载电阻 R</span><span class="val" id="v-r">10.0 Ω</span></div>
+        <input type="range" id="s-r" min="1" max="50" step="0.5" value="10">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label"><span class="name">负载电感 L</span><span class="val" id="v-l">50.0 mH</span></div>
+        <input type="range" id="s-l" min="0" max="200" step="1" value="50">
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-label"><span class="name">补偿电容 C</span><span class="val" id="v-c">0.0 µF</span></div>
+        <input type="range" id="s-c" min="0" max="300" step="1" value="0">
+      </div>
+    </div>
+  </div>
+
+  <div id="labels-layer"></div>
+
+  <div id="toolbar">
+    <button class="btn" data-preset="uncompensated">未补偿</button>
+    <button class="btn primary" data-preset="standard">补偿到 cosφ=0.9</button>
+    <button class="btn" data-preset="full">完全补偿 cosφ=1</button>
+    <button class="btn" data-preset="over">过补偿</button>
+    <button class="btn" data-preset="resistive">纯电阻负载</button>
+  </div>
+
+  <div id="loading"><div class="spinner"></div><div>正在加载 3D 引擎…</div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // ====== 常量 ======
+  const U = 220;              // 电源电压 (V)
+  const FREQ = 50;           // 频率 (Hz)
+  const OMEGA = 2 * Math.PI * FREQ;
+  const PHASOR_CENTER = new THREE.Vector3(-2.8, 0.8, 0);
+  const TRI_CENTER = new THREE.Vector3(1.0, 0.8, 0);
+  const SCHEMATIC_Y = -2.5;
+  const PHASOR_SCALE = 2.0;  // 相量长度比例
+  const POWER_MAX_LEN = 1.5; // 功率三角形最大边长
+
+  // 动态功率缩放：以 S 为基准，保证三角形不超出范围
+  function getPowerScale(c) {
+    const sKVA = Math.max(c.S, 300) / 1000;
+    return POWER_MAX_LEN / sKVA;
+  }
+
+  // ====== 状态 ======
+  let R = 10, L = 0.05, C = 0;
+  let scene, camera, renderer;
+  let dynamicObjs = [];
+  let particles = [];
+  let capMesh = null;
+  let labels = {};
+  let camTheta = 0.5, camPhi = 1.0, camRadius = 15;
+  const CAM_TARGET = new THREE.Vector3(-0.5, 0, 0);
+
+  // ====== 计算引擎 ======
+  function calculate() {
+    const XL = OMEGA * L;
+    const ZL = Math.sqrt(R * R + XL * XL);
+    const phiL = Math.atan2(XL, R);
+    const cosPhiL = R / ZL;
+    const IL = U / ZL;
+    const XC = C > 0 ? 1 / (OMEGA * C) : Infinity;
+    const IC = C > 0 ? U / XC : 0;
+
+    const IS_re = IL * Math.cos(phiL);
+    const IS_im = IL * Math.sin(phiL) - IC;
+    const IS = Math.sqrt(IS_re * IS_re + IS_im * IS_im);
+    const phi = Math.atan2(IS_im, IS_re);
+    const cosPhi = IS > 0.001 ? IS_re / IS : 1;
+
+    const P = U * IL * cosPhiL;
+    const QL = U * IL * Math.sin(phiL);
+    const QC = C > 0 ? -U * U * OMEGA * C : 0;
+    const Q = QL + QC;
+    const S = U * IS;
+
+    // 线路损耗比较 (电流平方正比)
+    const IL0 = U / Math.sqrt(R*R + (OMEGA*0.05)*(OMEGA*0.05)); // 基准
+    const lossReduction = (1 - (IS*IS)/(IL0*IL0)) * 100;
+
+    return { XL, XC, ZL, phiL, cosPhiL, IL, IC, IS, phi, cosPhi, P, QL, QC, Q, S, lossReduction };
+  }
+
+  // ====== 3D 箭头 ======
+  function createArrow(start, end, color, radius) {
+    radius = radius || 0.07;
+    const dir = end.clone().sub(start);
+    const len = dir.length();
+    if (len < 0.05) return new THREE.Group();
+    const grp = new THREE.Group();
+    const coneLen = Math.min(0.35, len * 0.22);
+    const shaftLen = Math.max(0.01, len - coneLen);
+    const mat = new THREE.MeshStandardMaterial({
+      color: color, emissive: color, emissiveIntensity: 0.45,
+      metalness: 0.2, roughness: 0.4
+    });
+    const shaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius, shaftLen, 16), mat);
+    shaft.position.y = shaftLen / 2;
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(radius * 2.5, coneLen, 16), mat);
+    cone.position.y = shaftLen + coneLen / 2;
+    grp.add(shaft); grp.add(cone);
+    grp.position.copy(start);
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+    grp.quaternion.copy(q);
+    return grp;
+  }
+
+  // ====== 圆弧 ======
+  function createArc(center, radius, a1, a2, color) {
+    const pts = [];
+    const seg = 40;
+    for (let i = 0; i <= seg; i++) {
+      const t = i / seg;
+      const a = a1 + (a2 - a1) * t;
+      pts.push(new THREE.Vector3(
+        center.x + radius * Math.cos(a),
+        center.y + radius * Math.sin(a),
+        center.z));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color: color, linewidth: 3 });
+    return new THREE.Line(geo, mat);
+  }
+
+  // ====== 动态对象管理 ======
+  function addDyn(obj) {
+    scene.add(obj);
+    dynamicObjs.push(obj);
+  }
+  function clearDyn() {
+    dynamicObjs.forEach(o => {
+      scene.remove(o);
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) { if (Array.isArray(o.material)) o.material.forEach(m=>m.dispose()); else o.material.dispose(); }
+    });
+    dynamicObjs = [];
+  }
+
+  // ====== 相量图静态网格 ======
+  function buildPhasorGrid() {
+    const g = new THREE.Group();
+    // 外圆
+    const ringGeo = new THREE.TorusGeometry(2.0, 0.02, 8, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.5 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.copy(PHASOR_CENTER);
+    ring.rotation.x = Math.PI / 2;
+    g.add(ring);
+    // 内圆
+    for (const r of [0.5, 1.0, 1.5]) {
+      const ir = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.012, 6, 48),
+        new THREE.MeshBasicMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.35 }));
+      ir.position.copy(PHASOR_CENTER);
+      ir.rotation.x = Math.PI / 2;
+      g.add(ir);
+    }
+    // 径向线
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      const pts = [
+        PHASOR_CENTER.clone(),
+        PHASOR_CENTER.clone().add(new THREE.Vector3(2.0*Math.cos(a), 0, 2.0*Math.sin(a)))
+      ];
+      // 在 XY 平面，所以用 Y 代替 Z
+      pts[1] = PHASOR_CENTER.clone().add(new THREE.Vector3(2.0*Math.cos(a), 2.0*Math.sin(a), 0));
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.3 });
+      g.add(new THREE.Line(geo, mat));
+    }
+    // 坐标轴
+    const axisX = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        PHASOR_CENTER.clone().add(new THREE.Vector3(-2.2, 0, 0)),
+        PHASOR_CENTER.clone().add(new THREE.Vector3(2.3, 0, 0))
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.5 })
+    );
+    g.add(axisX);
+    const axisY = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        PHASOR_CENTER.clone().add(new THREE.Vector3(0, -2.2, 0)),
+        PHASOR_CENTER.clone().add(new THREE.Vector3(0, 2.2, 0))
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.5 })
+    );
+    g.add(axisY);
+    scene.add(g);
+  }
+
+  // ====== 功率三角形参考网格 ======
+  function buildPowerGrid() {
+    const g = new THREE.Group();
+    const axisX = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        TRI_CENTER.clone().add(new THREE.Vector3(-0.3, 0, 0)),
+        TRI_CENTER.clone().add(new THREE.Vector3(1.8, 0, 0))
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.4 })
+    );
+    const axisY = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        TRI_CENTER.clone().add(new THREE.Vector3(0, -1.3, 0)),
+        TRI_CENTER.clone().add(new THREE.Vector3(0, 1.3, 0))
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.4 })
+    );
+    g.add(axisX); g.add(axisY);
+    scene.add(g);
+  }
+
+  // ====== 供电系统模型 ======
+  function buildSchematic() {
+    const g = new THREE.Group();
+    // 矩形回路顶点 (XZ平面)
+    const w = 3.5, h = 1.5;
+    const tl = new THREE.Vector3(-w, SCHEMATIC_Y, -h);
+    const tr = new THREE.Vector3(w, SCHEMATIC_Y, -h);
+    const br = new THREE.Vector3(w, SCHEMATIC_Y, h);
+    const bl = new THREE.Vector3(-w, SCHEMATIC_Y, h);
+
+    // 管道 (4条边)
+    const pipeMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b, transparent: true, opacity: 0.3, side: THREE.DoubleSide
+    });
+    const segs = [
+      [tl, tr], [tr, br], [br, bl], [bl, tl]
+    ];
+    segs.forEach(([a, b]) => {
+      const dir = b.clone().sub(a);
+      const len = a.distanceTo(b);
+      const pipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, len, 16, 1, true), pipeMat);
+      const q = new THREE.Quaternion();
+      q.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+      pipe.quaternion.copy(q);
+      pipe.position.copy(a.clone().lerp(b, 0.5));
+      g.add(pipe);
+    });
+
+    // 电源 (左)
+    const srcGeo = new THREE.SphereGeometry(0.4, 24, 24);
+    const srcMat = new THREE.MeshStandardMaterial({
+      color: 0xdc2626, emissive: 0x7f1d1d, emissiveIntensity: 0.5,
+      metalness: 0.3, roughness: 0.4
+    });
+    const src = new THREE.Mesh(srcGeo, srcMat);
+    src.position.copy(new THREE.Vector3(-w, SCHEMATIC_Y, 0));
+    g.add(src);
+
+    // 负载 (右, 电动机 R-L)
+    const loadGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.8, 24);
+    const loadMat = new THREE.MeshStandardMaterial({
+      color: 0x2563eb, emissive: 0x1e3a5f, emissiveIntensity: 0.4,
+      metalness: 0.3, roughness: 0.4
+    });
+    const load = new THREE.Mesh(loadGeo, loadMat);
+    load.position.copy(new THREE.Vector3(w, SCHEMATIC_Y, 0));
+    load.rotation.z = Math.PI / 2;
+    g.add(load);
+
+    // 电容器支路 (在 x=1.5 处, 连接前后两条线)
+    const capPos = new THREE.Vector3(1.0, SCHEMATIC_Y, 0);
+    const capGroup = new THREE.Group();
+    // 电容器: 两个平行板
+    const plateGeo = new THREE.BoxGeometry(0.5, 0.04, 0.25);
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0xea580c, emissive: 0x7c2d12, emissiveIntensity: 0.4
+    });
+    const plate1 = new THREE.Mesh(plateGeo, plateMat);
+    plate1.position.set(0, 0.12, 0);
+    const plate2 = new THREE.Mesh(plateGeo, plateMat);
+    plate2.position.set(0, -0.12, 0);
+    capGroup.add(plate1); capGroup.add(plate2);
+    // 连接线 (到前后两条线)
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0xea580c, transparent: true, opacity: 0.6 });
+    const wireUp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, h - 0.12, 8), wireMat);
+    wireUp.position.set(0, (h - 0.12)/2 + 0.12, 0);
+    wireUp.rotation.x = Math.PI / 2;
+    const wireDown = wireUp.clone();
+    wireDown.position.set(0, -(h - 0.12)/2 - 0.12, 0);
+    wireDown.rotation.x = Math.PI / 2;
+    capGroup.add(wireUp); capGroup.add(wireDown);
+    capGroup.position.copy(capPos);
+    g.add(capGroup);
+    capMesh = capGroup;
+
+    // 地面网格
+    const grid = new THREE.GridHelper(14, 14, 0xc7d2fe, 0xe0e7ff);
+    grid.position.y = SCHEMATIC_Y - 0.8;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.4;
+    g.add(grid);
+
+    scene.add(g);
+
+    // 粒子
+    const perimeter = 2 * (2 * w + 2 * h);
+    for (let i = 0; i < 24; i++) {
+      const pGeo = new THREE.SphereGeometry(0.1, 8, 8);
+      const pMat = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6, emissive: 0x2563eb, emissiveIntensity: 0.8
+      });
+      const p = new THREE.Mesh(pGeo, pMat);
+      p.userData.s = (i / 24) * perimeter;
+      scene.add(p);
+      particles.push(p);
+    }
+  }
+
+  function getSchematicPos(s) {
+    const w = 3.5, h = 1.5;
+    const pts = [
+      new THREE.Vector3(-w, SCHEMATIC_Y, -h),
+      new THREE.Vector3(w, SCHEMATIC_Y, -h),
+      new THREE.Vector3(w, SCHEMATIC_Y, h),
+      new THREE.Vector3(-w, SCHEMATIC_Y, h),
+    ];
+    const lens = [];
+    let perim = 0;
+    for (let i = 0; i < 4; i++) {
+      const l = pts[i].distanceTo(pts[(i+1)%4]);
+      lens.push(l); perim += l;
+    }
+    s = ((s % perim) + perim) % perim;
+    let acc = 0;
+    for (let i = 0; i < 4; i++) {
+      if (s <= acc + lens[i]) {
+        const t = (s - acc) / lens[i];
+        return pts[i].clone().lerp(pts[(i+1)%4], t);
+      }
+      acc += lens[i];
+    }
+    return pts[0].clone();
+  }
+
+  // ====== 更新动态对象 ======
+  function updateDynamic(c) {
+    clearDyn();
+
+    // === 相量图 (电流三角形: IS = IL + IC) ===
+    const cs = PHASOR_CENTER;
+
+    // U 相量 (红, 沿 +X, 参考相量)
+    const uEnd = cs.clone().add(new THREE.Vector3(PHASOR_SCALE, 0, 0));
+    addDyn(createArrow(cs, uEnd, 0xdc2626, 0.07));
+
+    // IL 相量 (绿, 三角形第一条边, 从原点出发, 角度 -phiL)
+    const ilLen = PHASOR_SCALE * (c.IL / 15);
+    const ilEnd = cs.clone().add(new THREE.Vector3(
+      ilLen * Math.cos(-c.phiL), ilLen * Math.sin(-c.phiL), 0));
+    addDyn(createArrow(cs, ilEnd, 0x16a34a, 0.06));
+
+    // IC 相量 (橙, 三角形第二条边, 从 IL 尖端出发, +90°方向)
+    let icEnd = ilEnd; // 无电容时 IC=0, 三角形退化为单边
+    if (c.IC > 0.01) {
+      const icLen = PHASOR_SCALE * (c.IC / 15);
+      icEnd = ilEnd.clone().add(new THREE.Vector3(0, icLen, 0));
+      addDyn(createArrow(ilEnd, icEnd, 0xea580c, 0.06));
+    }
+
+    // IS 相量 (蓝, 三角形闭合边 = IL + IC 相量和)
+    addDyn(createArrow(cs, icEnd, 0x2563eb, 0.07));
+    const isEnd = icEnd;
+
+    // 角度弧 φ (U 与 IS 之间)
+    if (Math.abs(c.phi) > 0.02) {
+      addDyn(createArc(cs, 0.6, -c.phi, 0, 0x7c3aed));
+    }
+
+    // === 功率三角形 ===
+    const ct = TRI_CENTER;
+    const pScale = getPowerScale(c);
+    const pLen = (c.P / 1000) * pScale;
+    const qLen = (c.Q / 1000) * pScale;
+
+    // P (红, +X)
+    const pEnd = ct.clone().add(new THREE.Vector3(pLen, 0, 0));
+    addDyn(createArrow(ct, pEnd, 0xdc2626, 0.07));
+
+    // Q (绿, +Y if Q>0, -Y if Q<0)
+    if (Math.abs(qLen) > 0.02) {
+      const qEnd = pEnd.clone().add(new THREE.Vector3(0, qLen, 0));
+      addDyn(createArrow(pEnd, qEnd, 0x16a34a, 0.06));
+      // S (蓝, 斜边)
+      addDyn(createArrow(ct, qEnd, 0x2563eb, 0.07));
+      // 角度弧
+      if (Math.abs(c.phi) > 0.02) {
+        const angle = Math.atan2(qLen, pLen);
+        addDyn(createArc(ct, 0.4, 0, angle, 0x7c3aed));
+      }
+    }
+
+    // 电容器发光
+    if (capMesh) {
+      const intensity = c.IC > 0.01 ? 0.4 + Math.min(0.6, c.IC * 0.08) : 0.15;
+      capMesh.children.forEach(m => {
+        if (m.material) m.material.emissiveIntensity = intensity;
+      });
+      capMesh.visible = C > 0;
+    }
+
+    // 更新标签
+    updateLabels(c, { uEnd, ilEnd, isEnd, pEnd, ct });
+  }
+
+  // ====== 标签 ======
+  function createLabels() {
+    const layer = document.getElementById('labels-layer');
+    const defs = [
+      { id: 'l-u', cls: 'label-voltage' },
+      { id: 'l-il', cls: 'label-il' },
+      { id: 'l-ic', cls: 'label-ic' },
+      { id: 'l-is', cls: 'label-is' },
+      { id: 'l-p', cls: 'label-p' },
+      { id: 'l-q', cls: 'label-q' },
+      { id: 'l-s', cls: 'label-s' },
+      { id: 'l-src', cls: 'label-comp' },
+      { id: 'l-load', cls: 'label-comp' },
+      { id: 'l-cap', cls: 'label-comp' },
+    ];
+    defs.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'label-3d ' + d.cls;
+      el.id = d.id;
+      el.style.display = 'none';
+      layer.appendChild(el);
+      labels[d.id] = el;
+    });
+  }
+
+  function project(pos) {
+    const v = pos.clone().project(camera);
+    return {
+      x: (v.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-v.y * 0.5 + 0.5) * window.innerHeight,
+      visible: v.z < 1
+    };
+  }
+
+  function setLabel(id, pos, text) {
+    const el = labels[id];
+    if (!el) return;
+    const p = project(pos);
+    if (p.visible) {
+      el.style.display = 'block';
+      el.style.left = p.x + 'px';
+      el.style.top = p.y + 'px';
+      el.textContent = text;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function updateLabels(c, pts) {
+    // 相量标签：沿箭头方向向外偏移 0.3 单位，避免遮挡箭头
+    setLabel('l-u', pts.uEnd.clone().add(new THREE.Vector3(0.3, 0.05, 0)), 'U=220V');
+    const ilDir = new THREE.Vector3(Math.cos(-c.phiL), Math.sin(-c.phiL), 0);
+    setLabel('l-il', pts.ilEnd.clone().add(ilDir.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.1, 0))), 'I_L=' + c.IL.toFixed(1) + 'A');
+    if (c.IC > 0.01) {
+      // IC 标签在三角形 IC 边的中点, 向右偏移
+      const icMid = pts.ilEnd.clone().lerp(pts.isEnd, 0.5);
+      setLabel('l-ic', icMid.clone().add(new THREE.Vector3(0.25, 0, 0)), 'I_C=' + c.IC.toFixed(1) + 'A');
+    } else {
+      labels['l-ic'].style.display = 'none';
+    }
+    const isDir = new THREE.Vector3(Math.cos(-c.phi), Math.sin(-c.phi), 0);
+    setLabel('l-is', pts.isEnd.clone().add(isDir.multiplyScalar(0.3).add(new THREE.Vector3(0, 0.1, 0))), 'I_S=' + c.IS.toFixed(1) + 'A');
+
+    // 功率三角形标签：从箭头尖端向外偏移
+    const pScale = getPowerScale(c);
+    const pEndTri = pts.ct.clone().add(new THREE.Vector3((c.P / 1000) * pScale, 0, 0));
+    const qEndTri = pEndTri.clone().add(new THREE.Vector3(0, (c.Q / 1000) * pScale, 0));
+    setLabel('l-p', pEndTri.clone().add(new THREE.Vector3(0, -0.22, 0)), 'P=' + (c.P/1000).toFixed(2) + 'kW');
+    if (Math.abs(c.Q) > 10) {
+      setLabel('l-q', qEndTri.clone().add(new THREE.Vector3(0.22, 0, 0)), 'Q=' + (c.Q/1000).toFixed(2) + 'kvar');
+    } else {
+      labels['l-q'].style.display = 'none';
+    }
+    setLabel('l-s', qEndTri.clone().add(new THREE.Vector3(0.22, 0.08, 0)), 'S=' + (c.S/1000).toFixed(2) + 'kVA');
+
+    // 元件标签
+    setLabel('l-src', new THREE.Vector3(-3.5, SCHEMATIC_Y - 0.6, 0), 'AC 电源');
+    setLabel('l-load', new THREE.Vector3(3.5, SCHEMATIC_Y - 0.6, 0), '电动机 R-L');
+    if (C > 0) {
+      setLabel('l-cap', new THREE.Vector3(1.0, SCHEMATIC_Y - 0.7, 0), 'C=' + (C*1e6).toFixed(0) + 'µF');
+    } else {
+      labels['l-cap'].style.display = 'none';
+    }
+  }
+
+  // ====== UI 更新 ======
+  function updateUI(c) {
+    document.getElementById('d-xl').textContent = c.XL.toFixed(1) + ' Ω';
+    document.getElementById('d-xc').textContent = C > 0 ? c.XC.toFixed(1) + ' Ω' : '— Ω';
+    document.getElementById('d-zl').textContent = c.ZL.toFixed(2) + ' Ω';
+    document.getElementById('d-phil').textContent = (c.phiL*180/Math.PI).toFixed(1) + '°';
+    document.getElementById('d-il').textContent = c.IL.toFixed(2) + ' A';
+    document.getElementById('d-cosphil').textContent = c.cosPhiL.toFixed(3);
+    document.getElementById('d-ic').textContent = c.IC.toFixed(2) + ' A';
+    document.getElementById('d-is').textContent = c.IS.toFixed(2) + ' A';
+    document.getElementById('d-phi').textContent = (c.phi*180/Math.PI).toFixed(1) + '°';
+
+    const cosEl = document.getElementById('d-cosphi');
+    cosEl.textContent = c.cosPhi.toFixed(3);
+    cosEl.className = 'data-value highlight ' + (c.cosPhi >= 0.9 ? 'good' : c.cosPhi >= 0.7 ? 'warn' : 'bad');
+
+    document.getElementById('d-p').textContent = (c.P/1000).toFixed(2) + ' kW';
+    document.getElementById('d-ql').textContent = (c.QL/1000).toFixed(2) + ' kvar';
+    document.getElementById('d-qc').textContent = (c.QC/1000).toFixed(2) + ' kvar';
+    document.getElementById('d-q').textContent = (c.Q/1000).toFixed(2) + ' kvar';
+    document.getElementById('d-s').textContent = (c.S/1000).toFixed(2) + ' kVA';
+    document.getElementById('d-loss').textContent = c.lossReduction > 0 ? c.lossReduction.toFixed(1) + '%↓' : '0%';
+
+    const statusEl = document.getElementById('d-status');
+    let badge;
+    if (Math.abs(c.Q) < 50) badge = '<span class="pf-badge pf-good">完全补偿</span>';
+    else if (c.Q > 0 && c.cosPhi >= 0.9) badge = '<span class="pf-badge pf-good">补偿达标</span>';
+    else if (c.Q > 0) badge = '<span class="pf-badge pf-bad">欠补偿</span>';
+    else badge = '<span class="pf-badge pf-warn">过补偿</span>';
+    statusEl.innerHTML = badge;
+
+    document.getElementById('v-r').textContent = R.toFixed(1) + ' Ω';
+    document.getElementById('v-l').textContent = (L*1000).toFixed(0) + ' mH';
+    document.getElementById('v-c').textContent = (C*1e6).toFixed(0) + ' µF';
+  }
+
+  // ====== 预设 ======
+  function applyPreset(name) {
+    switch(name) {
+      case 'uncompensated':
+        R = 10; L = 0.05; C = 0;
+        break;
+      case 'standard': {
+        R = 10; L = 0.05;
+        const c = calculate();
+        const targetPhi = Math.acos(0.9);
+        const C_needed = c.P * (Math.tan(c.phiL) - Math.tan(targetPhi)) / (OMEGA * U * U);
+        C = C_needed;
+        break;
+      }
+      case 'full': {
+        R = 10; L = 0.05;
+        const c = calculate();
+        const C_needed = c.P * Math.tan(c.phiL) / (OMEGA * U * U);
+        C = C_needed;
+        break;
+      }
+      case 'over':
+        R = 10; L = 0.05; C = 200e-6;
+        break;
+      case 'resistive':
+        R = 15; L = 0; C = 0;
+        break;
+    }
+    // 更新滑块
+    document.getElementById('s-r').value = R;
+    document.getElementById('s-l').value = Math.round(L * 1000);
+    document.getElementById('s-c').value = Math.round(C * 1e6);
+    refresh();
+  }
+
+  function refresh() {
+    const c = calculate();
+    updateUI(c);
+    updateDynamic(c);
+  }
+
+  // ====== 动画 ======
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+    const t = clock.elapsedTime;
+
+    // 粒子
+    const c = calculate();
+    const speed = 0.3 + c.IS * 0.05;
+    particles.forEach(p => {
+      p.userData.s += dt * speed;
+      p.position.copy(getSchematicPos(p.userData.s));
+    });
+
+    // 更新标签位置 (每帧) - 电流三角形: IS = IL + IC
+    const uEnd = PHASOR_CENTER.clone().add(new THREE.Vector3(PHASOR_SCALE, 0, 0));
+    const ilEnd = PHASOR_CENTER.clone().add(new THREE.Vector3(
+      PHASOR_SCALE * (c.IL/15) * Math.cos(-c.phiL),
+      PHASOR_SCALE * (c.IL/15) * Math.sin(-c.phiL), 0));
+    // 三角形闭合点 = IL 尖端 + IC 向量 (+90°方向)
+    const icLenAnim = PHASOR_SCALE * (c.IC / 15);
+    const isEnd = ilEnd.clone().add(new THREE.Vector3(0, icLenAnim, 0));
+    const pScale = getPowerScale(c);
+    const pEndTri = TRI_CENTER.clone().add(new THREE.Vector3((c.P / 1000) * pScale, 0, 0));
+    updateLabels(c, { uEnd, ilEnd, isEnd, pEnd: pEndTri, ct: TRI_CENTER });
+
+    renderer.render(scene, camera);
+  }
+
+  // ====== 相机控制 ======
+  function setupControls() {
+    const canvas = renderer.domElement;
+    let drag = false, lx = 0, ly = 0, pinch = 0;
+
+    canvas.addEventListener('mousedown', e => { drag = true; lx = e.clientX; ly = e.clientY; });
+    window.addEventListener('mousemove', e => {
+      if (!drag) return;
+      camTheta -= (e.clientX - lx) * 0.008;
+      camPhi -= (e.clientY - ly) * 0.008;
+      camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+      lx = e.clientX; ly = e.clientY;
+      updateCam();
+    });
+    window.addEventListener('mouseup', () => drag = false);
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      camRadius += e.deltaY * 0.012;
+      camRadius = Math.max(7, Math.min(25, camRadius));
+      updateCam();
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) { drag = true; lx = e.touches[0].clientX; ly = e.touches[0].clientY; }
+      else if (e.touches.length === 2) { drag = false; pinch = touchDist(e); }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (e.touches.length === 1 && drag) {
+        camTheta -= (e.touches[0].clientX - lx) * 0.008;
+        camPhi -= (e.touches[0].clientY - ly) * 0.008;
+        camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi));
+        lx = e.touches[0].clientX; ly = e.touches[0].clientY;
+        updateCam();
+      } else if (e.touches.length === 2) {
+        const d = touchDist(e);
+        camRadius += (pinch - d) * 0.05;
+        camRadius = Math.max(7, Math.min(25, camRadius));
+        pinch = d; updateCam();
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { drag = false; pinch = 0; });
+
+    function touchDist(e) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      return Math.sqrt(dx*dx + dy*dy);
+    }
+  }
+  function updateCam() {
+    camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+    camera.position.y = camRadius * Math.cos(camPhi);
+    camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+    camera.lookAt(CAM_TARGET);
+  }
+
+  // ====== 初始化 ======
+  function init() {
+    const canvas = document.getElementById('scene');
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xf0f9ff, 0.02);
+
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    updateCam();
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0xf0f9ff, 1);
+
+    // 灯光
+    scene.add(new THREE.AmbientLight(0x93c5fd, 0.5));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    d1.position.set(8, 12, 6); scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0x60a5fa, 0.4);
+    d2.position.set(-6, 4, -8); scene.add(d2);
+
+    // 标题文字 (3D 平面文字)
+    const titleGeo = new THREE.PlaneGeometry(3, 0.38);
+    const canvas2d = document.createElement('canvas');
+    canvas2d.width = 512; canvas2d.height = 64;
+    const ctx = canvas2d.getContext('2d');
+    ctx.fillStyle = '#1e40af';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('相量图', 256, 42);
+    const tex = new THREE.CanvasTexture(canvas2d);
+    const titleMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+    const title3d = new THREE.Mesh(titleGeo, titleMat);
+    title3d.position.copy(PHASOR_CENTER.clone().add(new THREE.Vector3(0, 2.2, 0)));
+    scene.add(title3d);
+
+    const titleGeo2 = new THREE.PlaneGeometry(3, 0.38);
+    const canvas2d2 = document.createElement('canvas');
+    canvas2d2.width = 512; canvas2d2.height = 64;
+    const ctx2 = canvas2d2.getContext('2d');
+    ctx2.fillStyle = '#1e40af';
+    ctx2.font = 'bold 24px sans-serif';
+    ctx2.textAlign = 'center';
+    ctx2.fillText('功率三角形', 256, 42);
+    const tex2 = new THREE.CanvasTexture(canvas2d2);
+    const titleMat2 = new THREE.MeshBasicMaterial({ map: tex2, transparent: true });
+    const title3d2 = new THREE.Mesh(titleGeo2, titleMat2);
+    title3d2.position.copy(TRI_CENTER.clone().add(new THREE.Vector3(0, 2.2, 0)));
+    scene.add(title3d2);
+
+    // 构建静态元素
+    buildPhasorGrid();
+    buildPowerGrid();
+    buildSchematic();
+    createLabels();
+    setupControls();
+
+    // 事件
+    document.getElementById('s-r').addEventListener('input', e => {
+      R = parseFloat(e.target.value); refresh();
+    });
+    document.getElementById('s-l').addEventListener('input', e => {
+      L = parseFloat(e.target.value) / 1000; refresh();
+    });
+    document.getElementById('s-c').addEventListener('input', e => {
+      C = parseFloat(e.target.value) / 1e6; refresh();
+    });
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+      btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    document.getElementById('loading').style.display = 'none';
+    refresh();
+    animate();
+  }
+
+  function tryStart() {
+    if (typeof THREE === 'undefined') { setTimeout(tryStart, 50); return; }
+    try { init(); } catch(e) {
+      document.getElementById('loading').innerHTML =
+        '<div style="color:#dc2626">3D 引擎加载失败<br><span style="font-size:13px;color:#64748b">请检查网络后刷新</span></div>';
+      console.error(e);
+    }
+  }
+  tryStart();
+})();
+</script>
+</body>
+</html>

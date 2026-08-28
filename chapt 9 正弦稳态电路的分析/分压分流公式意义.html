@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦稳态电路：分压与分流公式的物理本质</title>
+    <style>
+        :root {
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --primary: #2c5282;
+            --accent: #e53e3e;
+            --accent2: #38a169;
+            --accent3: #d69e2e;
+            --text-main: #1a202c;
+            --text-secondary: #4a5568;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fff5f5 0%, #fffaf0 100%);
+            border-left: 5px solid var(--accent);
+            padding: 20px 25px;
+            margin: 20px auto;
+            max-width: 900px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            box-shadow: var(--shadow);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .panel-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .panel-icon.series { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .panel-icon.parallel { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+        .panel-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .panel-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .circuit-svg {
+            width: 100%;
+            height: 140px;
+            margin: 15px 0;
+        }
+
+        .formula-box {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 1.25rem;
+            color: var(--primary);
+            font-family: "Times New Roman", Times, serif;
+            border: 1px solid var(--border);
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .control-value {
+            background: var(--primary);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-family: monospace;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .phasor-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: linear-gradient(to bottom, #fafbfc, #f0f4f8);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .phasor-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 1.05rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .result-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .result-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .result-card.warning {
+            border-color: var(--accent);
+            background: #fff5f5;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(229, 62, 62, 0); }
+        }
+
+        .result-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: "Times New Roman", Times, serif;
+        }
+
+        .result-value.highlight {
+            color: var(--accent);
+        }
+
+        .insight-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+            border-radius: 10px;
+            border-left: 4px solid #4299e1;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .toggle-btn {
+            display: block;
+            margin: 15px auto;
+            padding: 10px 28px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .toggle-btn:hover {
+            background: #2a4365;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(44, 82, 130, 0.3);
+        }
+
+        .demo-presets {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0 15px;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            padding: 6px 14px;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ 正弦稳态电路的深层洞察</h1>
+            <p class="subtitle">
+                阻抗串联分压与导纳并联分流公式只是<span style="color:var(--accent);font-weight:700;">复数运算关系</span>，<br>
+                并不意味着单个元件的电压/电流幅值一定小于端口总量
+            </p>
+            <div class="highlight-box">
+                <strong>核心结论：</strong>在交流电路中，由于各相量存在相位差，分电压的幅值可能大于总电压，分电流的幅值可能大于总电流。这是相量相加（平行四边形法则）与代数相加的本质区别。
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- 串联分压面板 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-icon series">Z</div>
+                    <div>
+                        <div class="panel-title">阻抗串联分压</div>
+                        <div class="panel-subtitle">Series Voltage Division</div>
+                    </div>
+                </div>
+
+                <svg class="circuit-svg" viewBox="0 0 400 140">
+                    <circle cx="60" cy="70" r="25" fill="none" stroke="#2c5282" stroke-width="2.5"/>
+                    <text x="60" y="78" text-anchor="middle" font-size="22" fill="#2c5282" font-weight="bold">U̇</text>
+                    <line x1="10" y1="70" x2="35" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="85" y1="70" x2="110" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <text x="25" y="58" font-size="16" fill="#2c5282">+</text>
+                    <text x="25" y="92" font-size="16" fill="#2c5282">−</text>
+
+                    <rect x="140" y="55" width="60" height="30" rx="4" fill="#e53e3e" fill-opacity="0.15" stroke="#e53e3e" stroke-width="2"/>
+                    <text x="170" y="76" text-anchor="middle" font-size="18" fill="#c53030" font-weight="bold">Z₁</text>
+                    <line x1="110" y1="70" x2="140" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="200" y1="70" x2="230" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <rect x="260" y="55" width="60" height="30" rx="4" fill="#38a169" fill-opacity="0.15" stroke="#38a169" stroke-width="2"/>
+                    <text x="290" y="76" text-anchor="middle" font-size="18" fill="#276749" font-weight="bold">Z₂</text>
+                    <line x1="230" y1="70" x2="260" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="320" y1="70" x2="350" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="350" y1="70" x2="350" y2="110" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="10" y1="110" x2="350" y2="110" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="10" y1="70" x2="10" y2="110" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <text x="210" y="48" text-anchor="middle" font-size="15" fill="#4a5568">İ</text>
+                    <polygon points="200,44 210,38 220,44" fill="#4a5568"/>
+                </svg>
+
+                <div class="formula-box">
+                    U̇₁ = (Z₁ / (Z₁ + Z₂)) · U̇&nbsp;&nbsp;&nbsp;&nbsp;U̇₂ = (Z₂ / (Z₁ + Z₂)) · U̇
+                </div>
+
+                <div class="demo-presets" id="seriesPresets">
+                    <button class="preset-btn active" onclick="setSeriesPreset(0)">典型情况</button>
+                    <button class="preset-btn" onclick="setSeriesPreset(1)">反相增强</button>
+                    <button class="preset-btn" onclick="setSeriesPreset(2)">纯电抗</button>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Z₁ = R₁ + jX₁</span>
+                        </div>
+                        <div class="control-label">
+                            <span>R₁ (Ω)</span>
+                            <span class="control-value" id="sr1v">1.0</span>
+                        </div>
+                        <input type="range" id="sr1" min="0.1" max="10" step="0.1" value="1">
+                        <div class="control-label" style="margin-top:8px">
+                            <span>X₁ (Ω)</span>
+                            <span class="control-value" id="sx1v">10.0</span>
+                        </div>
+                        <input type="range" id="sx1" min="-20" max="20" step="0.5" value="10">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Z₂ = R₂ + jX₂</span>
+                        </div>
+                        <div class="control-label">
+                            <span>R₂ (Ω)</span>
+                            <span class="control-value" id="sr2v">1.0</span>
+                        </div>
+                        <input type="range" id="sr2" min="0.1" max="10" step="0.1" value="1">
+                        <div class="control-label" style="margin-top:8px">
+                            <span>X₂ (Ω)</span>
+                            <span class="control-value" id="sx2v">-10.0</span>
+                        </div>
+                        <input type="range" id="sx2" min="-20" max="20" step="0.5" value="-10">
+                    </div>
+                </div>
+
+                <div class="phasor-container">
+                    <canvas id="seriesCanvas" class="phasor-canvas"></canvas>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#2c5282"></div>
+                        <span>U̇ (总电压)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#e53e3e"></div>
+                        <span>U̇₁ (Z₁分压)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#38a169"></div>
+                        <span>U̇₂ (Z₂分压)</span>
+                    </div>
+                </div>
+
+                <div class="result-cards">
+                    <div class="result-card" id="scard1">
+                        <div class="result-label">|U̇₁| / |U̇|</div>
+                        <div class="result-value" id="sratio1">5.02</div>
+                    </div>
+                    <div class="result-card" id="scard2">
+                        <div class="result-label">|U̇₂| / |U̇|</div>
+                        <div class="result-value" id="sratio2">5.02</div>
+                    </div>
+                </div>
+
+                <div class="insight-box" id="sinsight">
+                    <strong>现象：</strong>|U̇₁| 和 |U̇₂| 都远大于 |U̇|！<br>
+                    <strong>原因：</strong>Z₁ 与 Z₂ 的电抗符号相反，总阻抗 Z = Z₁+Z₂ 的模很小（|Z| = 2Ω），但各分阻抗的模很大（|Z₁| = |Z₂| ≈ 10.05Ω）。电流 İ = U̇/Z 很大，导致各分电压幅值被放大。
+                </div>
+
+                <button class="toggle-btn" onclick="toggleAnimation()">⏸ 暂停动画</button>
+            </div>
+
+            <!-- 并联分流面板 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-icon parallel">Y</div>
+                    <div>
+                        <div class="panel-title">导纳并联分流</div>
+                        <div class="panel-subtitle">Parallel Current Division</div>
+                    </div>
+                </div>
+
+                <svg class="circuit-svg" viewBox="0 0 400 140">
+                    <circle cx="60" cy="70" r="25" fill="none" stroke="#2c5282" stroke-width="2.5"/>
+                    <text x="60" y="78" text-anchor="middle" font-size="22" fill="#2c5282" font-weight="bold">İ</text>
+                    <line x1="10" y1="70" x2="35" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="85" y1="70" x2="110" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <polygon points="95,65 110,70 95,75" fill="#2c5282"/>
+
+                    <line x1="110" y1="70" x2="160" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="160" y1="30" x2="160" y2="110" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <line x1="160" y1="45" x2="240" y2="45" stroke="#2c5282" stroke-width="2.5"/>
+                    <rect x="240" y="30" width="50" height="30" rx="4" fill="#e53e3e" fill-opacity="0.15" stroke="#e53e3e" stroke-width="2"/>
+                    <text x="265" y="51" text-anchor="middle" font-size="18" fill="#c53030" font-weight="bold">Y₁</text>
+                    <line x1="290" y1="45" x2="350" y2="45" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <line x1="160" y1="95" x2="240" y2="95" stroke="#2c5282" stroke-width="2.5"/>
+                    <rect x="240" y="80" width="50" height="30" rx="4" fill="#38a169" fill-opacity="0.15" stroke="#38a169" stroke-width="2"/>
+                    <text x="265" y="101" text-anchor="middle" font-size="18" fill="#276749" font-weight="bold">Y₂</text>
+                    <line x1="290" y1="95" x2="350" y2="95" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <line x1="350" y1="45" x2="350" y2="95" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="350" y1="70" x2="390" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+                    <line x1="160" y1="70" x2="160" y2="70" stroke="#2c5282" stroke-width="2.5"/>
+
+                    <text x="360" y="65" font-size="15" fill="#4a5568">U̇</text>
+                    <text x="360" y="85" font-size="15" fill="#4a5568">+</text>
+                    <text x="360" y="105" font-size="15" fill="#4a5568">−</text>
+                </svg>
+
+                <div class="formula-box">
+                    İ₁ = (Y₁ / (Y₁ + Y₂)) · İ&nbsp;&nbsp;&nbsp;&nbsp;İ₂ = (Y₂ / (Y₁ + Y₂)) · İ
+                </div>
+
+                <div class="demo-presets" id="parallelPresets">
+                    <button class="preset-btn active" onclick="setParallelPreset(0)">典型情况</button>
+                    <button class="preset-btn" onclick="setParallelPreset(1)">反相增强</button>
+                    <button class="preset-btn" onclick="setParallelPreset(2)">纯电纳</button>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Y₁ = G₁ + jB₁</span>
+                        </div>
+                        <div class="control-label">
+                            <span>G₁ (S)</span>
+                            <span class="control-value" id="pg1v">0.10</span>
+                        </div>
+                        <input type="range" id="pg1" min="0.01" max="1" step="0.01" value="0.1">
+                        <div class="control-label" style="margin-top:8px">
+                            <span>B₁ (S)</span>
+                            <span class="control-value" id="pb1v">1.00</span>
+                        </div>
+                        <input type="range" id="pb1" min="-2" max="2" step="0.05" value="1">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Y₂ = G₂ + jB₂</span>
+                        </div>
+                        <div class="control-label">
+                            <span>G₂ (S)</span>
+                            <span class="control-value" id="pg2v">0.10</span>
+                        </div>
+                        <input type="range" id="pg2" min="0.01" max="1" step="0.01" value="0.1">
+                        <div class="control-label" style="margin-top:8px">
+                            <span>B₂ (S)</span>
+                            <span class="control-value" id="pb2v">-1.00</span>
+                        </div>
+                        <input type="range" id="pb2" min="-2" max="2" step="0.05" value="-1">
+                    </div>
+                </div>
+
+                <div class="phasor-container">
+                    <canvas id="parallelCanvas" class="phasor-canvas"></canvas>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#2c5282"></div>
+                        <span>İ (总电流)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#e53e3e"></div>
+                        <span>İ₁ (Y₁分流)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#38a169"></div>
+                        <span>İ₂ (Y₂分流)</span>
+                    </div>
+                </div>
+
+                <div class="result-cards">
+                    <div class="result-card" id="pcard1">
+                        <div class="result-label">|İ₁| / |İ|</div>
+                        <div class="result-value" id="pratio1">5.02</div>
+                    </div>
+                    <div class="result-card" id="pcard2">
+                        <div class="result-label">|İ₂| / |İ|</div>
+                        <div class="result-value" id="pratio2">5.02</div>
+                    </div>
+                </div>
+
+                <div class="insight-box" id="pinsight">
+                    <strong>现象：</strong>|İ₁| 和 |İ₂| 都远大于 |İ|！<br>
+                    <strong>原因：</strong>Y₁ 与 Y₂ 的电纳符号相反，总导纳 Y = Y₁+Y₂ 的模很小（|Y| = 0.2S），但各分导纳的模很大（|Y₁| = |Y₂| ≈ 1.005S）。电压 U̇ = İ/Y 很大，导致各分电流幅值被放大。
+                </div>
+
+                <button class="toggle-btn" onclick="toggleAnimation()">⏸ 暂停动画</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>调节滑块观察不同参数下的相量关系 · 红色高亮表示分量大於总量</p>
+            <p style="margin-top:8px; font-size:0.9rem; opacity:0.7">相量图以端口量为参考（固定在实轴），动态旋转展示正弦稳态的时间变化</p>
+        </footer>
+    </div>
+
+    <script>
+        // ===================== 全局状态 =====================
+        let animating = true;
+        let angle = 0;
+        let animId = null;
+
+        // ===================== 串联电路参数 =====================
+        const s = { r1: 1, x1: 10, r2: 1, x2: -10 };
+
+        // ===================== 并联电路参数 =====================
+        const p = { g1: 0.1, b1: 1, g2: 0.1, b2: -1 };
+
+        // ===================== 预设配置 =====================
+        const seriesPresets = [
+            { r1: 1, x1: 10, r2: 1, x2: -10, name: "典型情况" },
+            { r1: 2, x1: 15, r2: 3, x2: -12, name: "反相增强" },
+            { r1: 0.1, x1: 10, r2: 0.1, x2: -10, name: "纯电抗" }
+        ];
+
+        const parallelPresets = [
+            { g1: 0.1, b1: 1, g2: 0.1, b2: -1, name: "典型情况" },
+            { g1: 0.15, b1: 1.5, g2: 0.2, b2: -1.2, name: "反相增强" },
+            { g1: 0.01, b1: 1, g2: 0.01, b2: -1, name: "纯电纳" }
+        ];
+
+        function setSeriesPreset(idx) {
+            const cfg = seriesPresets[idx];
+            s.r1 = cfg.r1; s.x1 = cfg.x1; s.r2 = cfg.r2; s.x2 = cfg.x2;
+            document.getElementById('sr1').value = cfg.r1;
+            document.getElementById('sx1').value = cfg.x1;
+            document.getElementById('sr2').value = cfg.r2;
+            document.getElementById('sx2').value = cfg.x2;
+            updateSeriesControls();
+            document.querySelectorAll('#seriesPresets .preset-btn').forEach((b,i) => {
+                b.classList.toggle('active', i === idx);
+            });
+        }
+
+        function setParallelPreset(idx) {
+            const cfg = parallelPresets[idx];
+            p.g1 = cfg.g1; p.b1 = cfg.b1; p.g2 = cfg.g2; p.b2 = cfg.b2;
+            document.getElementById('pg1').value = cfg.g1;
+            document.getElementById('pb1').value = cfg.b1;
+            document.getElementById('pg2').value = cfg.g2;
+            document.getElementById('pb2').value = cfg.b2;
+            updateParallelControls();
+            document.querySelectorAll('#parallelPresets .preset-btn').forEach((b,i) => {
+                b.classList.toggle('active', i === idx);
+            });
+        }
+
+        // ===================== 复数运算工具 =====================
+        function cadd(a, b) { return { re: a.re + b.re, im: a.im + b.im }; }
+        function cmul(a, b) { return { re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re }; }
+        function cdiv(a, b) {
+            const d = b.re*b.re + b.im*b.im;
+            return { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+        }
+        function cabs(a) { return Math.sqrt(a.re*a.re + a.im*a.im); }
+        function carg(a) { return Math.atan2(a.im, a.re); }
+
+        // ===================== Canvas 初始化 =====================
+        const canvasInfo = {};
+
+        function initCanvas(id) {
+            const canvas = document.getElementById(id);
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            const physW = Math.floor(rect.width * dpr);
+            const physH = Math.floor(rect.height * dpr);
+            canvas.width = physW;
+            canvas.height = physH;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+
+            const ctx = canvas.getContext('2d');
+
+            canvasInfo[id] = {
+                canvas: canvas,
+                ctx: ctx,
+                w: rect.width,
+                h: rect.height,
+                dpr: dpr,
+                physW: physW,
+                physH: physH
+            };
+            return canvasInfo[id];
+        }
+
+        function getCanvas(id) {
+            const info = canvasInfo[id];
+            // 重置变换矩阵为单位矩阵，用物理像素清屏
+            info.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            info.ctx.clearRect(0, 0, info.physW, info.physH);
+            // 设置dpr缩放，之后所有绘制坐标都是CSS像素
+            info.ctx.setTransform(info.dpr, 0, 0, info.dpr, 0, 0);
+            return info;
+        }
+
+        function drawArrow(ctx, x1, y1, x2, y2, color, width, label, labelOffset) {
+            const dx = x2 - x1, dy = y2 - y1;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 2) return;
+            const ux = dx/len, uy = dy/len;
+            const arrSize = 10;
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+
+            const endX = x2 - ux*arrSize;
+            const endY = y2 - uy*arrSize;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - ux*arrSize - uy*arrSize*0.5, y2 - uy*arrSize + ux*arrSize*0.5);
+            ctx.lineTo(x2 - ux*arrSize + uy*arrSize*0.5, y2 - uy*arrSize - ux*arrSize*0.5);
+            ctx.closePath();
+            ctx.fill();
+
+            if (label) {
+                ctx.font = 'bold 15px "Times New Roman", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = color;
+                const lx = x2 + ux*labelOffset;
+                const ly = y2 + uy*labelOffset;
+                ctx.fillText(label, lx, ly);
+            }
+            ctx.restore();
+        }
+
+        // 压缩映射：将任意 ratio 映射到有限显示范围
+        function compressRatio(ratio) {
+            return 3.0 * ratio / (ratio + 2.0);
+        }
+
+        function drawPhasorDiagram(ctx, w, h, phasors, title) {
+            const cx = w/2, cy = h/2 + 10;
+            const refScale = Math.min(w, h) * 0.24;
+            const baseAbs = phasors[0].abs || 1;
+
+            // 背景网格
+            ctx.save();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(cx, 20); ctx.lineTo(cx, h-20);
+            ctx.moveTo(20, cy); ctx.lineTo(w-20, cy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 同心圆
+            const maxDisplayR = refScale * 3.0;
+            [0.33, 0.67, 1.0].forEach(r => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, maxDisplayR * r, 0, Math.PI*2);
+                ctx.strokeStyle = r===1.0 ? '#cbd5e0' : '#edf2f7';
+                ctx.lineWidth = r===1.0 ? 1.5 : 1;
+                ctx.stroke();
+            });
+
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Re', w-25, cy+18);
+            ctx.textAlign = 'left';
+            ctx.fillText('Im', cx+8, 25);
+            ctx.restore();
+
+            // 绘制相量
+            phasors.forEach((p) => {
+                const ratio = p.abs / baseAbs;
+                const displayRatio = compressRatio(ratio);
+                const r = refScale * displayRatio;
+                const ang = p.angle + angle;
+                const x2 = cx + r * Math.cos(ang);
+                const y2 = cy - r * Math.sin(ang);
+
+                ctx.save();
+                ctx.globalAlpha = 0.08;
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI*2);
+                ctx.stroke();
+                ctx.restore();
+
+                drawArrow(ctx, cx, cy, x2, y2, p.color, 3, p.label, 16);
+
+                ctx.save();
+                ctx.font = 'bold 13px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = p.color;
+                const mx = cx + r*0.5 * Math.cos(ang);
+                const my = cy - r*0.5 * Math.sin(ang);
+                const perpX = -Math.sin(ang) * 14;
+                const perpY = -Math.cos(ang) * 14;
+                ctx.fillText(p.abs.toFixed(2), mx + perpX, my + perpY);
+                ctx.restore();
+            });
+
+            ctx.save();
+            ctx.font = 'bold 15px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#4a5568';
+            ctx.fillText(title, w/2, 22);
+            ctx.restore();
+        }
+
+        // ===================== 串联电路 =====================
+        function updateSeries() {
+            s.r1 = parseFloat(document.getElementById('sr1').value);
+            s.x1 = parseFloat(document.getElementById('sx1').value);
+            s.r2 = parseFloat(document.getElementById('sr2').value);
+            s.x2 = parseFloat(document.getElementById('sx2').value);
+            updateSeriesControls();
+        }
+
+        function updateSeriesControls() {
+            document.getElementById('sr1v').textContent = s.r1.toFixed(1);
+            document.getElementById('sx1v').textContent = s.x1.toFixed(1);
+            document.getElementById('sr2v').textContent = s.r2.toFixed(1);
+            document.getElementById('sx2v').textContent = s.x2.toFixed(1);
+        }
+
+        function drawSeries() {
+            const info = getCanvas('seriesCanvas');
+            const ctx = info.ctx;
+            const w = info.w;
+            const h = info.h;
+
+            const Z1 = { re: s.r1, im: s.x1 };
+            const Z2 = { re: s.r2, im: s.x2 };
+            const Z = cadd(Z1, Z2);
+
+            const U = { re: 1, im: 0 };
+            const I = cdiv(U, Z);
+            const U1 = cmul(I, Z1);
+            const U2 = cmul(I, Z2);
+
+            const absU = cabs(U);
+            const absU1 = cabs(U1);
+            const absU2 = cabs(U2);
+            const absZ = cabs(Z);
+            const absZ1 = cabs(Z1);
+            const absZ2 = cabs(Z2);
+
+            const r1 = absU1 / absU;
+            const r2 = absU2 / absU;
+            document.getElementById('sratio1').textContent = r1.toFixed(2);
+            document.getElementById('sratio2').textContent = r2.toFixed(2);
+
+            document.getElementById('scard1').classList.toggle('warning', r1 > 1.05);
+            document.getElementById('scard2').classList.toggle('warning', r2 > 1.05);
+            document.getElementById('sratio1').classList.toggle('highlight', r1 > 1.05);
+            document.getElementById('sratio2').classList.toggle('highlight', r2 > 1.05);
+
+            const insight = document.getElementById('sinsight');
+            if (r1 > 1.05 || r2 > 1.05) {
+                insight.innerHTML = `<strong>现象：</strong>|U̇₁|=${absU1.toFixed(2)} 和 |U̇₂|=${absU2.toFixed(2)} 都大于 |U̇|=${absU.toFixed(2)}！<br>
+                <strong>原因：</strong>Z₁与Z₂电抗相反（X₁=${s.x1>0?'+':''}${s.x1}Ω, X₂=${s.x2>0?'+':''}${s.x2}Ω），总阻抗|Z|=${absZ.toFixed(2)}Ω 很小，但|Z₁|=${absZ1.toFixed(2)}Ω、|Z₂|=${absZ2.toFixed(2)}Ω 很大。电流 İ=U̇/Z 很大，导致分电压被放大。`;
+            } else {
+                insight.innerHTML = `<strong>当前状态：</strong>分电压幅值均小于总电压，这是电阻性电路的常见情况。<br>
+                <strong>提示：</strong>尝试让 X₁ 和 X₂ 符号相反（如 +10 和 -10），观察分电压大于总电压的反直觉现象。`;
+            }
+
+            drawPhasorDiagram(ctx, w, h, [
+                { abs: absU, angle: 0, color: '#2c5282', label: 'U̇' },
+                { abs: absU1, angle: -carg(U1), color: '#e53e3e', label: 'U̇₁' },
+                { abs: absU2, angle: -carg(U2), color: '#38a169', label: 'U̇₂' }
+            ], '相量图（以 U̇ 为参考）');
+        }
+
+        // ===================== 并联电路 =====================
+        function updateParallel() {
+            p.g1 = parseFloat(document.getElementById('pg1').value);
+            p.b1 = parseFloat(document.getElementById('pb1').value);
+            p.g2 = parseFloat(document.getElementById('pg2').value);
+            p.b2 = parseFloat(document.getElementById('pb2').value);
+            updateParallelControls();
+        }
+
+        function updateParallelControls() {
+            document.getElementById('pg1v').textContent = p.g1.toFixed(2);
+            document.getElementById('pb1v').textContent = p.b1.toFixed(2);
+            document.getElementById('pg2v').textContent = p.g2.toFixed(2);
+            document.getElementById('pb2v').textContent = p.b2.toFixed(2);
+        }
+
+        function drawParallel() {
+            const info = getCanvas('parallelCanvas');
+            const ctx = info.ctx;
+            const w = info.w;
+            const h = info.h;
+
+            const Y1 = { re: p.g1, im: p.b1 };
+            const Y2 = { re: p.g2, im: p.b2 };
+            const Y = cadd(Y1, Y2);
+
+            const I = { re: 1, im: 0 };
+            const U = cdiv(I, Y);
+            const I1 = cmul(U, Y1);
+            const I2 = cmul(U, Y2);
+
+            const absI = cabs(I);
+            const absI1 = cabs(I1);
+            const absI2 = cabs(I2);
+            const absY = cabs(Y);
+            const absY1 = cabs(Y1);
+            const absY2 = cabs(Y2);
+
+            const r1 = absI1 / absI;
+            const r2 = absI2 / absI;
+            document.getElementById('pratio1').textContent = r1.toFixed(2);
+            document.getElementById('pratio2').textContent = r2.toFixed(2);
+
+            document.getElementById('pcard1').classList.toggle('warning', r1 > 1.05);
+            document.getElementById('pcard2').classList.toggle('warning', r2 > 1.05);
+            document.getElementById('pratio1').classList.toggle('highlight', r1 > 1.05);
+            document.getElementById('pratio2').classList.toggle('highlight', r2 > 1.05);
+
+            const insight = document.getElementById('pinsight');
+            if (r1 > 1.05 || r2 > 1.05) {
+                insight.innerHTML = `<strong>现象：</strong>|İ₁|=${absI1.toFixed(2)} 和 |İ₂|=${absI2.toFixed(2)} 都大于 |İ|=${absI.toFixed(2)}！<br>
+                <strong>原因：</strong>Y₁与Y₂电纳相反（B₁=${p.b1>0?'+':''}${p.b1}S, B₂=${p.b2>0?'+':''}${p.b2}S），总导纳|Y|=${absY.toFixed(2)}S 很小，但|Y₁|=${absY1.toFixed(2)}S、|Y₂|=${absY2.toFixed(2)}S 很大。电压 U̇=İ/Y 很大，导致分电流被放大。`;
+            } else {
+                insight.innerHTML = `<strong>当前状态：</strong>分电流幅值均小于总电流，这是电导性电路的常见情况。<br>
+                <strong>提示：</strong>尝试让 B₁ 和 B₂ 符号相反（如 +1 和 -1），观察分电流大于总电流的反直觉现象。`;
+            }
+
+            drawPhasorDiagram(ctx, w, h, [
+                { abs: absI, angle: 0, color: '#2c5282', label: 'İ' },
+                { abs: absI1, angle: -carg(I1), color: '#e53e3e', label: 'İ₁' },
+                { abs: absI2, angle: -carg(I2), color: '#38a169', label: 'İ₂' }
+            ], '相量图（以 İ 为参考）');
+        }
+
+        // ===================== 动画循环 =====================
+        function animate() {
+            if (animating) {
+                angle += 0.015;
+            }
+            drawSeries();
+            drawParallel();
+            animId = requestAnimationFrame(animate);
+        }
+
+        function toggleAnimation() {
+            animating = !animating;
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.textContent = animating ? '⏸ 暂停动画' : '▶ 继续动画';
+            });
+        }
+
+        // ===================== 事件绑定 =====================
+        ['sr1','sx1','sr2','sx2'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateSeries);
+        });
+        ['pg1','pb1','pg2','pb2'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateParallel);
+        });
+
+        // ===================== 初始化 =====================
+        // 使用 setTimeout 确保 DOM 完全渲染后再初始化 canvas
+        setTimeout(function() {
+            initCanvas('seriesCanvas');
+            initCanvas('parallelCanvas');
+            updateSeriesControls();
+            updateParallelControls();
+            animate();
+        }, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>RLC 相量法余弦同步演示（修正夹角）</title>
+<style>
+/* 样式与上一版完全一致，已省略 */
+body{font-family:'Microsoft YaHei',Arial,sans-serif;background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;color:#333;margin:0}
+.container{background:rgba(255,255,255,.95);border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:1200px;width:90%}
+h1{text-align:center;color:#2c3e50;margin-bottom:30px;font-size:2.5em}
+.main-content{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:20px}
+.animation-area,.formula-area{background:#f8f9fa;border-radius:15px;padding:20px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
+#canvas{border:2px solid #3498db;border-radius:10px;display:block;margin:0 auto;background:white}
+.formula{background:white;padding:15px;border-radius:8px;margin:10px 0;box-shadow:0 2px 5px rgba(0,0,0,.1);transition:.3s}
+.formula.active{background:#e3f2fd;border-left:4px solid #3498db}
+.formula-label{font-weight:bold;color:#2980b9;margin-bottom:5px}
+.formula-text{font-size:1.1em;color:#2c3e50;font-family:'Courier New',monospace}
+.element-btns{text-align:center;margin:10px 0}
+.element-btns button{background:#27ae60;margin:0 6px}
+.element-btns button.active{background:#e74c3c}
+.controls{text-align:center;margin-top:10px}
+button{background:#3498db;color:white;border:none;padding:12px 30px;margin:0 6px;border-radius:25px;font-size:1.1em;cursor:pointer;transition:.3s;box-shadow:0 4px 6px rgba(0,0,0,.1)}
+button:hover{background:#2980b9;transform:translateY(-2px)}
+.info-panel{background:#ecf0f1;border-radius:10px;padding:20px;margin-top:20px;text-align:center}
+.phase-info{font-size:1.2em;color:#2c3e50;margin:10px 0}
+.highlight{color:#e74c3c;font-weight:bold}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>🔌 RLC 相量法余弦同步演示（修正夹角）</h1>
+
+  <div class="main-content">
+    <div class="animation-area">
+      <h2 class="section-title">📊 相量图 & 波形</h2>
+      <canvas id="canvas" width="500" height="400"></canvas>
+      <div class="element-btns">
+        <button id="btnR" onclick="showElement('R')">电阻 𝑼 = İ×R</button>
+        <button id="btnC" onclick="showElement('C')">电容 İ = jωC𝑼</button>
+        <button id="btnL" onclick="showElement('L')">电感 𝑼 = jωLİ</button>
+        <button id="btnRLC" onclick="cycleRLC()" style="background:#8e44ad">🔁 RLC组合</button>
+      </div>
+    </div>
+
+    <div class="formula-area">
+      <h2 class="section-title">📐 相量法公式</h2>
+      <div id="formulas">
+        <div class="formula" id="formula1"><div class="formula-label">余弦电压表达式：</div><div class="formula-text">u(t) = U<sub>m</sub> cos(ωt + φ)</div></div>
+        <div class="formula" id="formula2"><div class="formula-label">相量表示：</div><div class="formula-text">Ú = U∠φ = U(cosφ + j sinφ)</div></div>
+        <div class="formula" id="formula3"><div class="formula-label">欧姆定律相量形式：</div><div class="formula-text">Ú = İ × Z</div></div>
+        <div class="formula" id="formula4"><div class="formula-label">阻抗计算：</div><div class="formula-text">Z = R + j(ωL - 1/ωC)</div></div>
+        <div class="formula" id="formula5"><div class="formula-label">相位差：</div><div class="formula-text">θ = φ<sub>u</sub> - φ<sub>i</sub></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">▶️ 开始动画</button>
+    <button id="pauseBtn">⏸️ 暂停</button>
+    <button id="resetBtn">🔄 重置</button>
+  </div>
+
+  <div class="info-panel">
+    <div class="phase-info">当前频率: <span class="highlight" id="frequency">50</span> Hz</div>
+    <div class="phase-info">相位差: <span class="highlight" id="phaseDiff">0</span>°</div>
+    <div class="phase-info">电路类型: <span class="highlight" id="circuitType">纯阻性</span></div>
+    <div class="phase-info" id="elementExpr" style="margin-top:8px;font-size:1.1em"></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let animationId = null;
+let angle = 0;
+let isPaused = true;
+let currentElement = 'R';
+let currentFormula = 0;
+
+const omega = 2 * Math.PI * 50;           // 固定 50 Hz
+const params = { R: 10, L: 0, C: 0 };     // 初始
+
+/* ---------- 单元件数据 ---------- */
+const elementData = {
+  R: { phase: 0, uLabel: 'Ú_R', iLabel: 'İ_R', expr: '电阻：u(t) = R·i(t)   相量：Ú = İ·R （同相，余弦量）' },
+  C: { phase: -90, uLabel: 'Ú_C', iLabel: 'İ_C', expr: '电容：i(t) = C·du/dt   相量：İ = jωCÚ （电流超前90°，余弦量）' },
+  L: { phase: 90, uLabel: 'Ú_L', iLabel: 'İ_L', expr: '电感：u(t) = L·di/dt   相量：Ú = jωLİ （电压超前90°，余弦量）' }
+};
+
+/* ---------- RLC 组合档位（固定角度） ---------- */
+const rlcProfiles = [
+  { name: '纯阻性', R: 10, L: 0, C: 0, phase: 0 },
+  { name: '感性40°', R: 10, L: 0.08, C: 0, phase: 40 },   // 电压超前40°
+  { name: '容性60°', R: 10, L: 0, C: 120e-6, phase: -60 }, // 电压滞后60°
+  { name: '谐振', R: 10, L: 0.1, C: 1e-4, phase: 0 }
+];
+let rlcIdx = 0;
+
+/* ---------- 画图 ---------- */
+function drawAxes() {
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(50, 200); ctx.lineTo(450, 200); ctx.moveTo(250, 50); ctx.lineTo(250, 350); ctx.stroke();
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.moveTo(450, 200); ctx.lineTo(440, 195); ctx.lineTo(440, 205); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(250, 50); ctx.lineTo(245, 60); ctx.lineTo(255, 60); ctx.closePath(); ctx.fill();
+  ctx.font = '16px Arial'; ctx.fillText('实部', 430, 220); ctx.fillText('虚部', 260, 60); ctx.fillText('0', 240, 220);
+}
+function drawWaveformFrame() {
+  ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; ctx.strokeRect(50, 50, 400, 100);
+  ctx.save(); ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(50, 100); ctx.lineTo(450, 100); ctx.stroke(); ctx.restore();
+  ctx.font = '10px Arial'; ctx.fillStyle = '#666'; ctx.fillText('0', 40, 104);
+}
+function drawPhasor(x, y, len, ang, color, label) {
+  const ex = x + len * Math.cos(ang), ey = y - len * Math.sin(ang);
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  const al = 15, aa = Math.PI / 6;
+  ctx.beginPath(); ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - al * Math.cos(ang - aa), ey + al * Math.sin(ang - aa));
+  ctx.lineTo(ex - al * Math.cos(ang + aa), ey + al * Math.sin(ang + aa));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  ctx.font = 'bold 14px Arial'; ctx.fillText(label, ex + 10, ey - 10);
+}
+function drawWaveform() {
+  const zeroY = 100;
+  const timeAngleRad = angle * Math.PI / 180;
+  const phase = currentElement === 'RLC' ? rlcProfiles[rlcIdx].phase :
+                elementData[currentElement].phase;
+
+  // 电压
+  ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i < 400; i++) {
+    const t = i / 40;
+    const v = 50 * Math.cos(t + timeAngleRad);
+    ctx.lineTo(50 + i, zeroY - v);
+  } ctx.stroke();
+
+  // 电流
+  ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i < 400; i++) {
+    const t = i / 40;
+    const cur = 30 * Math.cos(t + timeAngleRad - phase * Math.PI / 180);
+    ctx.lineTo(50 + i, zeroY - cur);
+  } ctx.stroke();
+
+  ctx.font = '12px Arial';
+  ctx.fillStyle = '#e74c3c'; ctx.fillText('电压', 10, zeroY - 55);
+  ctx.fillStyle = '#3498db'; ctx.fillText('电流', 10, zeroY + 65);
+}
+
+/* ---------- 高亮 ---------- */
+function highlightFormula(idx) {
+  document.querySelectorAll('.formula').forEach(f => f.classList.remove('active'));
+  document.getElementById(`formula${idx + 1}`).classList.add('active');
+}
+
+/* ---------- 动画 ---------- */
+function animate() {
+  if (!isPaused) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawAxes();
+    drawWaveformFrame();
+    drawWaveform();
+
+    const curAngRad = angle * Math.PI / 180;
+    const phase = currentElement === 'RLC' ? rlcProfiles[rlcIdx].phase :
+                  elementData[currentElement].phase;
+
+    drawPhasor(250, 200, 80, curAngRad, '#e74c3c', 'Ú');
+    drawPhasor(250, 200, 60, curAngRad - phase * Math.PI / 180, '#3498db', 'İ');
+
+    angle += 2; if (angle >= 360) angle = 0;
+
+    document.getElementById('phaseDiff').textContent = phase.toFixed(1);
+    if (angle % 300 === 0) { currentFormula = (currentFormula + 1) % 5; highlightFormula(currentFormula); }
+  }
+  animationId = requestAnimationFrame(animate);
+}
+
+/* ---------- 控制 ---------- */
+function startAnimation() { isPaused = false; if (!animationId) animate(); }
+function pauseAnimation() { isPaused = true; }
+function resetAnimation() {
+  isPaused = true; angle = 0; currentFormula = 0; highlightFormula(0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawAxes(); drawWaveformFrame(); drawWaveform();
+}
+function cycleRLC() {
+  rlcIdx = (rlcIdx + 1) % rlcProfiles.length;
+  const p = rlcProfiles[rlcIdx];
+  Object.assign(params, { R: p.R, L: p.L, C: p.C });
+  document.getElementById('circuitType').textContent = p.name;
+  currentElement = 'RLC';
+  document.querySelectorAll('.element-btns button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btnRLC').classList.add('active');
+  document.getElementById('elementExpr').textContent =
+    `RLC 串联：Z = ${params.R} + j(${omega * params.L - 1 / (omega * params.C)}Ω)  电压-电流夹角=${p.phase}°`;
+  resetAnimation();
+}
+
+function showElement(el) {
+  currentElement = el;
+  document.querySelectorAll('.element-btns button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn' + el).classList.add('active');
+  document.getElementById('elementExpr').textContent = elementData[el].expr;
+  document.getElementById('circuitType').textContent = '纯阻性';
+  resetAnimation();
+}
+
+/* ---------- 初始化 ---------- */
+window.onload = () => {
+  drawAxes(); drawWaveformFrame(); drawWaveform(); highlightFormula(0);
+  showElement('R');
+  document.getElementById('startBtn').onclick = startAnimation;
+  document.getElementById('pauseBtn').onclick = pauseAnimation;
+  document.getElementById('resetBtn').onclick = resetAnimation;
+};
+</script>
+</body>
+</html>

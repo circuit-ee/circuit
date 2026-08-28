@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLC 串联电路阻抗三角形</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f5f7fa;
+            color: #2c3e50;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #1a1a2e;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .canvas-wrapper {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        canvas {
+            border-radius: 12px;
+            background: #fafbfc;
+            cursor: crosshair;
+        }
+
+        .controls-panel {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 30px;
+            min-width: 380px;
+            max-width: 420px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-value {
+            font-size: 1.1rem;
+            color: #e74c3c;
+            font-weight: 700;
+            background: #fef2f2;
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background: #e8ecf1;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #e74c3c;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.r { border-left-color: #e74c3c; }
+        .stat-card.xl { border-left-color: #27ae60; }
+        .stat-card.xc { border-left-color: #3498db; }
+        .stat-card.z { border-left-color: #9b59b6; }
+        .stat-card.phi { border-left-color: #f39c12; }
+        .stat-card.freq { border-left-color: #1abc9c; }
+
+        .stat-name {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .stat-unit {
+            font-size: 0.85rem;
+            color: #95a5a6;
+            font-weight: 500;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+
+        .formula-box {
+            background: #f0f4f8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            line-height: 2;
+            color: #34495e;
+        }
+
+        .formula-box .formula {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 1.2rem;
+            color: #1a1a2e;
+        }
+
+        .play-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .play-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .play-btn.playing {
+            background: #27ae60;
+        }
+
+        .circuit-state {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .state-inductive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .state-capacitive {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .state-resonant {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .controls-panel {
+                min-width: 300px;
+                width: 100%;
+            }
+            canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+            .canvas-container {
+                flex-direction: column;
+            }
+        }
+    
+        .display-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .display-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f4f8;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-weight: 500;
+        }
+
+        .display-option:hover {
+            background: #e8ecf1;
+        }
+
+        .display-option.active {
+            border-color: #e74c3c;
+            background: #fef2f2;
+        }
+
+        .display-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #e74c3c;
+            cursor: pointer;
+        }
+
+        .display-option label {
+            cursor: pointer;
+            font-size: 1.05rem;
+        }
+
+        .canvas-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .canvas-tab {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e6ed;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .canvas-tab:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .canvas-tab.active {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        .canvas-container {
+            position: relative;
+        }
+
+        #voltageCanvas {
+            border-radius: 12px;
+            background: #fafbfc;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <h1>RLC 串联电路阻抗三角形</h1>
+    <p class="subtitle">在复平面上交互式展示阻抗随频率的变化</p>
+
+    <div class="main-container">
+        <div class="canvas-wrapper">
+            <div class="display-options">
+                <div class="display-option active" id="optImpedance">
+                    <input type="checkbox" id="showImpedance" checked>
+                    <label for="showImpedance">阻抗三角形</label>
+                </div>
+                <div class="display-option active" id="optVoltage">
+                    <input type="checkbox" id="showVoltage" checked>
+                    <label for="showVoltage">电压三角形</label>
+                </div>
+            </div>
+
+            <div class="canvas-tabs">
+                <div class="canvas-tab active" id="tabImpedance" onclick="switchTab('impedance')">阻抗三角形</div>
+                <div class="canvas-tab" id="tabVoltage" onclick="switchTab('voltage')">电压三角形</div>
+                <div class="canvas-tab" id="tabBoth" onclick="switchTab('both')">双图并排</div>
+            </div>
+
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="impedanceCanvas" width="600" height="600"></canvas>
+                <canvas id="voltageCanvas" width="600" height="600" style="display:none;"></canvas>
+            </div>
+
+            <div class="legend" id="impedanceLegend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#e74c3c;"></div>
+                    <span>电阻 R（实轴）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#27ae60;"></div>
+                    <span>感抗 X<sub>L</sub>（+j）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#3498db;"></div>
+                    <span>容抗 X<sub>C</sub>（-j）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#9b59b6;"></div>
+                    <span>总阻抗 |Z|</span>
+                </div>
+            </div>
+
+            <div class="legend" id="voltageLegend" style="display:none;">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#e74c3c;"></div>
+                    <span>电阻电压 U<sub>R</sub>（与电流同相）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#27ae60;"></div>
+                    <span>电感电压 U<sub>L</sub>（超前电流90°）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#3498db;"></div>
+                    <span>电容电压 U<sub>C</sub>（滞后电流90°）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#9b59b6;"></div>
+                    <span>总电压 |U|</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <div class="control-label">
+                    <span>角频率 ω</span>
+                    <span class="control-value" id="omegaValue">500 rad/s</span>
+                </div>
+                <input type="range" id="omegaSlider" min="10" max="2000" value="500" step="5">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>电阻 R</span>
+                    <span class="control-value" id="rValue">50 Ω</span>
+                </div>
+                <input type="range" id="rSlider" min="10" max="200" value="50" step="5">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>电感 L</span>
+                    <span class="control-value" id="lValue">0.1 H</span>
+                </div>
+                <input type="range" id="lSlider" min="0.01" max="0.5" value="0.1" step="0.01">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>电容 C</span>
+                    <span class="control-value" id="cValue">20 μF</span>
+                </div>
+                <input type="range" id="cSlider" min="1" max="100" value="20" step="1">
+            </div>
+
+            <button class="play-btn" id="playBtn">▶ 自动播放频率扫描</button>
+
+            <div class="circuit-state" id="circuitState">电路状态：感性（X<sub>L</sub> > X<sub>C</sub>）</div>
+
+            <div class="stats-grid">
+                <div class="stat-card r">
+                    <div class="stat-name">电阻 R</div>
+                    <div class="stat-value" id="statR">50</div>
+                    <div class="stat-unit">Ω</div>
+                </div>
+                <div class="stat-card xl">
+                    <div class="stat-name">感抗 X<sub>L</sub></div>
+                    <div class="stat-value" id="statXL">50</div>
+                    <div class="stat-unit">Ω</div>
+                </div>
+                <div class="stat-card xc">
+                    <div class="stat-name">容抗 X<sub>C</sub></div>
+                    <div class="stat-value" id="statXC">100</div>
+                    <div class="stat-unit">Ω</div>
+                </div>
+                <div class="stat-card z">
+                    <div class="stat-name">总阻抗 |Z|</div>
+                    <div class="stat-value" id="statZ">112</div>
+                    <div class="stat-unit">Ω</div>
+                </div>
+                <div class="stat-card phi">
+                    <div class="stat-name">阻抗角 φ</div>
+                    <div class="stat-value" id="statPhi">-45.0</div>
+                    <div class="stat-unit">°</div>
+                </div>
+                <div class="stat-card freq">
+                    <div class="stat-name">谐振频率 f₀</div>
+                    <div class="stat-value" id="statF0">112.5</div>
+                    <div class="stat-unit">Hz</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>电流有效值 I</span>
+                    <span class="control-value" id="iValue">1.0 A</span>
+                </div>
+                <input type="range" id="iSlider" min="0.1" max="5.0" value="1.0" step="0.1">
+            </div>
+
+            <div class="formula-box">
+                <div style="font-weight:600; margin-bottom:10px; color:#1a1a2e;">核心公式</div>
+                <div class="formula">U<sub>R</sub> = I·R,  U<sub>L</sub> = I·X<sub>L</sub>,  U<sub>C</sub> = I·X<sub>C</sub></div>
+                <div class="formula">|U| = √(U<sub>R</sub>² + (U<sub>L</sub> - U<sub>C</sub>)²) = I·|Z|</div>
+                <div class="formula">电压三角形与阻抗三角形相似，比例系数为 I</div>
+                <div style="font-weight:600; margin-top:15px; margin-bottom:10px; color:#1a1a2e;">阻抗公式</div>
+                <div class="formula">X<sub>L</sub> = ωL</div>
+                <div class="formula">X<sub>C</sub> = 1/(ωC)</div>
+                <div class="formula">|Z| = √(R² + (X<sub>L</sub> - X<sub>C</sub>)²)</div>
+                <div class="formula">φ = arctan((X<sub>L</sub> - X<sub>C</sub>)/R)</div>
+                <div class="formula">ω₀ = 1/√(LC)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const impedanceCanvas = document.getElementById('impedanceCanvas');
+        const voltageCanvas = document.getElementById('voltageCanvas');
+        const ctxZ = impedanceCanvas.getContext('2d');
+        const ctxU = voltageCanvas.getContext('2d');
+
+        // UI elements
+        const omegaSlider = document.getElementById('omegaSlider');
+        const rSlider = document.getElementById('rSlider');
+        const lSlider = document.getElementById('lSlider');
+        const cSlider = document.getElementById('cSlider');
+        const iSlider = document.getElementById('iSlider');
+        const playBtn = document.getElementById('playBtn');
+        const showImpedance = document.getElementById('showImpedance');
+        const showVoltage = document.getElementById('showVoltage');
+
+        // State
+        let omega = 500;
+        let R = 50;
+        let L = 0.1;
+        let C = 20e-6;
+        let I = 1.0;
+        let isPlaying = false;
+        let animationId = null;
+        let playDirection = 1;
+        let currentTab = 'both'; // 'impedance', 'voltage', 'both'
+
+        // Canvas setup
+        const centerX = impedanceCanvas.width / 2;
+        const centerY = impedanceCanvas.height / 2;
+        const maxDisplayImpedance = 300;
+        const scale = 220 / maxDisplayImpedance;
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.canvas-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+            const container = document.getElementById('canvasContainer');
+            const zLegend = document.getElementById('impedanceLegend');
+            const uLegend = document.getElementById('voltageLegend');
+
+            if (tab === 'impedance') {
+                impedanceCanvas.style.display = 'block';
+                voltageCanvas.style.display = 'none';
+                impedanceCanvas.width = 600;
+                impedanceCanvas.height = 600;
+                zLegend.style.display = 'flex';
+                uLegend.style.display = 'none';
+            } else if (tab === 'voltage') {
+                impedanceCanvas.style.display = 'none';
+                voltageCanvas.style.display = 'block';
+                voltageCanvas.width = 600;
+                voltageCanvas.height = 600;
+                zLegend.style.display = 'none';
+                uLegend.style.display = 'flex';
+            } else {
+                impedanceCanvas.style.display = 'block';
+                voltageCanvas.style.display = 'block';
+                impedanceCanvas.width = 580;
+                impedanceCanvas.height = 580;
+                voltageCanvas.width = 580;
+                voltageCanvas.height = 580;
+                zLegend.style.display = 'flex';
+                uLegend.style.display = 'flex';
+            }
+
+            updateValues();
+            draw();
+        }
+
+        function updateDisplayOptions() {
+            const optImp = document.getElementById('optImpedance');
+            const optVolt = document.getElementById('optVoltage');
+
+            if (showImpedance.checked) optImp.classList.add('active');
+            else optImp.classList.remove('active');
+
+            if (showVoltage.checked) optVolt.classList.add('active');
+            else optVolt.classList.remove('active');
+
+            if (!showImpedance.checked && showVoltage.checked) {
+                switchTab('voltage');
+            } else if (showImpedance.checked && !showVoltage.checked) {
+                switchTab('impedance');
+            } else if (showImpedance.checked && showVoltage.checked) {
+                switchTab('both');
+            }
+        }
+
+        function updateValues() {
+            omega = parseFloat(omegaSlider.value);
+            R = parseFloat(rSlider.value);
+            L = parseFloat(lSlider.value);
+            C = parseFloat(cSlider.value) * 1e-6;
+            I = parseFloat(iSlider.value);
+
+            document.getElementById('omegaValue').textContent = omega + ' rad/s';
+            document.getElementById('rValue').textContent = R + ' Ω';
+            document.getElementById('lValue').textContent = L + ' H';
+            document.getElementById('cValue').textContent = (C * 1e6).toFixed(0) + ' μF';
+            document.getElementById('iValue').textContent = I.toFixed(1) + ' A';
+
+            const XL = omega * L;
+            const XC = 1 / (omega * C);
+            const X = XL - XC;
+            const Z = Math.sqrt(R * R + X * X);
+            const phi = Math.atan2(X, R) * 180 / Math.PI;
+            const omega0 = 1 / Math.sqrt(L * C);
+            const f0 = omega0 / (2 * Math.PI);
+
+            const UR = I * R;
+            const UL = I * XL;
+            const UC = I * XC;
+            const UX = I * X;
+            const U = I * Z;
+
+            document.getElementById('statR').textContent = R.toFixed(1);
+            document.getElementById('statXL').textContent = XL.toFixed(1);
+            document.getElementById('statXC').textContent = XC.toFixed(1);
+            document.getElementById('statZ').textContent = Z.toFixed(1);
+            document.getElementById('statPhi').textContent = phi.toFixed(1);
+            document.getElementById('statF0').textContent = f0.toFixed(1);
+
+            const stateEl = document.getElementById('circuitState');
+            if (Math.abs(X) < 1) {
+                stateEl.className = 'circuit-state state-resonant';
+                stateEl.innerHTML = '电路状态：<strong>谐振</strong>（X<sub>L</sub> ≈ X<sub>C</sub>）|Z| = R，φ = 0°';
+            } else if (X > 0) {
+                stateEl.className = 'circuit-state state-inductive';
+                stateEl.innerHTML = '电路状态：<strong>感性</strong>（X<sub>L</sub> > X<sub>C</sub>）电压超前电流';
+            } else {
+                stateEl.className = 'circuit-state state-capacitive';
+                stateEl.innerHTML = '电路状态：<strong>容性</strong>（X<sub>C</sub> > X<sub>L</sub>）电流超前电压';
+            }
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width = 3, headSize = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const len = Math.sqrt(dx * dx + dy * dy);
+
+            // Shorten line so arrowhead doesn't overlap
+            const shorten = headSize + 5;
+            const endX = fromX + (dx / len) * (len - shorten);
+            const endY = fromY + (dy / len) * (len - shorten);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headSize * Math.cos(angle - Math.PI/6), toY - headSize * Math.sin(angle - Math.PI/6));
+            ctx.lineTo(toX - headSize * Math.cos(angle + Math.PI/6), toY - headSize * Math.sin(angle + Math.PI/6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawDashedLine(ctx, x1, y1, x2, y2, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawGrid(ctx, canvas, title, subtitle, xLabel, yLabel) {
+            ctx.strokeStyle = '#e0e6ed';
+            ctx.lineWidth = 1;
+
+            // Grid lines
+            for (let i = -250; i <= 250; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(centerX + i, 0);
+                ctx.lineTo(centerX + i, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, centerY + i);
+                ctx.lineTo(canvas.width, centerY + i);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(xLabel + ' →', canvas.width - 60, centerY - 10);
+            ctx.fillText('← -' + xLabel, 60, centerY - 10);
+            ctx.textAlign = 'right';
+            ctx.fillText('+' + yLabel + ' ↑', centerX - 10, 30);
+            ctx.fillText('-' + yLabel + ' ↓', centerX - 10, canvas.height - 15);
+            ctx.textAlign = 'center';
+            ctx.fillText('O', centerX - 15, centerY + 20);
+
+            // Title
+            ctx.fillStyle = '#1a1a2e';
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(title, centerX, 40);
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#7f8c8d';
+            ctx.fillText(subtitle, centerX, 65);
+
+            // Scale markers
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#95a5a6';
+            for (let i = 50; i <= 250; i += 50) {
+                const val = (i / scale).toFixed(0);
+                ctx.fillText(val, centerX + i, centerY + 18);
+                ctx.fillText(val, centerX - i, centerY + 18);
+                ctx.fillText(val, centerX + 18, centerY - i);
+                ctx.fillText(val, centerX + 18, centerY + i);
+            }
+        }
+
+        function drawImpedanceTriangle(ctx, canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid(ctx, canvas, '复平面阻抗三角形', 'Z = R + j(X_L - X_C) = |Z|∠φ', 'Re(Z)', 'Im(Z)');
+
+            const XL = omega * L;
+            const XC = 1 / (omega * C);
+            const X = XL - XC;
+            const Z = Math.sqrt(R * R + X * X);
+            const phi = Math.atan2(X, R);
+
+            // Scale factor to fit in canvas
+            const displayScale = Math.min(scale, 220 / Math.max(Math.abs(XL), Math.abs(XC), R, Math.abs(X), Z, 1));
+
+            const originX = centerX - 180;
+            const originY = centerY + 120;
+
+            const rEndX = originX + R * displayScale;
+            const rEndY = originY;
+
+            const xEndX = rEndX;
+            const xEndY = originY - X * displayScale;
+
+            const zEndX = originX + Z * Math.cos(phi) * displayScale;
+            const zEndY = originY - Z * Math.sin(phi) * displayScale;
+
+            // Draw impedance triangle
+
+            // R vector (red)
+            drawArrow(ctx, originX, originY, rEndX, rEndY, '#e74c3c', 4, 12);
+
+            // X vector (green for XL, blue for XC, or purple for net)
+            let xColor = '#9b59b6';
+            if (X > 0) xColor = '#27ae60';
+            else if (X < 0) xColor = '#3498db';
+            drawArrow(ctx, rEndX, rEndY, xEndX, xEndY, xColor, 4, 12);
+
+            // Z vector (purple)
+            drawArrow(ctx, originX, originY, zEndX, zEndY, '#9b59b6', 5, 14);
+
+            // Dashed lines for triangle completion
+            drawDashedLine(ctx, originX, originY, originX, xEndY, '#bdc3c7');
+            drawDashedLine(ctx, originX, xEndY, xEndX, xEndY, '#bdc3c7');
+
+            // Draw angle arc
+            const arcRadius = 50;
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            if (X >= 0) {
+                ctx.arc(originX, originY, arcRadius, 0, -phi, true);
+            } else {
+                ctx.arc(originX, originY, arcRadius, 0, -phi, false);
+            }
+            ctx.stroke();
+
+            // Angle label
+            const angleLabelRadius = 70;
+            const angleLabelAngle = -phi / 2;
+            const angleLabelX = originX + angleLabelRadius * Math.cos(angleLabelAngle);
+            const angleLabelY = originY + angleLabelRadius * Math.sin(angleLabelAngle);
+            ctx.fillStyle = '#f39c12';
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('φ = ' + (phi * 180 / Math.PI).toFixed(1) + '°', angleLabelX, angleLabelY);
+
+            // Vector labels
+            ctx.font = 'bold 18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#e74c3c';
+            ctx.textAlign = 'center';
+            ctx.fillText('R = ' + R.toFixed(1) + 'Ω', (originX + rEndX) / 2, originY + 30);
+
+            ctx.fillStyle = xColor;
+            ctx.textAlign = 'left';
+            ctx.fillText('X = ' + X.toFixed(1) + 'Ω', xEndX + 15, (rEndY + xEndY) / 2);
+
+            ctx.fillStyle = '#9b59b6';
+            ctx.textAlign = 'center';
+            const midZX = (originX + zEndX) / 2;
+            const midZY = (originY + zEndY) / 2;
+            ctx.fillText('|Z| = ' + Z.toFixed(1) + 'Ω', midZX - 30, midZY - 15);
+
+            // Component breakdown labels
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#27ae60';
+            ctx.textAlign = 'right';
+            if (XL > 0) {
+                ctx.fillText('X_L = ' + XL.toFixed(1) + 'Ω', originX - 10, originY - XL * displayScale / 2);
+            }
+            ctx.fillStyle = '#3498db';
+            if (XC > 0) {
+                ctx.fillText('X_C = ' + XC.toFixed(1) + 'Ω', originX - 10, originY + XC * displayScale / 2);
+            }
+        }
+
+        function drawVoltageTriangle(ctx, canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid(ctx, canvas, '电压三角形', 'U = U_R + j(U_L - U_C) = |U|∠φ', 'Re(U)', 'Im(U)');
+
+            const XL = omega * L;
+            const XC = 1 / (omega * C);
+            const X = XL - XC;
+            const Z = Math.sqrt(R * R + X * X);
+            const phi = Math.atan2(X, R);
+
+            const UR = I * R;
+            const UL = I * XL;
+            const UC = I * XC;
+            const UX = I * X;
+            const U = I * Z;
+
+            // Scale factor to fit in canvas
+            const displayScale = Math.min(scale, 220 / Math.max(Math.abs(UL), Math.abs(UC), UR, Math.abs(UX), U, 1));
+
+            const originX = centerX - 180;
+            const originY = centerY + 120;
+
+            const urEndX = originX + UR * displayScale;
+            const urEndY = originY;
+
+            const uxEndX = urEndX;
+            const uxEndY = originY - UX * displayScale;
+
+            const uEndX = originX + U * Math.cos(phi) * displayScale;
+            const uEndY = originY - U * Math.sin(phi) * displayScale;
+
+            // Draw voltage triangle
+
+            // U_R vector (red) - in phase with current
+            drawArrow(ctx, originX, originY, urEndX, urEndY, '#e74c3c', 4, 12);
+
+            // U_X vector (green for UL, blue for UC, or purple for net)
+            let uxColor = '#9b59b6';
+            if (UX > 0) uxColor = '#27ae60';
+            else if (UX < 0) uxColor = '#3498db';
+            drawArrow(ctx, urEndX, urEndY, uxEndX, uxEndY, uxColor, 4, 12);
+
+            // U vector (purple)
+            drawArrow(ctx, originX, originY, uEndX, uEndY, '#9b59b6', 5, 14);
+
+            // Dashed lines for triangle completion
+            drawDashedLine(ctx, originX, originY, originX, uxEndY, '#bdc3c7');
+            drawDashedLine(ctx, originX, uxEndY, uxEndX, uxEndY, '#bdc3c7');
+
+            // Draw angle arc
+            const arcRadius = 50;
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            if (UX >= 0) {
+                ctx.arc(originX, originY, arcRadius, 0, -phi, true);
+            } else {
+                ctx.arc(originX, originY, arcRadius, 0, -phi, false);
+            }
+            ctx.stroke();
+
+            // Angle label
+            const angleLabelRadius = 70;
+            const angleLabelAngle = -phi / 2;
+            const angleLabelX = originX + angleLabelRadius * Math.cos(angleLabelAngle);
+            const angleLabelY = originY + angleLabelRadius * Math.sin(angleLabelAngle);
+            ctx.fillStyle = '#f39c12';
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('φ = ' + (phi * 180 / Math.PI).toFixed(1) + '°', angleLabelX, angleLabelY);
+
+            // Vector labels
+            ctx.font = 'bold 18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#e74c3c';
+            ctx.textAlign = 'center';
+            ctx.fillText('U_R = ' + UR.toFixed(1) + 'V', (originX + urEndX) / 2, originY + 30);
+
+            ctx.fillStyle = uxColor;
+            ctx.textAlign = 'left';
+            ctx.fillText('U_X = ' + UX.toFixed(1) + 'V', uxEndX + 15, (urEndY + uxEndY) / 2);
+
+            ctx.fillStyle = '#9b59b6';
+            ctx.textAlign = 'center';
+            const midUX = (originX + uEndX) / 2;
+            const midUY = (originY + uEndY) / 2;
+            ctx.fillText('|U| = ' + U.toFixed(1) + 'V', midUX - 30, midUY - 15);
+
+            // Component breakdown labels
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#27ae60';
+            ctx.textAlign = 'right';
+            if (UL > 0) {
+                ctx.fillText('U_L = ' + UL.toFixed(1) + 'V', originX - 10, originY - UL * displayScale / 2);
+            }
+            ctx.fillStyle = '#3498db';
+            if (UC > 0) {
+                ctx.fillText('U_C = ' + UC.toFixed(1) + 'V', originX - 10, originY + UC * displayScale / 2);
+            }
+
+            // Current reference label
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('I = ' + I.toFixed(1) + 'A (参考相位)', centerX, canvas.height - 30);
+        }
+
+        function draw() {
+            if (currentTab === 'impedance' || currentTab === 'both') {
+                drawImpedanceTriangle(ctxZ, impedanceCanvas);
+            }
+            if (currentTab === 'voltage' || currentTab === 'both') {
+                drawVoltageTriangle(ctxU, voltageCanvas);
+            }
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+
+            let val = parseFloat(omegaSlider.value);
+            val += playDirection * 8;
+
+            if (val >= 2000) {
+                val = 2000;
+                playDirection = -1;
+            } else if (val <= 10) {
+                val = 10;
+                playDirection = 1;
+            }
+
+            omegaSlider.value = val;
+            updateValues();
+            draw();
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        [omegaSlider, rSlider, lSlider, cSlider, iSlider].forEach(slider => {
+            slider.addEventListener('input', () => {
+                updateValues();
+                draw();
+            });
+        });
+
+        showImpedance.addEventListener('change', updateDisplayOptions);
+        showVoltage.addEventListener('change', updateDisplayOptions);
+
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                isPlaying = false;
+                playBtn.textContent = '▶ 自动播放频率扫描';
+                playBtn.classList.remove('playing');
+                cancelAnimationFrame(animationId);
+            } else {
+                isPlaying = true;
+                playBtn.textContent = '⏸ 停止播放';
+                playBtn.classList.add('playing');
+                animate();
+            }
+        });
+
+        // Initialize
+        updateValues();
+        draw();
+        updateDisplayOptions();
+    </script>
+</body>
+</html>

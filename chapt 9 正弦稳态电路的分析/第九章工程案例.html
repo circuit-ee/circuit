@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>第9章延伸 · 电力系统与特高压工程案例</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "PingFang SC","Microsoft YaHei",sans-serif;
+        background: #f5f7fa;
+        color: #1e293b;
+        font-size: 22px;
+        line-height: 1.85;
+    }
+    header {
+        background: linear-gradient(135deg,#1e3a8a,#0e7490);
+        color: #fff;
+        padding: 36px 24px;
+        text-align: center;
+    }
+    header h1 { font-size: 40px; margin: 0; letter-spacing: 1px; }
+    header p { font-size: 21px; opacity: .92; margin-top: 12px; }
+
+    .tabs {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        background: #dbeafe;
+        padding: 16px;
+        flex-wrap: wrap;
+    }
+    .tabs button {
+        font-size: 20px;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        background: #fff;
+        color: #1e3a8a;
+    }
+    .tabs button.active { background: #1e3a8a; color: #fff; }
+
+    .pane {
+        max-width: 1160px;
+        margin: 30px auto;
+        background: #fff;
+        border-radius: 18px;
+        padding: 44px;
+        box-shadow: 0 12px 48px rgba(0,0,0,.08);
+        display: none;
+    }
+    .pane.active { display: block; }
+
+    h2 { font-size: 32px; color: #1e3a8a; margin-top: 0; }
+    h3 { font-size: 25px; color: #475569; margin-top: 24px; }
+
+    .eq {
+        background: #eff6ff;
+        padding: 22px 26px;
+        border-radius: 12px;
+        font-size: 24px;
+        text-align: center;
+        border-left: 6px solid #2563eb;
+        margin: 22px 0;
+    }
+
+    .ctrl {
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        margin: 26px 0;
+        align-items: center;
+    }
+    .ctrl label { font-size: 21px; min-width: 150px; }
+    .ctrl span { font-weight: bold; color: #9a3412; font-size: 22px; }
+    input[type=range] { width: 230px; height: 10px; }
+
+    canvas {
+        display: block;
+        margin: 24px auto;
+        background: #fff;
+        border: 2px solid #dbeafe;
+        border-radius: 14px;
+    }
+
+    .box { padding: 20px 24px; border-radius: 12px; font-size: 21px; margin: 20px 0; }
+    .info { background: #f0fdff; border-left: 6px solid #0ea5e9; }
+    .ok   { background: #ecfdf5; border-left: 6px solid #10b981; }
+    .warn { background: #fef3c7; border-left: 6px solid #f59e0b; }
+    .bad  { background: #fef2f2; border-left: 6px solid #dc2626; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 19px; margin: 18px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: center; }
+    th { background: #f1f5f9; }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 16px;
+        font-weight: bold;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    .b-safe { background: #d1fae5; color: #065f46; }
+    .b-warn { background: #fef3c7; color: #92400e; }
+    .b-bad  { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>第9章延伸 · 电力系统与特高压工程案例</h1>
+    <p>容升效应 · 无功电压支撑 · 电网小扰动特征值 &nbsp;（邱关源《电路》第9章工具直达）</p>
+</header>
+
+<div class="tabs">
+    <button class="tabBtn active" onclick="show('p1',this)">① 特高压容升效应</button>
+    <button class="tabBtn" onclick="show('p2',this)">② 受端无功补偿</button>
+    <button class="tabBtn" onclick="show('p3',this)">③ 电网低频振荡</button>
+    <button class="tabBtn" onclick="show('p4',this)">④ 集总 vs 分布：适用范围</button>
+</div>
+
+<!-- ========== 案例1：容升效应（已修正） ========== -->
+<div id="p1" class="pane active">
+    <h2>① 1000 kV 特高压：空载末端电压升高</h2>
+
+    <h3>工程背景</h3>
+    <p>特高压交流线路对地电容巨大，空载时电容电流流过线路电感，在末端产生压升——
+    这叫 <b>费兰蒂效应（Ferranti Effect）</b>。线路越长，末端电压越高。</p>
+
+    <h3>第9章工具：π 型等效电路</h3>
+    <p>把分布参数线路等效为 π 型：</p>
+    <div class="eq">
+        X<sub>L</sub> = x · l &nbsp;&nbsp;&nbsp;
+        B = b · l &nbsp;&nbsp;&nbsp;
+        ΔU / U<sub>1</sub> ≈ X<sub>L</sub> · B · U<sub>1</sub> / 2
+    </div>
+    <p>其中 x = 0.25 Ω/km，b = 4.5 μS/km 为 1000 kV 单回线单位长度参数。</p>
+
+    <h3>📐 集总 π 型什么时候能用？</h3>
+    <div class="ok box">
+        <b>判据</b>：工频 λ = 6000 km，工程上要求 l ≤ λ/20 = <b>300 km</b> 时，
+        集总 π 型误差 &lt; 2%，可放心使用。
+    </div>
+    <p>因此下面滑块限定在 <b>50 ~ 300 km</b>（集总合法区）。超过 300 km 见第④页。</p>
+
+    <div class="ctrl">
+        <label>线路长度 l = <span id="ll">200</span> km</label>
+        <input type="range" min="50" max="300" step="10" value="200" oninput="updP1(this.value)">
+    </div>
+
+    <canvas id="cv1" width="800" height="340"></canvas>
+
+    <div id="r1" class="info box"></div>
+
+    <div class="warn box">
+        💡 <b>工程措施</b>：当 ΔU/U₁ 接近 10%（约 300 km 处），必须投入
+        <b>高压并联电抗器</b>吸收线路充电功率，否则末端电压越限，威胁设备绝缘。
+    </div>
+</div>
+
+<!-- ========== 案例2：受端无功补偿 ========== -->
+<div id="p2" class="pane">
+    <h2>② 特高压受端电网：无功缺口与电压支撑</h2>
+
+    <h3>工程背景</h3>
+    <p>西北新能源大基地经 1000 kV 线路向华东送电。送端线路发出容性充电功率 Q<sub>C</sub>，
+    受端负荷（异步电机群）吸收大量感性无功 Q<sub>L</sub>，造成受端电压跌落。</p>
+
+    <h3>第9章工具：复功率 + 电压降公式</h3>
+    <div class="eq">
+        S = P + jQ &nbsp;&nbsp;&nbsp;
+        U<sub>2</sub> = U<sub>1</sub> − (P·R + Q<sub>net</sub>·X) / U<sub>1</sub>
+        &nbsp;&nbsp;&nbsp; Q<sub>net</sub> = Q<sub>L</sub> − Q<sub>C</sub> − Q<sub>comp</sub>
+    </div>
+
+    <h3>参数（1000 kV 受端典型值）</h3>
+    <table>
+        <tr><th>负荷 P</th><th>补偿前 λ₁</th><th>Q<sub>L</sub></th><th>Q<sub>C</sub> 送出</th><th>等效 X</th></tr>
+        <tr><td>8000 MW</td><td>0.92</td><td>≈ 3360 Mvar</td><td>≈ 1200 Mvar</td><td>75 Ω</td></tr>
+    </table>
+
+    <div class="ctrl">
+        <label>SVG 补偿 Q<sub>comp</sub> = <span id="qc">2000</span> Mvar</label>
+        <input type="range" min="0" max="4000" step="100" value="2000" oninput="updP2(this.value)">
+    </div>
+
+    <canvas id="cv2" width="800" height="320"></canvas>
+
+    <div id="r2" class="info box"></div>
+
+    <div class="bad box">
+        ⚠️ 无功缺口大 → 受端电压坍塌；过补偿 → 电压越上限，设备绝缘承压。
+        <b>目标 λ₂ ≥ 0.98</b>，对应 I 从 131 A 降到 80 A，变压器容量释放约 30%。
+    </div>
+</div>
+
+<!-- ========== 案例3：电网低频振荡 ========== -->
+<div id="p3" class="pane">
+    <h2>③ 两区域电网小扰动：特征值判稳</h2>
+
+    <h3>工程背景</h3>
+    <p>两大机群经弱联络线相连（如川渝—华中东），负荷扰动后会出现
+    <b>0.2 ~ 0.8 Hz 区域间低频振荡</b>。第9章的节点导纳矩阵 + 第5章特征值，
+    就是判断这类稳定性的最小工具集。</p>
+
+    <h3>第9章 + 第5章工具</h3>
+    <div class="eq">
+        Y = [ jB₁ &nbsp; −jB₁₂ &nbsp; 0 ;
+              −jB₁₂ &nbsp; j(B₁₂+B₂) &nbsp; −jB₂₃ ;
+              0 &nbsp; −jB₂₃ &nbsp; jB₃ ]
+        &nbsp;&nbsp; λ = σ ± jω<sub>d</sub>
+    </div>
+    <p>σ &lt; 0 → 阻尼正，扰动衰减；σ &gt; 0 → 失步，需加 PSS / 调相机。</p>
+
+    <div class="ctrl">
+        <label>联络线电纳 B<sub>12</sub> = <span id="b12v">0.80</span> pu</label>
+        <input type="range" min="0.2" max="2" step="0.05" value="0.80" oninput="updP3(this.value)">
+    </div>
+
+    <canvas id="cv3" width="800" height="340"></canvas>
+
+    <div id="r3" class="info box"></div>
+
+    <div class="warn box">
+        💡 B<sub>12</sub> 越小 → 联络越弱 → σ 越接近 0 → 区域间振荡越明显。
+        这正是大三《电力系统分析》低频振荡一章的起点。
+    </div>
+</div>
+
+<!-- ========== 案例4：集总 vs 分布（适用范围） ========== -->
+<div id="p4" class="pane">
+    <h2>④ 集总 π 型到底能用多远？</h2>
+
+    <h3>原理</h3>
+    <p>线路是<b>分布参数</b>系统，集总 π 型只是它的小长度近似。判断标准：</p>
+    <div class="eq">
+        λ = v/f = 3×10⁸ / 50 = 6000 km &nbsp;&nbsp;
+        l ≤ λ/20 = 300 km → 集总可信
+    </div>
+
+    <h3>三种算法</h3>
+    <table>
+        <tr><th>方法</th><th>公式</th><th>适用长度</th></tr>
+        <tr>
+            <td>集总 π 型</td>
+            <td>ΔU/U₁ ≈ (ωL'·ωC'·l²)/2</td>
+            <td class="ok">l ≤ 300 km <span class="badge b-safe">本页案例1</span></td>
+        </tr>
+        <tr>
+            <td>修正 π 型（GB/T 22389）</td>
+            <td>Y' = Y · tan(βl/2)/(βl/2)</td>
+            <td class="warn">300 ~ 600 km <span class="badge b-warn">特高压常用</span></td>
+        </tr>
+        <tr>
+            <td>分布参数（精确）</td>
+            <td>U₂/U₁ = 1 / cos(βl)</td>
+            <td class="bad">> 600 km <span class="badge b-bad">必须分布建模</span></td>
+        </tr>
+    </table>
+
+    <h3>三曲线对比（50 ~ 800 km 全量程）</h3>
+    <p>拖动看三种算法结果何时分家：</p>
+
+    <div class="ctrl">
+        <label>线路长度 l = <span id="ll4">300</span> km</label>
+        <input type="range" min="50" max="800" step="10" value="300" oninput="updP4(this.value)">
+    </div>
+
+    <canvas id="cv4" width="800" height="360"></canvas>
+
+    <div id="r4" class="info box"></div>
+
+    <div class="ok box">
+        ✅ 结论：<b>集总 π 型不是错，是近似</b>。短线路（≤300 km）省得漂亮，
+        长线路要换修正 π 型或分布参数，但物理本质仍是第9章的 Z(jω)、Y(jω)。
+    </div>
+</div>
+
+<script>
+/* ========== 通用 ========== */
+function show(id, btn){
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+    var el = document.getElementById(id);
+    if(el) el.classList.add('active');
+    document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+    if(btn && btn.classList) btn.classList.add('active');
+    else {
+        var btns = document.querySelectorAll('.tabBtn');
+        for(var i=0;i<btns.length;i++){
+            var oc = btns[i].getAttribute('onclick')||'';
+            if(oc.indexOf("'"+id+"'")>=0){ btns[i].classList.add('active'); break; }
+        }
+    }
+    if(id==='p1') draw1();
+    if(id==='p2') draw2();
+    if(id==='p3') draw3();
+    if(id==='p4') draw4();
+}
+
+const f = 50, w = 2*Math.PI*f;
+const U1 = 1000e3;          // 1000 kV
+const x = 0.25, b = 4.5e-6; // 单位长度参数
+const Lprim = x/w, Cprim = b/w; // H/km, F/km（π型近似用）
+const beta = w * Math.sqrt(Lprim * Cprim); // 相位常数 rad/km
+
+/* ========== 案例1：容升（限定≤300km，集总合法） ========== */
+let l1 = 200;
+function updP1(v){ l1 = +v; document.getElementById('ll').innerText = v; draw1(); }
+
+function draw1(){
+    const c = document.getElementById('cv1'), ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,800,340);
+
+    const XL = x * l1;  // 修复: x直接是Ω/km感抗
+    const B  = b * l1;
+    const dUratio = XL * B * U1 / 2 / U1; // ΔU/U1
+    const U2 = U1 * (1 + dUratio);
+    const Qc = U1 * U1 * B;
+
+    // π 型图
+    const ox = 140, oy = 170;
+    ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+200,oy); ctx.lineTo(ox+200,oy-50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+200,oy); ctx.lineTo(ox+200,oy+50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+440,oy); ctx.stroke();
+    ctx.fillStyle = '#1e3a8a'; ctx.font = '18px sans';
+    ctx.fillText('U₁ = 1000 kV', ox-30, oy-12);
+    ctx.fillText('U₂ = '+(U2/1e3).toFixed(1)+' kV', ox+440, oy-12);
+    ctx.fillText('X_L = '+XL.toFixed(1)+' Ω', ox+300, oy-16);
+    ctx.fillText('B = '+B.toFixed(4)+' S', ox+100, oy+90);
+
+    // 电压沿线曲线
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for(let d=0; d<=l1; d+=10){
+        const u = U1 * (1 + dUratio * d / l1);
+        const px = ox + (d/l1)*440;
+        const py = 300 - (u-U1)/U1 * 5000;
+        d===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#dc2626'; ctx.fillText('末端电压升高曲线', ox+150, 300);
+
+    // 结果
+    const pct = (dUratio*100).toFixed(2);
+    let tag = '';
+    if(dUratio < 0.05)      tag = '<span class="badge b-safe">集总可信</span>';
+    else if(dUratio < 0.10) tag = '<span class="badge b-warn">接近极限，需校核</span>';
+    else                     tag = '<span class="badge b-bad">超限！须投电抗器</span>';
+
+    document.getElementById('r1').innerHTML =
+        `X_L = ${XL.toFixed(1)} Ω，B = ${B.toFixed(4)} S，` +
+        `Q_C = ${(Qc/1e6).toFixed(0)} Mvar<br>` +
+        `ΔU/U₁ ≈ <b>${pct}%</b>，U₂ = ${(U2/1e3).toFixed(1)} kV ` + tag +
+        `<br><small>集总π型在 l≤300km 误差<2%，本页已限定在此区间。</small>`;
+}
+
+/* ========== 案例2：受端无功补偿 ========== */
+let Qcomp = 2000e6;
+function updP2(v){ Qcomp = +v*1e6; document.getElementById('qc').innerText = v; draw2(); }
+
+function draw2(){
+    const c = document.getElementById('cv2'), ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,800,320);
+
+    const P = 8000e6;
+    const lam1 = 0.92;
+    const QL = P * Math.tan(Math.acos(lam1)); // ≈3360 Mvar
+    const Qc_send = 1200e6;
+    const X = 75, R = 8;
+    const Qnet = QL - Qc_send - Qcomp;
+    const U1n = 1050e3;
+    const U2 = U1n - (P*R + Qnet*X)/U1n;
+    const lam2 = P / Math.hypot(P, Qnet);
+
+    // 电压条
+    const ox = 120, oy = 150, sc = 0.0006;
+    ctx.fillStyle = '#10b981'; ctx.fillRect(ox, oy, U2*sc, 44);
+    ctx.fillStyle = '#1e3a8a'; ctx.fillRect(ox, oy+60, U1n*sc, 44);
+    ctx.fillStyle = '#1f2937'; ctx.font = '19px sans';
+    ctx.fillText('受端 U₂ = '+(U2/1e3).toFixed(1)+' kV ('+(U2/U1n).toFixed(3)+' pu)', ox+540, oy+32);
+    ctx.fillText('基准 U₁ = 1050 kV', ox+540, oy+92);
+
+    // 文本
+    ctx.fillText('Q_L = '+(QL/1e6).toFixed(0)+' Mvar，Q_C送出 = '+(Qc_send/1e6)+' Mvar，Q_comp = '+(Qcomp/1e6)+' Mvar', 30, 40);
+    ctx.fillText('净无功 Q_net = '+(Qnet/1e6).toFixed(0)+' Mvar，合成 λ = '+lam2.toFixed(3), 30, 70);
+
+    const ok = lam2 >= 0.98;
+    document.getElementById('r2').innerHTML =
+        `受端电压 ${(U1n-(P*R+(QL-Qc_send)*X)/U1n)/1e3|0} kV → ${(U2/1e3).toFixed(0)} kV，` +
+        `λ ${lam1} → ${lam2.toFixed(3)} ` +
+        (ok ? '<b style="color:#16a34a">→ 达标</b>' : '<b style="color:#dc2626">→ 仍不足，继续补无功</b>') +
+        `<br>线电流 I = P/(U₂λ) 从 ${(P/(U2*0.92)/1e3).toFixed(0)} A 降到 ${(P/(U2*lam2)/1e3).toFixed(0)} A`;
+}
+
+/* ========== 案例3：电网低频振荡 ========== */
+let B12 = 0.8;
+function updP3(v){ B12 = +v; document.getElementById('b12v').innerText = v; draw3(); }
+
+function eig3(M){
+    function cp(lam){
+        return (M[0][0]-lam)*((M[1][1]-lam)*(M[2][2]-lam)-M[1][2]*M[2][1])
+             - M[0][1]*((M[1][0]-lam)*(M[2][2]-lam)-M[1][2]*M[2][0])
+             + M[0][2]*((M[1][0]-lam)*(M[2][1]-lam)-M[1][1]*M[2][0]);
+    }
+    let roots = [];
+    for(let s=-3; s<=3; s+=0.002){ if(cp(s-0.002)*cp(s)<=0){ roots.push(s); if(roots.length>=3) break; } }
+    return roots.slice(0,3);
+}
+
+function draw3(){
+    const c = document.getElementById('cv3'), ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,800,340);
+
+    const B1=1.2, B2=1.0, B3=1.5, B23=0.6;
+    const Y = [
+        [B1,    -B12,  0],
+        [-B12,  B12+B2, -B23],
+        [0,     -B23,  B3]
+    ];
+    const vals = eig3(Y).sort((a,b)=>a-b);
+    const sigma = vals.map(v => -0.25*Math.abs(v));
+    const wd = 2*Math.PI*0.4; // 0.4 Hz 典型区域间振荡
+
+    // 复平面
+    const ox = 400, oy = 200, sc = 60;
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ox,40); ctx.lineTo(ox,360); ctx.moveTo(120,oy); ctx.lineTo(680,oy); ctx.stroke();
+    ctx.fillStyle = '#1f2937'; ctx.font = '17px sans';
+    ctx.fillText('σ 实部 →', 690, oy-8); ctx.fillText('jω', ox+8, 50);
+
+    sigma.forEach((s,i)=>{
+        const x = ox + s*sc;
+        ctx.fillStyle = s<0 ? '#10b981' : '#dc2626';
+        ctx.beginPath(); ctx.arc(x, oy-wd*sc/6, 7, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, oy+wd*sc/6, 7, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1f2937'; ctx.fillText('λ'+(i+1)+': σ='+s.toFixed(2), x+10, oy-wd*sc/6-8);
+    });
+
+    // 摇摆曲线
+    ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let t=0; t<=6; t+=0.05){
+        const ang = 8 * Math.exp(sigma[sigma.length-1]*t) * Math.cos(wd*t);
+        const px = 120 + t*90, py = 320 - ang*3;
+        t===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#7c3aed'; ctx.fillText('区域间功角摇摆（0~6s）', 130, 315);
+
+    const dom = sigma[sigma.length-1];
+    document.getElementById('r3').innerHTML =
+        `主导特征值 σ = ${dom.toFixed(2)} ` +
+        (dom<0 ? '<b style="color:#16a34a">→ 阻尼正，扰动后回同步</b>'
+               : '<b style="color:#dc2626">→ σ>0 失步！</b>') +
+        `<br>B₁₂ = ${B12} pu，联络越弱 σ 越接近 0 → 越易低频振荡`;
+}
+
+/* ========== 案例4：集总 vs 修正 vs 精确 ========== */
+let l4 = 300;
+function updP4(v){ l4 = +v; document.getElementById('ll4').innerText = v; draw4(); }
+
+function draw4(){
+    const c = document.getElementById('cv4'), ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,800,360);
+
+    // 坐标
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80,300); ctx.lineTo(760,300); ctx.moveTo(80,80); ctx.lineTo(80,340); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '17px sans';
+    ctx.fillText('l (km)', 700, 295); ctx.fillText('U₂/U₁ (pu)', 40, 90);
+
+    // 三条曲线
+    const methods = [
+        { name:'集总π型  1+(βl)²/2',     col:'#3b82f6', fn: ll => 1 + beta*beta*ll*ll/2 },
+        { name:'修正π型  1/cos²(βl/2)',   col:'#f59e0b', fn: ll => 1/(Math.cos(beta*ll/2)*Math.cos(beta*ll/2)) },
+        { name:'精确解  1/cos(βl)',       col:'#10b981', fn: ll => 1/Math.cos(beta*ll) }
+    ];
+
+    methods.forEach((m,i)=>{
+        ctx.strokeStyle = m.col; ctx.lineWidth = 3;
+        ctx.beginPath();
+        for(let ll=0; ll<=800; ll+=20){
+            const y = 300 - m.fn(ll)*70;
+            ll===0 ? ctx.moveTo(80+ll, y) : ctx.lineTo(80+ll, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = m.col; ctx.fillText(m.name, 600, 110+i*26);
+    });
+
+    // 1.10 pu 警戒线
+    ctx.strokeStyle = '#dc2626'; ctx.setLineDash([6,4]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(80,300-1.10*70); ctx.lineTo(760,300-1.10*70); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#dc2626'; ctx.fillText('1.10 pu 电压上限', 560, 300-1.10*70-6);
+
+    // 300 km 分界线（集总可信边界）
+    ctx.strokeStyle = '#0ea5e9'; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(80+300,80); ctx.lineTo(80+300,340); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#0ea5e9'; ctx.fillText('300km 集总边界', 380, 100);
+
+    // 当前点
+    const x = 80+l4;
+    const yE = 300 - 1/Math.cos(beta*l4)*70;
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(x, yE, 7, 0, 7); ctx.fill();
+    ctx.fillText('当前 l='+l4+'km → U₂/U₁='+(1/Math.cos(beta*l4)).toFixed(3)+' pu', 90, 60);
+
+    // 数值表
+    const v1 = 1+beta*beta*l4*l4/2;
+    const v2 = 1/(Math.cos(beta*l4/2)**2);
+    const v3 = 1/Math.cos(beta*l4);
+    const err = ((v1-v3)/v3*100).toFixed(2);
+
+    let tag = '';
+    if(l4 <= 300)      tag = '<span class="badge b-safe">集总可信（误差'+err+'%）</span>';
+    else if(l4 <= 600) tag = '<span class="badge b-warn">建议修正π型（误差'+err+'%）</span>';
+    else                tag = '<span class="badge b-bad">必须分布参数（误差'+err+'%）</span>';
+
+    document.getElementById('r4').innerHTML =
+        `l=${l4} km → 集总 ${v1.toFixed(4)}，修正 ${v2.toFixed(4)}，精确 ${v3.toFixed(4)} ` + tag +
+        `<br><small>集总误差 = ${err}%，βl = ${(beta*l4).toFixed(3)} rad = ${(beta*l4*180/Math.PI).toFixed(1)}°</small>`;
+}
+
+/* 初始化 */
+function initPage(){
+    draw1(); draw2(); draw3(); draw4();
+}
+if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initPage);
+}else{
+    initPage();
+}
+</script>
+</body>
+</html>
