@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拉普拉斯变换 · 三维交互探索</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { font-size:18px; }
+  body {
+    font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    background:#f5f8fc; color:#1f2a37; overflow-x:clip;
+    -webkit-font-smoothing:antialiased;
+  }
+  section { scroll-margin-top:72px; }
+  /* ===== 顶部导航 ===== */
+  nav {
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid #e3eaf3; padding:14px 24px;
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center;
+  }
+  nav .brand { font-weight:800; font-size:1.15rem; color:#1d4ed8; margin-right:8px; }
+  nav a {
+    text-decoration:none; color:#334155; font-weight:600; font-size:1rem;
+    padding:8px 14px; border-radius:8px; transition:.2s; white-space:nowrap;
+  }
+  nav a:hover { background:#e8f0fe; color:#1d4ed8; }
+  /* ===== 章节通用 ===== */
+  section { max-width:1180px; margin:0 auto; padding:52px 24px; }
+  .sec-title { font-size:2rem; font-weight:800; color:#1e3a8a; margin-bottom:8px; }
+  .sec-sub { font-size:1.1rem; color:#64748b; margin-bottom:28px; line-height:1.7; }
+  .card {
+    background:#fff; border-radius:18px; padding:30px;
+    box-shadow:0 6px 24px rgba(30,58,138,0.06); border:1px solid #eef3f9;
+  }
+  .formula {
+    background:#f0f5ff; border-left:5px solid #1d4ed8; border-radius:10px;
+    padding:18px 22px; font-size:1.35rem; font-family:"Cambria Math",serif;
+    color:#1e3a8a; margin:16px 0; line-height:1.9; text-align:center;
+  }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:22px; }
+  .point { font-size:1.05rem; line-height:1.85; color:#334155; }
+  .point b { color:#1d4ed8; }
+  .tip {
+    background:#fff7e6; border-left:5px solid #f59e0b; border-radius:10px;
+    padding:14px 18px; font-size:1rem; color:#7c5a00; margin-top:16px; line-height:1.7;
+  }
+  /* ===== 3D 画布容器 ===== */
+  .stage {
+    position:relative; width:100%; height:560px; border-radius:16px; overflow:hidden;
+    background:linear-gradient(180deg,#eef4ff 0%,#fbfcfe 100%);
+    border:1px solid #e3eaf3; touch-action:none;
+  }
+  .stage canvas { display:block; }
+  .stage .legend {
+    position:absolute; left:16px; top:14px; font-size:.95rem; color:#334155;
+    background:rgba(255,255,255,0.85); padding:10px 14px; border-radius:10px;
+    line-height:1.7; border:1px solid #e3eaf3;
+  }
+  .stage .legend .sw { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:middle; }
+  .controls {
+    display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-top:18px;
+    background:#f8faff; border-radius:12px; padding:16px 18px; border:1px solid #e8eef7;
+  }
+  .controls label { font-weight:700; color:#1e3a8a; font-size:1rem; white-space:nowrap; }
+  .controls input[type=range] { flex:1; min-width:160px; accent-color:#1d4ed8; }
+  .controls .val { font-weight:800; color:#1d4ed8; min-width:52px; text-align:center; font-size:1.1rem; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .btn {
+    border:none; cursor:pointer; font-weight:700; font-size:1rem; padding:10px 18px;
+    border-radius:10px; background:#1d4ed8; color:#fff; transition:.2s;
+  }
+  .btn:hover { background:#1e40af; }
+  .btn.ghost { background:#fff; color:#1d4ed8; border:2px solid #1d4ed8; }
+  .btn.ghost:hover { background:#e8f0fe; }
+  /* ===== 意义/稳定性 卡片 ===== */
+  .sig-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; }
+  .sig {
+    background:#f8faff; border-radius:14px; padding:22px; border:1px solid #e5ecf6;
+    transition:.25s;
+  }
+  .sig:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(30,58,138,0.09); }
+  .sig .ico { font-size:2rem; margin-bottom:8px; }
+  .sig h3 { font-size:1.2rem; color:#1e3a8a; margin-bottom:8px; }
+  .sig p { font-size:1rem; color:#475569; line-height:1.75; }
+  .stab-table { width:100%; border-collapse:collapse; font-size:1rem; margin-top:12px; }
+  .stab-table th, .stab-table td { border:1px solid #e3eaf3; padding:12px 14px; text-align:left; }
+  .stab-table th { background:#eef4ff; color:#1e3a8a; font-weight:700; }
+  .stab-table td { color:#334155; line-height:1.6; }
+  .dot { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+  footer { text-align:center; color:#94a3b8; font-size:.95rem; padding:30px 0 46px; }
+  @media (max-width:640px){
+    .stage { height:420px; }
+    .sec-title { font-size:1.55rem; }
+    .formula { font-size:1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">∫ 拉普拉斯变换</span>
+  <a href="#def">① 定义</a>
+  <a href="#meaning">② 意义</a>
+  <a href="#splane">③ s 平面</a>
+  <a href="#stab">④ 稳定性</a>
+  <a href="#link">⑤ 时域↔复频域</a>
+  <a href="#intuition">⑥ 公式为什么长这样？</a>
+  <a href="#fulldim">⑦ F(s)的完整模样</a>
+</nav>
+
+<!-- ============ ① 定义 ============ -->
+<section id="def">
+  <div class="sec-title">① 定义：从时域到复频域的"积分透镜"</div>
+  <div class="sec-sub">拉普拉斯变换把一条随时间变化的信号 f(t)，通过积分"折叠"成一个关于复变量 s=σ+jω 的函数 F(s)。它像一台透镜，把时域的演化投影到复频域。</div>
+  <div class="card">
+    <div class="formula">
+      F(s) = ℒ{f(t)} = ∫<sub>0<sup>−</sup></sub><sup>∞</sup> f(t)·e<sup>−st</sup> dt ,&nbsp;&nbsp; s = σ + jω
+    </div>
+    <div class="grid2">
+      <div class="point">
+        <b>e<sup>−st</sup> 是"复指数核"</b>：当 Re(s)=σ 大于信号的<b>收敛横坐标</b> σ_c 时，e<sup>−σt</sup> 随 t 衰减，把原本可能发散的 f(t) 压制成收敛积分——这就是拉氏变换比傅里叶变换"包容性更强"的原因（傅里叶要求信号绝对可积，拉氏只要 σ&gt;σ_c 即可）。<br><br>
+        <b>直观理解：</b>对 f(t) 在每个时刻 t 做"复指数加权求和"，权重 e<sup>−st</sup> 随 t 指数变化。不同 s 对应不同的加权方式，于是 F(s) 记录了 f(t) 在所有复频率下的"投影强度"。
+      </div>
+      <div class="point">
+        <b>与傅里叶变换的关系：</b>当信号满足 σ_c≤0（即收敛域包含虚轴）时，傅里叶变换就是拉氏变换在 <b>s=jω（σ=0）</b> 这条轴上的"切片"。拉氏变换把分析范围从纯虚数轴扩展到了整个 s 复平面（收敛半平面 Re(s)&gt;σ_c），因而能描述增长/衰减的信号，并自然引出<b>系统极点</b>的概念。<br><br>
+        <b>逆变换：</b>f(t)=ℒ<sup>−1</sup>{F(s)}，把 F(s) 沿一条竖直线（σ 恒定）做复积分即可还原时域信号。
+      </div>
+    </div>
+    <div class="tip">💡 记忆口诀：拉氏变换 = 对信号做"带衰减的傅里叶变换"。σ 是衰减因子，ω 是角频率；二者合起来就是复频率 s。</div>
+  </div>
+</section>
+
+<!-- ============ ② 意义 ============ -->
+<section id="meaning">
+  <div class="sec-title">② 意义：为什么需要拉普拉斯变换？</div>
+  <div class="sec-sub">微积分方程 → 代数方程；卷积 → 乘法；初值问题 → 代数求解。这就是拉氏变换在工程中的核心价值。</div>
+  <div class="sig-grid">
+    <div class="sig"><div class="ico">🧮</div><h3>化微积分为代数</h3><p>ℒ{d/dt f}=sF(s)−f(0<sup>−</sup>)。微分方程经变换后变成 s 的代数方程，解出 F(s) 再反变换即得时域解。</p></div>
+    <div class="sig"><div class="ico">🔗</div><h3>卷积变乘法</h3><p>时域卷积 y(t)=h(t)*x(t) 在复频域变成简单乘积 Y(s)=H(s)·X(s)。系统分析因此极大简化。</p></div>
+    <div class="sig"><div class="ico">🎛️</div><h3>传递函数</h3><p>H(s)=Y(s)/X(s) 完全刻画线性时不变系统的输入输出关系，是控制工程的基石。</p></div>
+    <div class="sig"><div class="ico">📈</div><h3>初值与终值</h3><p>初值定理 f(0<sup>+</sup>)=lim<sub>s→∞</sub>sF(s)；终值定理 lim<sub>t→∞</sub>f(t)=lim<sub>s→0</sub>sF(s)（极点在左半平面时成立）。</p></div>
+  </div>
+  <div class="card" style="margin-top:22px;">
+    <div class="formula">
+      时域微分 ⇒ 乘 s &nbsp;&nbsp;|&nbsp;&nbsp; 时域积分 ⇒ 除 s &nbsp;&nbsp;|&nbsp;&nbsp; 时域卷积 ⇒ 乘积 &nbsp;&nbsp;|&nbsp;&nbsp; 系统响应 = 传递函数 × 输入
+    </div>
+    <div class="point">拉氏变换的本质是<b>换一种"坐标系"看信号与系统</b>：时域看"随时间怎么变"，复频域看"由哪些复频率分量构成、增长还是衰减"。后者往往把复杂动态问题化为多项式/有理函数的求根问题。</div>
+  </div>
+</section>
+
+<!-- ============ ③ s 平面 交互 ============ -->
+<section id="splane">
+  <div class="sec-title">③ s 平面：极点与零点的三维地形</div>
+  <div class="sec-sub">在 s 平面上，对简单传递函数（如一阶系统 F(s)=1/(s−p)），其模 |F(s)| 被同时映射为三维曲面的<b>高度</b>与<b>颜色</b>——极点在空间中真正"隆起"成山峰（|F|→∞），零点是凹陷（|F|=0）。可拖拽旋转从任意角度观察这张三维地形。下面以 F(s)=1/(s−p) 为例，拖动滑块改变极点 p 的位置，观察地形与稳定性结论的实时变化。</div>
+  <div class="card">
+    <div class="stage" id="stage">
+      <div class="legend">
+        <div><span class="sw" style="background:#1d4ed8"></span>极点点位 p=σ+jω</div>
+        <div><span class="sw" style="background:#f59e0b"></span>零点 z（若有）</div>
+        <div style="margin-top:6px;color:#334155;"><b>竖轴 = |F(s)| 模值</b>（高度+颜色双编码）</div>
+        <div style="margin-top:2px;color:#64748b;">鼠标拖拽：旋转 · 滚轮：缩放</div>
+      </div>
+    </div>
+    <div class="controls">
+      <label>极点 σ（实部）</label>
+      <input type="range" id="rSigma" min="-3" max="1" step="0.05" value="-0.6">
+      <span class="val" id="vSigma">-0.6</span>
+      <label style="margin-left:10px;">极点 ω（虚部）</label>
+      <input type="range" id="rOmega" min="0" max="4" step="0.05" value="2.0">
+      <span class="val" id="vOmega">2.0</span>
+    </div>
+    <div class="btnrow">
+      <button class="btn" id="bLeft">极点在左半平面（稳定）</button>
+      <button class="btn ghost" id="bRight">极点在右半平面（发散）</button>
+      <button class="btn ghost" id="bImag">纯虚轴（等幅振荡）</button>
+      <button class="btn ghost" id="bReset">复位</button>
+    </div>
+    <div class="tip" id="interp">当前极点 p=-0.6+2.0j：σ&lt;0，系统<b>稳定</b>；冲激响应为衰减振荡 e<sup>-0.6t</sup>sin(2t)。地形在 p 处隆起尖峰。</div>
+  </div>
+</section>
+
+<!-- ============ ④ 稳定性 ============ -->
+<section id="stab">
+  <div class="sec-title">④ 稳定性：极点在 s 平面的"住址"决定一切</div>
+  <div class="sec-sub">对有理传递函数 H(s)，系统的稳定性完全由极点（分母根）的位置决定。</div>
+  <div class="card">
+    <table class="stab-table">
+      <thead><tr><th>极点位置（σ=Re(s)）</th><th>时域冲激响应 h(t)</th><th>稳定性结论</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot" style="background:#16a34a"></span>全部极点 σ&lt;0（左半平面）</td><td>衰减 e<sup>σt</sup>→0（可能振荡）</td><td><b>渐近稳定</b>（BIBO 稳定）</td></tr>
+        <tr><td><span class="dot" style="background:#f59e0b"></span>有极点在 σ=0（虚轴，单阶）</td><td>等幅振荡或常数，不衰减</td><td><b>临界稳定 / 不稳定</b>（边界情形）</td></tr>
+        <tr><td><span class="dot" style="background:#dc2626"></span>有极点 σ&gt;0（右半平面）</td><td>发散增长 e<sup>σt</sup>→∞</td><td><b>不稳定</b></td></tr>
+      </tbody>
+    </table>
+    <div class="point" style="margin-top:18px;">
+      <b>稳定判据速记：</b>极点是"系统固有频率"。只要存在实部为正的固有频率，任何扰动都会被该模式指数放大而失控；所有固有频率实部为负，则扰动被逐个衰减——系统回到平衡。<br><br>
+      <b>工程意义：</b>控制系统设计中，常用"极点配置"把闭环极点安置在左半平面期望位置，从而同时保证稳定并满足动态性能指标（调节时间、超调）。这正是拉氏变换把"稳定性"转化为"复平面几何问题"的威力。
+    </div>
+    <div class="tip">⚠️ 虚轴上<b>高阶</b>极点（重根）或多重积分环节会导致响应无界，工程上同样视为不稳定/不可用。</div>
+  </div>
+</section>
+
+<!-- ============ ⑤ 时域↔复频域 关联 ============ -->
+<section id="link">
+  <div class="sec-title">⑤ 时域信号 ↔ 拉氏变换：直观对应</div>
+  <div class="sec-sub">下方交互对比：左侧为时域波形 f(t)，右侧为复频域 |F(s)| 地形。拖动"信号类型"与参数，观察二者如何联动——建立"信号形状"与"极点位置"的一一对应直觉。</div>
+  <div class="card">
+    <div class="grid2">
+      <div>
+        <div class="controls" style="margin-top:0;">
+          <label>信号类型</label>
+          <select id="sigType" style="font-size:1rem;padding:8px;border-radius:8px;border:1px solid #cbd5e1;">
+            <option value="exp">指数衰减 e^(-at)</option>
+            <option value="osc">衰减振荡 e^(-at)sin(ωt)</option>
+            <option value="step">单位阶跃 ε(t)</option>
+            <option value="ramp">斜坡 t·ε(t)</option>
+          </select>
+        </div>
+        <div class="stage" id="stageTD" style="height:300px;margin-top:14px;"></div>
+        <div class="point" style="margin-top:10px;text-align:center;color:#64748b;" id="tdNote">指数衰减：极点位于 s=-a（负实轴）</div>
+      </div>
+      <div>
+        <div class="stage" id="stageFD" style="height:374px;"></div>
+        <div class="point" style="margin-top:10px;text-align:center;color:#64748b;" id="fdNote">|F(s)| 地形：极点在 s=-a 处隆起</div>
+      </div>
+    </div>
+    <div class="controls">
+      <label>参数 a</label>
+      <input type="range" id="rA" min="0.1" max="3" step="0.05" value="1.0">
+      <span class="val" id="vA">1.0</span>
+      <label style="margin-left:10px;">参数 ω</label>
+      <input type="range" id="rW" min="0" max="5" step="0.05" value="3.0">
+      <span class="val" id="vW">3.0</span>
+    </div>
+    <div class="tip"><b>对应规律：</b>① 衰减越快(a越大)→极点越靠左→时域越快归零；② 振荡频率越高(ω越大)→极点虚部越大→时域波纹越密；③ 阶跃/斜坡在 s=0 有极点→对应"累积/记忆"类信号。</div>
+  </div>
+</section>
+
+<!-- ============ ⑥ 公式为什么长这样？ ============ -->
+<section id="intuition">
+  <div class="sec-title">⑥ 公式为什么长这样？——把"怪胎"拆开看</div>
+  <div class="sec-sub">拉氏变换的公式看起来像天书，尤其反变换那个围道积分。其实它不是凭空变出来的，而是人类为了"驯服"微分方程，一步步"设计"出来的工具。下面用两个比喻把正、反两个"怪胎"拆解开。</div>
+
+  <div class="card">
+    <div class="formula">
+      正变换&nbsp;F(s)=∫<sub>0<sup>−</sup></sub><sup>∞</sup> f(t)·e<sup>−st</sup> dt &nbsp;&nbsp;⇄&nbsp;&nbsp; 反变换&nbsp; f(t)=<span style="font-size:.9em;">1</span><span style="font-size:.7em;">/2πj</span> ∫<sub>σ−j∞</sub><sup>σ+j∞</sup> F(s)·e<sup>st</sup> ds
+    </div>
+  </div>
+
+  <!-- 正变换 -->
+  <div class="card" style="margin-top:22px;">
+    <div class="sec-title" style="font-size:1.45rem;margin-bottom:6px;">🔍 一、正变换：为什么是 ∫ f(t)·e⁻ˢᵗ dt ？</div>
+    <div class="point" style="margin-bottom:14px;"><b>核心直觉：把"时间"变成"频率+衰减"，把"变化"变成"乘法"。</b>把 s 拆开：s=σ+jω，则 e⁻ˢᵗ = e⁻σᵗ · e⁻ʲωᵗ，里面藏着两层含义。</div>
+    <div class="grid2">
+      <div class="sig" style="height:100%;">
+        <div class="ico">🎵</div><h3>e⁻ʲωᵗ —— 傅里叶的"旋转扫描仪"</h3>
+        <p>这是傅里叶变换的核心：用一个旋转复指数去"检测"信号里有没有某个频率 ω，把时域信号"投影"到频域。</p>
+      </div>
+      <div class="sig" style="height:100%;">
+        <div class="ico">🛑</div><h3>e⁻σᵗ —— 拉氏独有的"衰减刹车片"</h3>
+        <p>许多信号（e²ᵗ、不稳定响应）到 ∞ 不收敛，傅里叶算出来是无穷大。乘上 e⁻σᵗ（σ 足够大）强行压成收敛积分——这就是拉氏比傅里叶"包容性更强"的原因。</p>
+      </div>
+    </div>
+    <div class="point" style="margin-top:16px;">
+      <b>再加一个积分 ∫₀<sup>∞</sup>：</b>上限 ∞ 观察信号从开始到永恒的完整生命周期；下限 <b>0</b> 是拉氏变换最工程化的地方——它关注因果信号（t&lt;0 时为 0），并<b>自动把初始条件（电容电压、电感电流）打包进方程</b>，让你不用手动去解一堆初值。
+    </div>
+    <div class="tip">🎧 <b>类比（交响乐侦探）：</b>f(t) 是一首交响乐。傅里叶是摘掉耳机听全曲"平均音色"；拉氏是戴上<b>降噪耳机</b>（e⁻σᵗ 衰减窗口）再<b>快进</b>（e⁻ʲωᵗ），去听每一种乐器（极点）在整首曲子里的贡献——它能告诉你哪些乐器越吹越响（右半平面极点，不稳定）、哪些慢慢消失（左半平面极点，稳定）。</div>
+  </div>
+
+  <!-- 反变换 -->
+  <div class="card" style="margin-top:22px;">
+    <div class="sec-title" style="font-size:1.45rem;margin-bottom:6px;">🧩 二、反变换：那个"恐怖围道积分"到底在干嘛？</div>
+    <div class="point" style="margin-bottom:14px;"><b>核心直觉：把"拼图碎片"找回来。</b>正变换把信号拆成零件（像乐高拆开），反变换把零件拼回去。</div>
+    <div class="grid2">
+      <div class="sig" style="height:100%;">
+        <div class="ico">🧱</div><h3>F(s) 是"零件清单"</h3>
+        <p>我们在复频域 s 平面得到的"配方"。eˢᵗ 是基函数：正变换用 e⁻ˢᵗ"筛选"信号，反变换就用它的"逆" eˢᵗ 来"重建"信号。</p>
+      </div>
+      <div class="sig" style="height:100%;">
+        <div class="ico">📐</div><h3>那条竖线是"积分路径"</h3>
+        <p>σ−j∞ 到 σ+j∞ 是 s 平面的一条竖直线（Bromwich 路径），σ 必须取得<b>大于所有极点的实部</b>（即路径位于最右极点的右侧、且落在收敛域内），才能保证积分收敛并把信号完整还原。</p>
+      </div>
+    </div>
+    <div class="point" style="margin-top:16px;">
+      <b>为什么搞得这么复杂？——留数定理的魔法。</b>s 平面上让 F(s) 变成无穷大的点（<b>极点 Poles</b>）就是构成原信号 f(t) 的<b>核心骨架</b>：一个在 s=−a 的极点对应时域的 e⁻ᵃᵗ 分量；s=0 的极点对应常数项（阶跃）。反变换积分的本质，就是绕极点画圈，把极点里的"能量"（留数）抠出来。
+    </div>
+    <div class="tip">✏️ <b>给工程学生的建议：</b>反变换几乎从不直接硬算。课堂上你只用到"查表 + 部分分式展开"——找到极点，信号就还原了。就像有了乐高图纸（s 域极点分布），按图索骥就能拼出原样，不必去数每一块积木。</div>
+  </div>
+
+  <!-- 对照表 -->
+  <div class="card" style="margin-top:22px;">
+    <div class="sec-title" style="font-size:1.45rem;margin-bottom:6px;">📋 三、"怪胎"真相一览</div>
+    <table class="stab-table">
+      <thead><tr><th>公式</th><th>看起来像</th><th>实际上在干嘛</th><th>直观类比</th></tr></thead>
+      <tbody>
+        <tr><td><b>正变换</b><br>∫ f(t)e⁻ˢᵗ dt</td><td>复杂积分</td><td><b>扫描 + 称重</b>：用带刹车片的旋转雷达扫描信号，把不同频率/衰减率的成分分离并记录在 s 平面上</td><td>戴降噪耳机 + 快进，听每种乐器的贡献</td></tr>
+        <tr><td><b>反变换</b><br>∫<sub>σ−j∞</sub><sup>σ+j∞</sup> F(s)e<sup>st</sup> ds / 2πj<br><span style="font-size:.85rem;color:#64748b;">（再用留数定理化为极点围道求和）</span></td><td>恐怖围道积分</td><td><b>拼图 + 还原</b>：去 s 平面找到关键"极点"拼图块，把对应时域分量（指数函数）加起来，即得原信号</td><td>按乐高图纸，把极点对应的积木拼回原样</td></tr>
+      </tbody>
+    </table>
+    <div class="point" style="margin-top:18px;">
+      <b>记住三件事就够：</b>① <b>s 是复数</b>，同时代表频率(ω)和衰减(σ)；② <b>极点位置决定一切</b>——左半平面衰减(稳定)、右半平面发散(爆炸)、虚轴上振荡(临界)；③ <b>拉氏变换把微积分变成乘除法</b>，把微分方程变成代数方程。<br><br>
+      <b>一句话总结：</b>拉氏变换之所以"怪"，是因为它为了能处理<b>所有</b>信号（包括不稳定的），不得不进入<b>复数维度</b>。它用看似复杂的公式，换来了分析系统稳定性的<b>上帝视角</b>——一旦你接受了"极点决定命运"这个设定，那些奇怪的公式就变成了口袋里最强大的工具。
+    </div>
+    <div class="tip">💡 回到本页顶部的三维交互：你在 s 平面拖动极点 σ 穿过虚轴时，亲眼看到地形尖峰从左半平面移到右半平面、结论从"稳定"翻红为"不稳定"——这正是"极点决定命运"的几何直觉。</div>
+  </div>
+</section>
+
+<!-- ============ ⑦ F(s) 的完整模样 ============ -->
+<section id="fulldim">
+  <div class="sec-title">⑦ F(s) 的完整模样：为什么平时只画 |F(s)|？</div>
+  <div class="sec-sub">你可能会问：F(s) 本身就是复数，为什么三维地形图只画它的"模"|F(s)|，而不把 F(s) 完完整整画出来？答案藏在"维度"里——本节用可交互的三维视图，把 F(s) 的实部、虚部、模和相位分别呈现，让你看清"模地形"只是 F(s) 的一个投影。</div>
+
+  <div class="card">
+    <div class="sec-title" style="font-size:1.4rem;margin-bottom:8px;">📐 一、先算一笔"维度账"</div>
+    <div class="point">拉普拉斯变换 F(s) 是<b>复变函数</b>，有两个输入维度 + 两个输出维度，共 <b>4 维</b>。而人类生活在三维空间，最多只能直接画出 3 维——因此必须做一次"降维投影"。</div>
+    <table class="stab-table" style="margin-top:14px;">
+      <thead><tr><th>维度类型</th><th>变量</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td>输入维度（自变量）</td><td>σ（实部）、ω（虚部）</td><td>s 平面的两个轴，共 2 维</td></tr>
+        <tr><td>输出维度（函数值）</td><td>Re[F(s)]（实部）、Im[F(s)]（虚部）</td><td>F(s) 本身是复数，共 2 维</td></tr>
+      </tbody>
+    </table>
+    <div class="point" style="margin-top:14px;">画 |F(s)| 地形，本质是用 <b>"σ（横轴）、ω（纵轴）、|F(s)|（竖轴）"</b> 三个维度凑成一张三维图——山峰即极点，山谷即零点。这是信息量、直观性、教学效率之间的最优折中。</div>
+  </div>
+
+  <div class="card" style="margin-top:22px;">
+    <div class="sec-title" style="font-size:1.4rem;margin-bottom:8px;">🎛️ 二、交互：同一传递函数的四种三维视图</div>
+    <div class="sec-sub">下方以 F(s)=1/(s−p)（一阶系统）为例，p 为你设置的极点。切换四种视图，观察同一 F(s) 的不同"投影"。</div>
+    <div class="stage" id="stageFull">
+      <div class="legend">
+        <div><span class="sw" style="background:#1d4ed8"></span>极点点位 p=σ+jω</div>
+        <div style="margin-top:6px;color:#334155;"><b>竖轴 = 当前视图函数值</b>（高度+颜色双编码）</div>
+        <div style="margin-top:2px;color:#64748b;">鼠标拖拽：旋转 · 滚轮：缩放</div>
+        <div id="legendExtra" style="margin-top:6px;color:#64748b;"></div>
+      </div>
+    </div>
+    <div class="btnrow" id="viewToggle">
+      <button class="btn" data-view="magnitude">模 |F(s)|（默认）</button>
+      <button class="btn ghost" data-view="real">实部 Re[F(s)]</button>
+      <button class="btn ghost" data-view="imag">虚部 Im[F(s)]</button>
+      <button class="btn ghost" data-view="phase">相位着色（模+相位）</button>
+    </div>
+    <div class="controls">
+      <label>极点 σ</label>
+      <input type="range" id="fSigma" min="-3" max="1" step="0.05" value="-0.8">
+      <span class="val" id="fVSigma">-0.8</span>
+      <label style="margin-left:10px;">极点 ω</label>
+      <input type="range" id="fOmega" min="0" max="4" step="0.05" value="2.0">
+      <span class="val" id="fVOmega">2.0</span>
+    </div>
+    <div class="tip" id="fullInterp">当前视图：模 |F(s)|。极点是地形尖峰（|F|→∞），最适合判断稳定性。切换"实部/虚部"可看到 F(s) 的对称结构；"相位着色"用颜色编码辐角，同时体现幅度与相位。</div>
+  </div>
+
+  <div class="card" style="margin-top:22px;">
+    <div class="sec-title" style="font-size:1.4rem;margin-bottom:8px;">📋 三、四种视图对照（以 F(s)=1/(s+a)，a&gt;0 为例）</div>
+    <table class="stab-table">
+      <thead><tr><th>视图</th><th>竖轴/颜色</th><th>曲面形状</th><th>教学用途</th></tr></thead>
+      <tbody>
+        <tr><td><b>模 |F|</b></td><td>|F(s)| 高度</td><td>在 s=−a 处一个尖峰（火山状）</td><td>突出极点位置，最适合分析稳定性</td></tr>
+        <tr><td><b>实部 Re[F]</b></td><td>Re[F(s)] 高度</td><td>在 s=−a 处沿 ω 方向的"脊线"，峰值在 ω=0</td><td>展示共轭对称特性，理解留数定理</td></tr>
+        <tr><td><b>虚部 Im[F]</b></td><td>Im[F(s)] 高度</td><td>在 s=−a 处"马鞍面"，ω&gt;0 与 ω&lt;0 反号</td><td>虚部是 ω 的奇函数，可见正负起伏</td></tr>
+        <tr><td><b>相位着色</b></td><td>高度=|F|，颜色=arg F(s)</td><td>地形高低为模，颜色随辐角连续变化</td><td>同时体现幅度与相位，对应频响/Bode 图</td></tr>
+      </tbody>
+    </table>
+    <div class="point" style="margin-top:16px;">
+      <b>关键结论：</b>F(s) 本身是四维对象，我们永远画不出它的"完整样子"——任何三维图都是它的一个<b>投影/降维</b>。模地形之所以成为教材标配，是因为它<b>一眼就能定位极点</b>（极点决定稳定性），信息效率最高。实部/虚部视图则揭示了 F(s) 的对称结构与留数信息；相位着色视图把"幅度+相位"合一，直接通向频率响应分析。
+    </div>
+    <div class="tip">💡 <b>一句话回答开头的问题：</b>不是 F(s) 不能画，而是它作为四维对象"画不全"。教材画 |F(s)|，是工程师在"信息完整"与"人类能看懂"之间做的<b>最优妥协</b>——就像你不需要摸到整个太阳，只要看到影子的长度，就能知道时间。</div>
+  </div>
+</section>
+
+<footer>
+  交互式三维 H5 · 拉普拉斯变换可视化 &nbsp;|&nbsp; 拖动滑块与图形可实时探索 s 平面与时域信号的关联 &nbsp;|&nbsp; 适配课堂演示与自学
+</footer>
+
+<!-- Three.js (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============ 通用：OrbitControls 简易实现（无外部依赖） ============ */
+function makeOrbit(canvas, scene, camera){
+  const ctrl = { rotX:-0.55, rotY:0.6, dist:15, target:new THREE.Vector3(0,0.9,0) };
+  let drag=false, lx=0, ly=0;
+  const update=()=>{
+    const x=ctrl.dist*Math.sin(ctrl.rotY)*Math.cos(ctrl.rotX);
+    const y=ctrl.dist*Math.sin(ctrl.rotX);
+    const z=ctrl.dist*Math.cos(ctrl.rotY)*Math.cos(ctrl.rotX);
+    camera.position.set(x+ctrl.target.x,y+ctrl.target.y,z+ctrl.target.z);
+    camera.lookAt(ctrl.target);
+  };
+  canvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    ctrl.rotY-=(e.clientX-lx)*0.01; ctrl.rotX+=(e.clientY-ly)*0.01;
+    ctrl.rotX=Math.max(-1.4,Math.min(1.4,ctrl.rotX));
+    lx=e.clientX;ly=e.clientY;update();
+  });
+  canvas.addEventListener('wheel',e=>{ e.preventDefault(); ctrl.dist*=1+e.deltaY*0.001; ctrl.dist=Math.max(5,Math.min(40,ctrl.dist)); update(); },{passive:false});
+  update(); return ctrl;
+}
+function lightScene(scene){
+  scene.add(new THREE.AmbientLight(0xffffff,0.65));
+  const d=new THREE.DirectionalLight(0xffffff,0.6); d.position.set(6,10,8); scene.add(d);
+}
+function axesHelper(scene, len=5){
+  const g=new THREE.AxesHelper(len); scene.add(g);
+  const mk=(p,col)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,12),new THREE.MeshBasicMaterial({color:col})); m.position.copy(p); scene.add(m);};
+  // labels as sprites
+  const mkL=(txt,p,col)=>{const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');x.fillStyle=col;x.font='bold 40px sans-serif';x.fillText(txt,8,44);const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));s.position.copy(p);s.scale.set(1.2,0.6,1);scene.add(s);};
+  mkL('Re',new THREE.Vector3(len+0.4,0,0),'#1d4ed8'); mkL('Im',new THREE.Vector3(0,0,len+0.4),'#1d4ed8'); mkL('|F|',new THREE.Vector3(0,len+0.5,0),'#dc2626');
+}
+
+/* ============ ③ s 平面三维地形 ============ */
+const stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(window.devicePixelRatio); renderer.setSize(stage.clientWidth,stage.clientHeight);
+stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0xf3f7fd);
+const camera=new THREE.PerspectiveCamera(50,stage.clientWidth/stage.clientHeight,0.1,200);
+lightScene(scene); axesHelper(scene,5);
+const orbit=makeOrbit(renderer.domElement,scene,camera);
+
+// 地形网格（|1/(s-p)| 在离散网格上的可视化：模值同时映射为【顶点高度】与【颜色】，
+// 使 |F(s)| 在三维空间中真正"隆起"成山峰，而非仅作复平面上的彩色投影）
+const N=60, R=4.5;
+const geom=new THREE.PlaneGeometry(R*2,R*2,N,N); geom.rotateX(-Math.PI/2);
+const pos=geom.attributes.position;
+// 高度归一化：将原始模值 v 压缩到合理高度区间，避免极点处无穷大把地形"炸飞"
+function normH(v, mx){ return 2.6*Math.tanh(v/(mx||1)); }
+function buildTerrain(p){
+  const arr=[]; let mx=0;
+  const raw=new Float32Array(pos.count);
+  for(let i=0;i<pos.count;i++){
+    const x=pos.getX(i), z=pos.getZ(i);
+    const den=(x-p.sigma)*(x-p.sigma)+(z-p.omega)*(z-p.omega)+0.45;
+    const v=1.6/den; raw[i]=v; mx=Math.max(mx,v);
+  }
+  for(let i=0;i<pos.count;i++){ const h=normH(raw[i],mx); pos.setY(i,h); arr.push(raw[i]); }
+  geom.computeVertexNormals(); return arr;
+}
+function colorTerrain(vals){ const c=new Float32Array(pos.count*3); let mx=0; for(const v of vals)mx=Math.max(mx,v); for(let i=0;i<vals.length;i++){ const t=Math.min(1,vals[i]/mx); const col=new THREE.Color().setHSL(0.62-0.55*t,0.8,0.52+0.28*(1-t)); c[i*3]=col.r;c[i*3+1]=col.g;c[i*3+2]=col.b; } geom.setAttribute('color',new THREE.BufferAttribute(c,3)); }
+let terrain=new THREE.Mesh(geom,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:0.95}));
+if(stage.clientWidth>0){renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();}
+scene.add(terrain);
+// 极点标记
+const poleMark=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.5,16),new THREE.MeshBasicMaterial({color:0x1d4ed8})); scene.add(poleMark);
+const poleDot=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,16),new THREE.MeshBasicMaterial({color:0x1d4ed8})); scene.add(poleDot);
+function updateTerrain(){ const p={sigma:parseFloat(rSigma.value),omega:parseFloat(rOmega.value)}; const vals=buildTerrain(p); colorTerrain(vals); poleMark.position.set(p.sigma,0.25,-p.omega); poleDot.position.set(p.sigma,0,-p.omega); vSigma.textContent=p.sigma.toFixed(2); vOmega.textContent=p.omega.toFixed(2); interpText(p); }
+const rSigma=document.getElementById('rSigma'),rOmega=document.getElementById('rOmega');
+rSigma.oninput=updateTerrain; rOmega.oninput=updateTerrain;
+function interpText(p){ const el=document.getElementById('interp'); let s; if(p.sigma<0) s='<b>稳定</b>：冲激响应衰减 e<sup>'+p.sigma+'t</sup>'; else if(p.sigma>0) s='<b style="color:#dc2626">不稳定</b>：响应发散增长 e<sup>'+p.sigma+'t</sup>'; else s='<b style="color:#f59e0b">临界</b>：等幅振荡/常数'; const osc=p.omega!==0? 'sin('+p.omega+'t)' : ''; el.innerHTML='当前极点 p='+p.sigma.toFixed(2)+'+'+p.omega.toFixed(2)+'j：'+s+(osc? '，含振荡项 '+osc : '')+'。地形在 p 处隆起尖峰。'; }
+document.getElementById('bLeft').onclick=()=>{rSigma.value=-0.8;updateTerrain();};
+document.getElementById('bRight').onclick=()=>{rSigma.value=0.8;updateTerrain();};
+document.getElementById('bImag').onclick=()=>{rSigma.value=0;rOmega.value=2.5;updateTerrain();};
+document.getElementById('bReset').onclick=()=>{rSigma.value=-0.6;rOmega.value=2.0;updateTerrain();};
+updateTerrain();
+
+/* ============ ⑤ 时域信号 + 复频域地形 双视图 ============ */
+const stageTD=document.getElementById('stageTD'), stageFD=document.getElementById('stageFD');
+const rA=document.getElementById('rA'),rW=document.getElementById('rW'),sigType=document.getElementById('sigType');
+const vA=document.getElementById('vA'),vW=document.getElementById('vW');
+function fVal(t,a,w,type){ switch(type){ case'exp':return Math.exp(-a*t); case'osc':return Math.exp(-a*t)*Math.sin(w*t); case'step':return t>=0?1:0; case'ramp':return t>=0?t:0; } return 0; }
+// 时域绘图用 Canvas2D（更清晰可控）
+function drawTime(){ const c=stageTD; const cv=ensureCV(c); const ctx=cv.getContext('2d'); const w=cv.width,hh=cv.height; ctx.clearRect(0,0,w,hh); ctx.fillStyle='#fbfcfe'; ctx.fillRect(0,0,w,hh); const a=+rA.value,w0=+rW.value,type=sigType.value; vA.textContent=a.toFixed(2); vW.textContent=w0.toFixed(2); const pad=42; const x2d=t=>pad+t*(w-2*pad)/8; const ymax=type==='ramp'?8:3.2; const y2d=y=>hh-pad-y*(hh-2*pad)/ymax; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(pad,y2d(0));ctx.lineTo(w-pad,y2d(0));ctx.stroke(); ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,hh-pad);ctx.stroke(); ctx.strokeStyle='#1d4ed8'; ctx.lineWidth=2.5; ctx.beginPath(); for(let i=0;i<=400;i++){const t=i/400*8;const y=fVal(t,a,w0,type);const px=x2d(t),py=isFinite(y)?y2d(y):y2d(0); if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);} ctx.stroke(); ctx.fillStyle='#1e3a8a';ctx.font='bold 16px sans-serif';ctx.fillText('f(t)',w-pad-10,pad+14);ctx.fillText('t',w-pad-4,hh-pad+18); document.getElementById('tdNote').innerHTML=noteTD(type,a,w0); }
+function noteTD(type,a,w0){ if(type==='exp')return '指数衰减 e<sup>-'+a+'t</sup>：极点位于 s=-'+a+'（负实轴）'; if(type==='osc')return '衰减振荡 e<sup>-'+a+'t</sup>sin('+w0+'t)：共轭极点在 s=-'+a+'±'+w0+'j'; if(type==='step')return '单位阶跃：在 s=0 有一阶极点（累积）'; return '斜坡 t：s=0 处二阶极点（更强记忆）'; }
+function ensureCV(c){ let cv=c.querySelector('canvas'); if(!cv){cv=document.createElement('canvas');c.appendChild(cv);} cv.width=c.clientWidth*devicePixelRatio; cv.height=c.clientHeight*devicePixelRatio; cv.style.width=c.clientWidth+'px';cv.style.height=c.clientHeight+'px'; return cv; }
+// 复频域 |F(s)| 地形 —— 用 Canvas2D 绘制【透视网格曲面】，使模值真正以第三维高度"立起来"
+function drawFD(){ const c=stageFD; const cv=ensureCV(c); const ctx=cv.getContext('2d'); const w=cv.width,hh=cv.height; ctx.clearRect(0,0,w,hh); const a=+rA.value,w0=+rW.value,type=sigType.value; const pad=52; const x2d=s=>pad+(s+4)*(w-2*pad)/8; const y2d=im=>hh-pad-(im+4)*(hh-2*pad)/8;
+  // 采样 |F|（与第三章一致：加 0.45 防止极点处发散）
+  const Nx=46,Ny=46; let mx=0; const grid=new Array(Nx); const eps=0.25;
+  for(let ix=0;ix<Nx;ix++){ const row=new Float32Array(Ny); const s=-4+ix*8/(Nx-1);
+    for(let iy=0;iy<Ny;iy++){ const im=-4+iy*8/(Ny-1); let F;
+      if(type==='exp')F=1/Math.sqrt((s+a)*(s+a)+im*im+eps);
+      else if(type==='osc')F=w0/Math.sqrt(((s+a)*(s+a)+im*im-w0*w0)*((s+a)*(s+a)+im*im-w0*w0)+4*w0*w0*im*im+eps);
+      else if(type==='step')F=1/Math.sqrt(s*s+im*im+eps);
+      else F=1/Math.sqrt((s*s+im*im)*(s*s+im*im)+eps);
+      if(!isFinite(F))F=8; row[iy]=F; mx=Math.max(mx,F);
+    } grid[ix]=row;
+  }
+  // 透视投影参数：将 (s,im,height) 投影到屏幕
+  const cx=w/2, cy=hh*0.62, sc=Math.min((w-2*pad)/9,(hh-2*pad)/9)*0.9;
+  const proj=(s,im,h)=>{ const X=(s+4)/8-0.5, Y=(im+4)/8-0.5; const z=(h/mx)*1.5; // 归一化高度
+    const px=cx+(X-Y)*sc*1.0, py=cy+(-X-Y)*sc*0.5 - z*sc*1.15; return [px,py]; };
+  // 先画底层（复平面投影网格）淡色
+  ctx.strokeStyle='#e5ecf6';ctx.lineWidth=1;
+  for(let ix=0;ix<Nx;ix+=4){const [px,py]=proj(-4+ix*8/(Nx-1),0,0);ctx.beginPath();for(let iy=0;iy<Ny;iy++){const [x,y]=proj(-4+ix*8/(Nx-1),-4+iy*8/(Ny-1),0);iy?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
+  // 画曲面：按高度从低到高、远处到近处逐格填充 + 网格线
+  const order=[]; for(let ix=0;ix<Nx-1;ix++)for(let iy=0;iy<Ny-1;iy++){const h=(grid[ix][iy]+grid[ix+1][iy]+grid[ix][iy+1]+grid[ix+1][iy+1])/4;order.push([ix,iy,h]);}
+  order.sort((p,q)=>p[2]-q[2]);
+  for(const [ix,iy,h] of order){ const t=Math.min(1,h/(mx||1)); const [ax,ay]=proj(-4+ix*8/(Nx-1),-4+iy*8/(Ny-1),h); const [bx,by]=proj(-4+(ix+1)*8/(Nx-1),-4+iy*8/(Ny-1),h); const [cx2,cy2]=proj(-4+(ix+1)*8/(Nx-1),-4+(iy+1)*8/(Ny-1),h); const [dx,dy]=proj(-4+ix*8/(Nx-1),-4+(iy+1)*8/(Ny-1),h);
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx2,cy2);ctx.lineTo(dx,dy);ctx.closePath();
+    const r=60+t*170,g=210-t*120,b=255-t*180; ctx.fillStyle='rgba('+r+','+g+','+b+',0.78)';ctx.fill();ctx.strokeStyle='rgba(30,58,138,'+(0.12+0.35*t)+')';ctx.lineWidth=0.7;ctx.stroke();
+  }
+  // 坐标轴（复平面投影）
+  ctx.strokeStyle='#94a3b8';ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(x2d(0),pad);ctx.lineTo(x2d(0),hh-pad);ctx.stroke(); ctx.beginPath();ctx.moveTo(pad,y2d(0));ctx.lineTo(w-pad,y2d(0));ctx.stroke();
+  ctx.fillStyle='#1e3a8a';ctx.font='bold 15px sans-serif';ctx.fillText('Re(s)',w-pad-6,y2d(0)+18);ctx.fillText('Im(s)',x2d(0)+8,pad+14);ctx.fillText('|F|',cx-10,cy-sc*1.05-6);
+  // 标极点
+  const pR=(type==='exp'||type==='osc')?-a:0; const pI=(type==='osc')?w0:0;
+  const pp=proj(pR,pI,0); ctx.fillStyle='#dc2626';ctx.beginPath();ctx.arc(pp[0],pp[1],6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  if(type==='osc'){const pp2=proj(-a,-w0,0);ctx.beginPath();ctx.arc(pp2[0],pp2[1],6,0,Math.PI*2);ctx.fill();}
+  document.getElementById('fdNote').innerHTML='|F(s)| 三维曲面：'+(type==='exp'||type==='osc'?'极点在 s=-'+a+(type==='osc'?'±'+w0+'j':'（负实轴）'):type==='step'?'极点在 s=0':'极点在 s=0（二阶）')+' 处隆起成山峰';
+}
+function redrawAll(){ drawTime();drawFD(); }
+rA.oninput=redrawAll;rW.oninput=redrawAll;sigType.onchange=redrawAll;
+window.addEventListener('resize',()=>{ renderer.setSize(stage.clientWidth,stage.clientHeight); camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix(); redrawAll(); });
+redrawAll();
+// 动画循环（地形旋转 + 时域静态已够）
+(function loop(){ renderer.render(scene,camera); requestAnimationFrame(loop); })();
+
+/* ============ ⑦ F(s) 完整模样：四种三维视图切换 ============ */
+const stageFull=document.getElementById('stageFull');
+const rF=new THREE.WebGLRenderer({antialias:true,alpha:true}); rF.setPixelRatio(window.devicePixelRatio); rF.setSize(stageFull.clientWidth,stageFull.clientHeight); stageFull.appendChild(rF.domElement);
+const scF=new THREE.Scene(); scF.background=new THREE.Color(0xf3f7fd);
+const camF=new THREE.PerspectiveCamera(50,stageFull.clientWidth/stageFull.clientHeight,0.1,200);
+lightScene(scF); axesHelper(scF,5);
+makeOrbit(rF.domElement,scF,camF).target.set(0,0.9,0);
+const N7=60,R7=4.5;
+const g7=new THREE.PlaneGeometry(R7*2,R7*2,N7,N7); g7.rotateX(-Math.PI/2);
+const p7=g7.attributes.position;
+let curView='magnitude';
+// 高度归一化（与第三章一致）：tanh 压缩，避免极点/奇点处高度发散
+function normH7(v){ return 2.6*Math.tanh(v); }
+function buildF(valsOut, view, sigmaP, omegaP){
+  let mx=0; const raw=new Float32Array(p7.count);
+  for(let i=0;i<p7.count;i++){
+    const x=p7.getX(i), z=-p7.getZ(i); const dx=x-sigmaP, dz=z-omegaP;
+    const denR=(dx*dx+dz*dz)+0.45; let v;
+    if(view==='magnitude'){ v=1.6/denR; }
+    else if(view==='real'){ v=1.9*dx/denR; }
+    else if(view==='imag'){ v=1.9*(-dz)/denR; }
+    else { v=1.6/denR; } // phase：高度仍用模
+    raw[i]=v; mx=Math.max(mx,Math.abs(v)||v);
+  }
+  for(let i=0;i<p7.count;i++){ const h=normH7(raw[i]/(mx||1)); p7.setY(i,h); valsOut.push(raw[i]); }
+  g7.computeVertexNormals();
+}
+function colorF(view, vals){ const c=new Float32Array(p7.count*3); let mx=0; for(const v of vals)mx=Math.max(mx,Math.abs(v)||v); const sp=parseFloat(document.getElementById('fSigma').value),op=parseFloat(document.getElementById('fOmega').value); if(view==='phase'){ for(let i=0;i<vals.length;i++){ const x=p7.getX(i), z=-p7.getZ(i); const dx=x-sp, dz=z-op; const ph=Math.atan2(-dz,dx+0.0001); const t=(ph+Math.PI)/(2*Math.PI); const col=new THREE.Color().setHSL(t,0.8,0.55); c[i*3]=col.r;c[i*3+1]=col.g;c[i*3+2]=col.b; } } else { for(let i=0;i<vals.length;i++){ const v=vals[i]; const t=Math.min(1,Math.abs(v)/(mx||1)); const col=new THREE.Color().setHSL(0.62-0.55*t,0.8,0.52+0.28*(1-t)); c[i*3]=col.r;c[i*3+1]=col.g;c[i*3+2]=col.b; } } g7.setAttribute('color',new THREE.BufferAttribute(c,3)); }
+let meshF=new THREE.Mesh(g7,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:0.95})); scF.add(meshF);
+const poleF=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.5,16),new THREE.MeshBasicMaterial({color:0x1d4ed8})); scF.add(poleF);
+const dotF=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,16),new THREE.MeshBasicMaterial({color:0x1d4ed8})); scF.add(dotF);
+const rFSigma=document.getElementById('fSigma'),rFOmega=document.getElementById('fOmega');
+function updateFull(){ if(stageFull.clientWidth>0){rF.setSize(stageFull.clientWidth,stageFull.clientHeight);camF.aspect=stageFull.clientWidth/stageFull.clientHeight;camF.updateProjectionMatrix();} const sp=parseFloat(rFSigma.value),op=parseFloat(rFOmega.value); const arr=[]; buildF(arr,curView,sp,op); colorF(curView,arr); poleF.position.set(sp,0.25,-op); dotF.position.set(sp,0,-op); document.getElementById('fVSigma').textContent=sp.toFixed(2); document.getElementById('fVOmega').textContent=op.toFixed(2); const tip=document.getElementById('fullInterp'); const leg=document.getElementById('legendExtra'); if(curView==='magnitude'){tip.innerHTML='当前视图：<b>模 |F(s)|</b>。极点是地形尖峰（|F|→∞），最适合判断稳定性。';leg.innerHTML='颜色：蓝→红 = 模从小到大';} else if(curView==='real'){tip.innerHTML='当前视图：<b>实部 Re[F(s)]</b>。可看到沿 ω 方向的"脊线"，峰值在 ω=0，体现共轭对称。';leg.innerHTML='颜色：蓝→红 = 实部值大小';} else if(curView==='imag'){tip.innerHTML='当前视图：<b>虚部 Im[F(s)]</b>。呈"马鞍面"，ω&gt;0 与 ω&lt;0 反号（奇函数特性）。';leg.innerHTML='颜色：蓝→红 = 虚部值大小';} else {tip.innerHTML='当前视图：<b>相位着色</b>。地形高度=|F|，颜色编码辐角 arg F(s)（红→绿→蓝跨 0~2π），同时体现幅度与相位，通向频响分析。';leg.innerHTML='颜色： hue 编码相位 arg F(s)';} }
+rFSigma.oninput=updateFull; rFOmega.oninput=updateFull;
+document.getElementById('viewToggle').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; curView=b.dataset.view; document.querySelectorAll('#viewToggle .btn').forEach(x=>x.classList.toggle('ghost',x!==b)); updateFull(); });
+updateFull();
+(function loopF(){ rF.render(scF,camF); requestAnimationFrame(loopF); })();
+window.addEventListener('resize',()=>{ rF.setSize(stageFull.clientWidth,stageFull.clientHeight); camF.aspect=stageFull.clientWidth/stageFull.clientHeight; camF.updateProjectionMatrix(); });
+/* ============ 导航锚点平滑滚动（修复 overflow 下原生锚点跳空白的问题）============ */
+document.querySelectorAll('nav a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{ const id=a.getAttribute('href').slice(1); const el=document.getElementById(id); if(!el)return; e.preventDefault(); el.scrollIntoView({behavior:'smooth',block:'start'}); });
+});
+</script>
+</body>
+</html>
