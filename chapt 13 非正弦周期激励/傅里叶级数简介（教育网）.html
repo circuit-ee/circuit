@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>傅里叶级数 - 交互式可视化</title>
+        <style>
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, h1, h2, h3, h4, p, ul, button, input, section, div, span, a, canvas { margin: 0; padding: 0; }
+button { border: none; background: transparent; cursor: pointer; font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; }
+input { font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; }
+a { text-decoration: none; color: inherit; }
+
+/* ===== Layout ===== */
+.block { display: block; }
+.inline-block { display: inline-block; }
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.grid { display: grid; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1 1 0%; }
+.flex-shrink-0 { flex-shrink: 0; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-center { justify-content: center; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.top-0 { top: 0; }
+.bottom-0 { bottom: 0; }
+.left-7 { left: 1.75rem; }
+.z-10 { z-index: 10; }
+.overflow-hidden { overflow: hidden; }
+.hidden { display: none; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+
+/* ===== Sizing ===== */
+.w-1 { width: 0.25rem; }
+.w-10 { width: 2.5rem; }
+.w-16 { width: 4rem; }
+.w-32 { width: 8rem; }
+.w-full { width: 100%; }
+.h-3 { height: 0.75rem; }
+.h-10 { height: 2.5rem; }
+.h-16 { height: 4rem; }
+.min-h-screen { min-height: 100vh; }
+.max-w-3xl { max-width: 48rem; }
+.max-w-5xl { max-width: 64rem; }
+
+/* ===== Spacing ===== */
+.mx-auto { margin-left: auto; margin-right: auto; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mb-16 { margin-bottom: 4rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.mt-12 { margin-top: 3rem; }
+.mr-4 { margin-right: 1rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+.py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+.py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+.pt-2 { padding-top: 0.5rem; }
+.pt-8 { padding-top: 2rem; }
+
+/* ===== Typography ===== */
+.text-center { text-align: center; }
+.whitespace-nowrap { white-space: nowrap; }
+.italic { font-style: italic; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl { font-size: 3rem; line-height: 1; }
+.font-light { font-weight: 300; }
+.font-medium { font-weight: 500; }
+.font-bold { font-weight: 700; }
+.font-black { font-weight: 900; }
+.leading-tight { line-height: 1.25; }
+.leading-relaxed { line-height: 1.625; }
+
+/* Text Colors */
+.text-white { color: #ffffff; }
+.text-amber-400 { color: #fbbf24; }
+.text-amber-500 { color: #f59e0b; }
+.text-amber-800 { color: #92400e; }
+.text-amber-900 { color: #78350f; }
+.text-red-600 { color: #dc2626; }
+.text-stone-300 { color: #d6d3d1; }
+.text-stone-400 { color: #a8a29e; }
+.text-stone-500 { color: #78716c; }
+.text-stone-600 { color: #57534e; }
+.text-stone-700 { color: #44403c; }
+.text-stone-800 { color: #292524; }
+.text-stone-900 { color: #1c1917; }
+
+/* ===== Backgrounds ===== */
+.bg-amber-100 { background-color: #fef3c7; }
+.bg-amber-200 { background-color: #fde68a; }
+.bg-amber-50 { background-color: #fffbeb; }
+.bg-red-50 { background-color: #fef2f2; }
+.bg-stone-100 { background-color: #f5f5f4; }
+.bg-stone-200 { background-color: #e7e5e4; }
+.bg-stone-50 { background-color: #fafaf9; }
+.bg-stone-900 { background-color: #1c1917; }
+.bg-white { background-color: #ffffff; }
+
+/* ===== Borders ===== */
+.border { border-width: 1px; border-style: solid; border-color: #e7e5e4; }
+.border-2 { border-width: 2px; border-style: solid; }
+.border-t { border-top-width: 1px; border-top-style: solid; }
+.border-l-4 { border-left-width: 4px; border-left-style: solid; }
+.border-dashed { border-style: dashed; }
+.border-stone-100 { border-color: #f5f5f4; }
+.border-stone-200 { border-color: #e7e5e4; }
+.border-stone-300 { border-color: #d6d3d1; }
+.border-stone-700 { border-color: #44403c; }
+.border-amber-400 { border-color: #fbbf24; }
+.rounded { border-radius: 0.25rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-3xl { border-radius: 1.5rem; }
+.rounded-full { border-radius: 9999px; }
+.rounded-r-xl { border-top-right-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
+
+/* ===== Effects ===== */
+.opacity-5 { opacity: 0.05; }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+
+/* ===== Transitions & Hover ===== */
+.transition { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.hover\:bg-stone-800:hover { background-color: #292524; }
+.hover\:bg-stone-200:hover { background-color: #e7e5e4; }
+.hover\:bg-red-100:hover { background-color: #fee2e2; }
+.hover\:border-stone-400:hover { border-color: #a8a29e; }
+.cursor-pointer { cursor: pointer; }
+.cursor-crosshair { cursor: crosshair; }
+.appearance-none { -webkit-appearance: none; appearance: none; }
+.accent-stone-900 { accent-color: #1c1917; }
+
+/* ===== Custom Components (from @layer) ===== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: #faf8f5;
+    color: #2d2a26;
+}
+
+.serif {
+    font-family: "Songti SC", "SimSun", "STSong", "FangSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+}
+
+.section-card {
+    background-color: #ffffff;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(120, 113, 108, 0.15), 0 4px 6px -2px rgba(120, 113, 108, 0.1);
+    border: 1px solid #f5f5f4;
+    padding: 2rem;
+}
+
+.math-display {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    color: #292524;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-family: "Times New Roman", "Songti SC", serif;
+}
+
+.highlight-box {
+    background-color: #fffbeb;
+    border-left-width: 4px;
+    border-left-style: solid;
+    border-left-color: #fbbf24;
+    border-top-right-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 9999px;
+    background-color: #1c1917;
+    color: #ffffff;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.formula-box {
+    background-color: #fafaf9;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e7e5e4;
+}
+
+.canvas-container {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    border: 1px solid #e7e5e4;
+    overflow: hidden;
+}
+
+/* ===== Math Formula Styles ===== */
+.fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    font-size: 0.9em;
+    margin: 0 2px;
+}
+.fraction .top {
+    border-bottom: 1.5px solid currentColor;
+    padding: 0 4px;
+    line-height: 1.3;
+}
+.fraction .bottom {
+    padding: 0 4px;
+    line-height: 1.3;
+}
+.summation {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    font-size: 0.95em;
+    margin: 0 3px;
+}
+.summation .top { font-size: 0.65em; line-height: 1; }
+.summation .symbol { font-size: 1.4em; line-height: 1; }
+.summation .bottom { font-size: 0.65em; line-height: 1; }
+.integral {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin: 0 2px;
+}
+.integral .symbol {
+    font-size: 1.6em;
+    font-style: italic;
+    line-height: 1;
+    margin-right: 1px;
+}
+.integral .limits {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.65em;
+    line-height: 1.1;
+    margin-right: 2px;
+}
+.paren { font-size: 1.15em; margin: 0 2px; }
+
+/* ===== Responsive ===== */
+@media (min-width: 768px) {
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .md\:py-32 { padding-top: 8rem; padding-bottom: 8rem; }
+    .md\:text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .md\:text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    .md\:text-5xl { font-size: 3rem; line-height: 1; }
+    .md\:text-7xl { font-size: 4.5rem; line-height: 1; }
+    .md\:p-12 { padding: 3rem; }
+}
+@media (min-width: 1024px) {
+    .lg\:text-8xl { font-size: 6rem; line-height: 1; }
+}
+
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden py-20 md:py-32 px-4">
+        <div class="absolute inset-0 opacity-5">
+            <svg width="100%" height="100%">
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2d2a26" stroke-width="0.5"/>
+                </pattern>
+                <rect width="100%" height="100%" fill="url(#grid)"/>
+            </svg>
+        </div>
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <div class="inline-block px-6 py-2 bg-amber-100 text-amber-800 rounded-full text-lg font-medium mb-6">
+                数学之美 · 信号分析
+            </div>
+            <h1 class="serif text-5xl md:text-7xl lg:text-8xl font-black text-stone-900 mb-8 leading-tight">
+                傅里叶级数
+            </h1>
+            <p class="text-xl md:text-2xl text-stone-500 max-w-3xl mx-auto leading-relaxed">
+                用正弦波的叠加，解构世间一切周期现象<br>
+                <span class="text-stone-400 text-lg">——从热传导到音乐，从心跳到星系</span>
+            </p>
+            <div class="mt-12 flex justify-center gap-4 flex-wrap">
+                <a href="#origin" class="px-8 py-4 bg-stone-900 text-white rounded-2xl text-lg font-medium hover:bg-stone-800 transition shadow-lg shadow-stone-300/50">
+                    探索来历
+                </a>
+                <a href="#formula" class="px-8 py-4 bg-white text-stone-800 rounded-2xl text-lg font-medium border-2 border-stone-200 hover:border-stone-400 transition">
+                    查看公式
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Origin Section -->
+    <section id="origin" class="py-16 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="section-card">
+                <h2 class="serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">傅里叶级数的来历</h2>
+                <p class="text-xl text-stone-500 mb-12">一段跨越两百年的数学传奇</p>
+
+                <!-- Timeline -->
+                <div class="relative">
+                    <div class="absolute left-7 top-0 bottom-0 w-1 bg-stone-200 rounded-full"></div>
+
+                    <div class="flex items-start mb-12">
+                        <div class="step-number">1</div>
+                        <div class="flex-1 pt-2">
+                            <div class="text-2xl font-bold text-stone-800 mb-2">1807年 · 巴黎科学院</div>
+                            <p class="text-lg text-stone-600 leading-relaxed">
+                                法国数学家 <span class="font-bold text-stone-900">约瑟夫·傅里叶</span> 在研究热传导问题时，提出了一个惊人的猜想：
+                                <span class="bg-amber-100 px-2 py-1 rounded text-amber-900 font-medium">任何周期函数，都可以表示为正弦和余弦函数的无穷级数之和。</span>
+                            </p>
+                            <div class="mt-4 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                                <p class="text-stone-500 italic text-lg">"热的分析理论" —— 这篇论文最初被拉格朗日拒绝发表，因为它太超前了。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start mb-12">
+                        <div class="step-number">2</div>
+                        <div class="flex-1 pt-2">
+                            <div class="text-2xl font-bold text-stone-800 mb-2">核心思想</div>
+                            <p class="text-lg text-stone-600 leading-relaxed mb-4">
+                                傅里叶发现，复杂的热分布（温度随位置变化）可以分解为简单正弦波的叠加。
+                                这类似于：
+                            </p>
+                            <div class="highlight-box">
+                                <p class="text-lg font-medium text-amber-900">
+                                    白光通过棱镜分解成七色光谱 → 复杂信号分解为简单正弦波
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start mb-12">
+                        <div class="step-number">3</div>
+                        <div class="flex-1 pt-2">
+                            <div class="text-2xl font-bold text-stone-800 mb-2">数学突破</div>
+                            <p class="text-lg text-stone-600 leading-relaxed">
+                                1822年，傅里叶出版了《热的分析理论》，正式建立了傅里叶级数的数学框架。
+                                这一理论不仅解决了热传导问题，更成为现代 <span class="font-bold">信号处理、图像压缩、量子力学</span> 的基石。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <div class="step-number">4</div>
+                        <div class="flex-1 pt-2">
+                            <div class="text-2xl font-bold text-stone-800 mb-2">现代应用</div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div class="bg-stone-50 rounded-xl p-4 text-center border border-stone-200">
+                                    <div class="text-3xl mb-2">🎵</div>
+                                    <div class="text-stone-700 font-medium">MP3压缩</div>
+                                </div>
+                                <div class="bg-stone-50 rounded-xl p-4 text-center border border-stone-200">
+                                    <div class="text-3xl mb-2">📷</div>
+                                    <div class="text-stone-700 font-medium">JPEG图像</div>
+                                </div>
+                                <div class="bg-stone-50 rounded-xl p-4 text-center border border-stone-200">
+                                    <div class="text-3xl mb-2">📡</div>
+                                    <div class="text-stone-700 font-medium">无线通信</div>
+                                </div>
+                                <div class="bg-stone-50 rounded-xl p-4 text-center border border-stone-200">
+                                    <div class="text-3xl mb-2">🧠</div>
+                                    <div class="text-stone-700 font-medium">MRI核磁共振</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Formula Section -->
+    <section id="formula" class="py-16 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="section-card">
+                <h2 class="serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">傅里叶级数公式</h2>
+                <p class="text-xl text-stone-500 mb-12">用数学语言描述"分解与重构"</p>
+
+                <!-- Main Formula -->
+                <div class="formula-box">
+                    <div class="text-center mb-6">
+                        <span class="text-lg text-stone-400 font-medium">周期函数 f(x) 的傅里叶展开</span>
+                    </div>
+                    <div class="math-display">
+                        <span class="math-display">f(x) = <span class="fraction"><span class="top">a<sub>0</sub></span><span class="bottom">2</span></span> + <span class="summation"><span class="top">∞</span><span class="symbol">∑</span><span class="bottom">n=1</span></span>&nbsp;<span class="paren">(</span> a<sub>n</sub>&nbsp;cos<span class="fraction"><span class="top">2πnx</span><span class="bottom">T</span></span> + b<sub>n</sub>&nbsp;sin<span class="fraction"><span class="top">2πnx</span><span class="bottom">T</span></span> <span class="paren">)</span></span>
+                    </div>
+                    <div class="text-center mt-4">
+                        <span class="text-lg text-stone-400">或等价地写成</span>
+                    </div>
+                    <div class="math-display">
+                        <span class="math-display">f(x) = <span class="fraction"><span class="top">a<sub>0</sub></span><span class="bottom">2</span></span> + <span class="summation"><span class="top">∞</span><span class="symbol">∑</span><span class="bottom">n=1</span></span>&nbsp;<span class="paren">(</span> a<sub>n</sub>&nbsp;cos nω<sub>0</sub>x + b<sub>n</sub>&nbsp;sin nω<sub>0</sub>x <span class="paren">)</span></span>
+                    </div>
+                </div>
+
+                <!-- Coefficients -->
+                <div class="grid md:grid-cols-3 gap-6 mt-8">
+                    <div class="bg-stone-50 rounded-2xl p-6 border border-stone-200">
+                        <div class="text-center mb-4">
+                            <span class="text-2xl font-bold text-stone-800">直流分量</span>
+                        </div>
+                        <div class="math-display text-xl">
+                            <span class="math-display" style="font-size:1.3em;">a<sub>0</sub> = <span class="fraction"><span class="top">2</span><span class="bottom">T</span></span><span class="integral"><span class="symbol">∫</span><span class="limits"><span>T</span><span>0</span></span></span> f(x) dx</span>
+                        </div>
+                        <p class="text-center text-stone-500 mt-2">函数在一个周期内的平均值</p>
+                    </div>
+                    <div class="bg-stone-50 rounded-2xl p-6 border border-stone-200">
+                        <div class="text-center mb-4">
+                            <span class="text-2xl font-bold text-stone-800">余弦系数</span>
+                        </div>
+                        <div class="math-display text-xl">
+                            <span class="math-display" style="font-size:1.3em;">a<sub>n</sub> = <span class="fraction"><span class="top">2</span><span class="bottom">T</span></span><span class="integral"><span class="symbol">∫</span><span class="limits"><span>T</span><span>0</span></span></span> f(x) cos nω<sub>0</sub>x dx</span>
+                        </div>
+                        <p class="text-center text-stone-500 mt-2">第 n 个余弦波的"权重"</p>
+                    </div>
+                    <div class="bg-stone-50 rounded-2xl p-6 border border-stone-200">
+                        <div class="text-center mb-4">
+                            <span class="text-2xl font-bold text-stone-800">正弦系数</span>
+                        </div>
+                        <div class="math-display text-xl">
+                            <span class="math-display" style="font-size:1.3em;">b<sub>n</sub> = <span class="fraction"><span class="top">2</span><span class="bottom">T</span></span><span class="integral"><span class="symbol">∫</span><span class="limits"><span>T</span><span>0</span></span></span> f(x) sin nω<sub>0</sub>x dx</span>
+                        </div>
+                        <p class="text-center text-stone-500 mt-2">第 n 个正弦波的"权重"</p>
+                    </div>
+                </div>
+
+                <!-- Key Parameters -->
+                <div class="highlight-box mt-8">
+                    <h3 class="text-2xl font-bold text-amber-900 mb-4">参数含义</h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">T</span>
+                            <span class="text-stone-700">周期 —— 函数重复的最小间隔</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">ω₀</span>
+                            <span class="text-stone-700">基频 —— ω₀ = 2π/T，最低频率分量</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">n</span>
+                            <span class="text-stone-700">谐波次数 —— n=1 基波，n=2 二次谐波...</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">∞</span>
+                            <span class="text-stone-700">无穷级数 —— 理论上需要无限项才能精确重构</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Intuitive Understanding Section -->
+    <section id="intuition" class="py-16 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="section-card">
+                <h2 class="serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">直观理解</h2>
+                <p class="text-xl text-stone-500 mb-12">三个视角，让你"看见"傅里叶级数</p>
+
+                <!-- Perspective 1: Building Blocks -->
+                <div class="mb-16">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-stone-900 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">1</div>
+                        <h3 class="text-3xl font-bold text-stone-800">积木视角：正弦波是基本积木</h3>
+                    </div>
+                    <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                        想象你要用乐高积木搭建一座复杂的城堡。傅里叶级数告诉我们：<span class="font-bold text-stone-900">任何周期函数，都可以用不同大小、频率的正弦波"积木"搭建出来。</span>
+                    </p>
+
+                    <!-- Interactive: Wave Synthesis -->
+                    <div class="canvas-container p-4 mb-6">
+                        <div class="flex flex-wrap gap-3 mb-4 justify-center">
+                            <button onclick="setWaveType('square')" id="btn-square" class="px-6 py-3 rounded-xl font-medium transition bg-stone-900 text-white">方波</button>
+                            <button onclick="setWaveType('sawtooth')" id="btn-sawtooth" class="px-6 py-3 rounded-xl font-medium transition bg-stone-100 text-stone-600 hover:bg-stone-200">锯齿波</button>
+                            <button onclick="setWaveType('triangle')" id="btn-triangle" class="px-6 py-3 rounded-xl font-medium transition bg-stone-100 text-stone-600 hover:bg-stone-200">三角波</button>
+                        </div>
+                        <div class="flex items-center gap-4 mb-4 px-4">
+                            <span class="text-stone-500 font-medium whitespace-nowrap">谐波数量: <span id="harmonic-count" class="text-stone-900 font-bold text-xl">1</span></span>
+                            <input type="range" id="harmonic-slider" min="1" max="20" value="1" 
+                                class="flex-1 h-3 bg-stone-200 rounded-full appearance-none cursor-pointer accent-stone-900"
+                                oninput="updateHarmonics(this.value)">
+                        </div>
+                        <canvas id="synthesis-canvas" width="900" height="350" class="w-full"></canvas>
+                        <div class="text-center text-stone-400 mt-2 text-sm">拖动滑块，观察正弦波如何叠加成复杂波形</div>
+                    </div>
+                </div>
+
+                <!-- Perspective 2: Orthogonal Basis -->
+                <div class="mb-16">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-stone-900 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">2</div>
+                        <h3 class="text-3xl font-bold text-stone-800">正交基视角：像坐标投影一样分解</h3>
+                    </div>
+                    <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                        在三维空间中，任何向量都可以分解为 x、y、z 三个方向的投影。傅里叶级数做了一件类似的事：
+                        <span class="font-bold text-stone-900">将函数"投影"到无穷多个正交的正弦/余弦基函数上。</span>
+                    </p>
+
+                    <div class="highlight-box mb-6">
+                        <h4 class="text-xl font-bold text-amber-900 mb-3">什么是"正交"？</h4>
+                        <p class="text-lg text-stone-700 leading-relaxed">
+                            两个函数正交，意味着它们在一个周期内的"内积"为零：
+                        </p>
+                        <div class="math-display text-xl mt-3">
+                            <span class="math-display" style="font-size:1.3em;"><span class="integral"><span class="symbol">∫</span><span class="limits"><span>T</span><span>0</span></span></span> sin(nω<sub>0</sub>x) · sin(mω<sub>0</sub>x) dx = 0 &nbsp;&nbsp;(n ≠ m)</span>
+                        </div>
+                        <p class="text-lg text-stone-600 mt-3">
+                            这就像三维空间中 x 轴和 y 轴互相垂直一样。正因为正交，我们才能独立地求出每个频率分量的系数，互不干扰。
+                        </p>
+                    </div>
+
+                    <!-- Interactive: Orthogonality Demo -->
+                    <div class="canvas-container p-4">
+                        <div class="flex flex-wrap gap-3 mb-4 justify-center">
+                            <button onclick="setOrthoMode('product')" id="btn-product" class="px-6 py-3 rounded-xl font-medium transition bg-stone-900 text-white">乘积函数</button>
+                            <button onclick="setOrthoMode('integral')" id="btn-integral" class="px-6 py-3 rounded-xl font-medium transition bg-stone-100 text-stone-600 hover:bg-stone-200">积分面积</button>
+                        </div>
+                        <div class="flex items-center gap-4 mb-4 px-4 justify-center">
+                            <span class="text-stone-500">n = <span id="n-val" class="font-bold text-stone-900">1</span></span>
+                            <input type="range" id="n-slider" min="1" max="5" value="1" 
+                                class="w-32 h-3 bg-stone-200 rounded-full appearance-none cursor-pointer accent-stone-900"
+                                oninput="updateN(this.value)">
+                            <span class="text-stone-300">|</span>
+                            <span class="text-stone-500">m = <span id="m-val" class="font-bold text-stone-900">2</span></span>
+                            <input type="range" id="m-slider" min="1" max="5" value="2" 
+                                class="w-32 h-3 bg-stone-200 rounded-full appearance-none cursor-pointer accent-stone-900"
+                                oninput="updateM(this.value)">
+                        </div>
+                        <canvas id="ortho-canvas" width="900" height="300" class="w-full"></canvas>
+                        <div class="text-center mt-4">
+                            <div id="integral-result" class="text-2xl font-bold text-stone-800"></div>
+                            <div class="text-stone-400 text-sm mt-1">当 n ≠ m 时，积分结果趋近于 0（正交！）</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perspective 3: Inner Product -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-stone-900 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">3</div>
+                        <h3 class="text-3xl font-bold text-stone-800">内积视角："相关性"决定系数大小</h3>
+                    </div>
+                    <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                        系数 aₙ 和 bₙ 的计算公式，本质上是在问：<span class="font-bold text-stone-900">"原函数 f(x) 和第 n 个正弦/余弦波有多像？"</span>
+                    </p>
+
+                    <div class="formula-box mb-6">
+                        <div class="text-center mb-4">
+                            <span class="text-lg text-stone-400">系数公式的本质</span>
+                        </div>
+                        <div class="math-display">
+                            <span class="math-display">a<sub>n</sub> = <span class="fraction"><span class="top">⟨f, cos nω<sub>0</sub>x⟩</span><span class="bottom">⟨cos nω<sub>0</sub>x, cos nω<sub>0</sub>x⟩</span></span></span>
+                        </div>
+                        <div class="text-center mt-4 text-lg text-stone-600">
+                            分子 = 函数 f 与基函数的"相关性"（内积）<br>
+                            分母 = 基函数的"自身长度"（归一化因子）
+                        </div>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4 class="text-xl font-bold text-amber-900 mb-3">通俗理解</h4>
+                        <ul class="space-y-3 text-lg text-stone-700">
+                            <li class="flex items-start gap-3">
+                                <span class="text-amber-500 text-2xl">•</span>
+                                <span>如果 f(x) 长得很像 sin(2x)，那么 b₂ 就会很大</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-amber-500 text-2xl">•</span>
+                                <span>如果 f(x) 和 cos(5x) 完全不搭边，那么 a₅ 就接近 0</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-amber-500 text-2xl">•</span>
+                                <span>每个系数就像"投票"，告诉我们原函数中包含多少该频率的成分</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Playground -->
+    <section class="py-16 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="section-card">
+                <h2 class="serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">交互实验室</h2>
+                <p class="text-xl text-stone-500 mb-8">亲手绘制波形，实时观察傅里叶分解</p>
+
+                <div class="canvas-container p-4">
+                    <div class="flex flex-wrap gap-3 mb-4 justify-center">
+                        <button onclick="setDrawMode('draw')" id="btn-draw" class="px-6 py-3 rounded-xl font-medium transition bg-stone-900 text-white">🖊️ 手绘波形</button>
+                        <button onclick="setDrawMode('preset')" id="btn-preset" class="px-6 py-3 rounded-xl font-medium transition bg-stone-100 text-stone-600 hover:bg-stone-200">📐 预设波形</button>
+                        <button onclick="clearCanvas()" class="px-6 py-3 rounded-xl font-medium transition bg-red-50 text-red-600 hover:bg-red-100">🗑️ 清空</button>
+                    </div>
+                    <div id="preset-buttons" class="flex flex-wrap gap-2 mb-4 justify-center hidden">
+                        <button onclick="loadPreset('square')" class="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 transition text-sm">方波</button>
+                        <button onclick="loadPreset('sawtooth')" class="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 transition text-sm">锯齿波</button>
+                        <button onclick="loadPreset('triangle')" class="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 transition text-sm">三角波</button>
+                        <button onclick="loadPreset('pulse')" class="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 transition text-sm">脉冲波</button>
+                        <button onclick="loadPreset('sine')" class="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 transition text-sm">纯正弦</button>
+                    </div>
+                    <canvas id="draw-canvas" width="900" height="200" class="w-full cursor-crosshair border-2 border-dashed border-stone-300 rounded-xl"></canvas>
+                    <div class="text-center text-stone-400 mt-2 text-sm" id="draw-hint">在上方画布中拖动鼠标绘制波形</div>
+
+                    <div class="mt-6">
+                        <div class="flex items-center gap-4 mb-4 px-4">
+                            <span class="text-stone-500 font-medium whitespace-nowrap">分解精度: <span id="precision-count" class="text-stone-900 font-bold text-xl">10</span> 项</span>
+                            <input type="range" id="precision-slider" min="1" max="50" value="10" 
+                                class="flex-1 h-3 bg-stone-200 rounded-full appearance-none cursor-pointer accent-stone-900"
+                                oninput="updatePrecision(this.value)">
+                        </div>
+                        <canvas id="reconstruct-canvas" width="900" height="200" class="w-full"></canvas>
+                        <div class="text-center text-stone-400 mt-2 text-sm">傅里叶重构结果（绿色 = 原波形，红色 = 重构）</div>
+                    </div>
+
+                    <div class="mt-6">
+                        <canvas id="spectrum-canvas" width="900" height="200" class="w-full"></canvas>
+                        <div class="text-center text-stone-400 mt-2 text-sm">频谱图 —— 各频率分量的幅度</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary -->
+    <section class="py-16 px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="section-card bg-stone-900 text-white">
+                <h2 class="serif text-4xl md:text-5xl font-bold mb-6">一句话总结</h2>
+                <div class="text-2xl md:text-3xl leading-relaxed font-light">
+                    傅里叶级数告诉我们：<span class="text-amber-400 font-bold">再复杂的周期现象，也不过是简单正弦波的合唱。</span><br><br>
+                    通过正交基的内积投影，我们可以精确地"听出"每一个声部的音量——这就是系数 aₙ 和 bₙ 的物理意义。
+                </div>
+                <div class="mt-8 pt-8 border-t border-stone-700 text-stone-400 text-lg">
+                    "自然界最深刻的真理，往往以最简洁的数学形式呈现。" —— 傅里叶
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 text-center text-stone-400">
+        <p class="text-lg">傅里叶级数交互式可视化 · 数学之美</p>
+    </footer>
+
+    <script>
+        // ============ SYNTHESIS CANVAS ============
+        const synthCanvas = document.getElementById('synthesis-canvas');
+        const synthCtx = synthCanvas.getContext('2d');
+        let currentWaveType = 'square';
+        let harmonicCount = 1;
+
+        function setWaveType(type) {
+            currentWaveType = type;
+            ['square', 'sawtooth', 'triangle'].forEach(t => {
+                const btn = document.getElementById('btn-' + t);
+                if (t === type) {
+                    btn.classList.remove('bg-stone-100', 'text-stone-600');
+                    btn.classList.add('bg-stone-900', 'text-white');
+                } else {
+                    btn.classList.add('bg-stone-100', 'text-stone-600');
+                    btn.classList.remove('bg-stone-900', 'text-white');
+                }
+            });
+            drawSynthesis();
+        }
+
+        function updateHarmonics(val) {
+            harmonicCount = parseInt(val);
+            document.getElementById('harmonic-count').textContent = val;
+            drawSynthesis();
+        }
+
+        function getWaveValue(x, type, n) {
+            const t = x / synthCanvas.width;
+            switch(type) {
+                case 'square':
+                    // Square wave: only odd harmonics, amplitude 1/n
+                    if (n % 2 === 0) return 0;
+                    return (4/Math.PI) * Math.sin(n * 2 * Math.PI * t) / n;
+                case 'sawtooth':
+                    // Sawtooth: all harmonics, amplitude 1/n
+                    return (2/Math.PI) * Math.pow(-1, n+1) * Math.sin(n * 2 * Math.PI * t) / n;
+                case 'triangle':
+                    // Triangle: only odd harmonics, amplitude 1/n²
+                    if (n % 2 === 0) return 0;
+                    return (8/Math.PI/Math.PI) * Math.pow(-1, (n-1)/2) * Math.sin(n * 2 * Math.PI * t) / (n*n);
+                default: return 0;
+            }
+        }
+
+        function drawSynthesis() {
+            const w = synthCanvas.width;
+            const h = synthCanvas.height;
+            const cy = h / 2;
+            const scale = h * 0.35;
+
+            synthCtx.clearRect(0, 0, w, h);
+
+            // Draw grid
+            synthCtx.strokeStyle = '#f0ebe5';
+            synthCtx.lineWidth = 1;
+            for (let i = 0; i < w; i += 50) {
+                synthCtx.beginPath();
+                synthCtx.moveTo(i, 0);
+                synthCtx.lineTo(i, h);
+                synthCtx.stroke();
+            }
+            for (let i = 0; i < h; i += 50) {
+                synthCtx.beginPath();
+                synthCtx.moveTo(0, i);
+                synthCtx.lineTo(w, i);
+                synthCtx.stroke();
+            }
+
+            // Draw individual harmonics (faded)
+            for (let n = 1; n <= harmonicCount && n <= 5; n++) {
+                const alpha = n === harmonicCount ? 0.3 : 0.1;
+                synthCtx.strokeStyle = `rgba(120, 113, 108, ${alpha})`;
+                synthCtx.lineWidth = 1;
+                synthCtx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    const val = getWaveValue(x, currentWaveType, n);
+                    const y = cy - val * scale;
+                    if (x === 0) synthCtx.moveTo(x, y);
+                    else synthCtx.lineTo(x, y);
+                }
+                synthCtx.stroke();
+            }
+
+            // Draw summed wave
+            synthCtx.strokeStyle = '#1c1917';
+            synthCtx.lineWidth = 3;
+            synthCtx.beginPath();
+            for (let x = 0; x < w; x++) {
+                let sum = 0;
+                for (let n = 1; n <= harmonicCount; n++) {
+                    sum += getWaveValue(x, currentWaveType, n);
+                }
+                const y = cy - sum * scale;
+                if (x === 0) synthCtx.moveTo(x, y);
+                else synthCtx.lineTo(x, y);
+            }
+            synthCtx.stroke();
+
+            // Draw center line
+            synthCtx.strokeStyle = '#d6d3d1';
+            synthCtx.lineWidth = 1;
+            synthCtx.setLineDash([5, 5]);
+            synthCtx.beginPath();
+            synthCtx.moveTo(0, cy);
+            synthCtx.lineTo(w, cy);
+            synthCtx.stroke();
+            synthCtx.setLineDash([]);
+        }
+
+        // ============ ORTHOGONALITY CANVAS ============
+        const orthoCanvas = document.getElementById('ortho-canvas');
+        const orthoCtx = orthoCanvas.getContext('2d');
+        let orthoN = 1, orthoM = 2;
+        let orthoMode = 'product';
+
+        function setOrthoMode(mode) {
+            orthoMode = mode;
+            ['product', 'integral'].forEach(m => {
+                const btn = document.getElementById('btn-' + m);
+                if (m === mode) {
+                    btn.classList.remove('bg-stone-100', 'text-stone-600');
+                    btn.classList.add('bg-stone-900', 'text-white');
+                } else {
+                    btn.classList.add('bg-stone-100', 'text-stone-600');
+                    btn.classList.remove('bg-stone-900', 'text-white');
+                }
+            });
+            drawOrtho();
+        }
+
+        function updateN(val) {
+            orthoN = parseInt(val);
+            document.getElementById('n-val').textContent = val;
+            drawOrtho();
+        }
+
+        function updateM(val) {
+            orthoM = parseInt(val);
+            document.getElementById('m-val').textContent = val;
+            drawOrtho();
+        }
+
+        function drawOrtho() {
+            const w = orthoCanvas.width;
+            const h = orthoCanvas.height;
+            const cy = h / 2;
+            const scale = h * 0.35;
+
+            orthoCtx.clearRect(0, 0, w, h);
+
+            // Grid
+            orthoCtx.strokeStyle = '#f0ebe5';
+            orthoCtx.lineWidth = 1;
+            for (let i = 0; i < w; i += 50) {
+                orthoCtx.beginPath();
+                orthoCtx.moveTo(i, 0);
+                orthoCtx.lineTo(i, h);
+                orthoCtx.stroke();
+            }
+
+            const points = [];
+            let integral = 0;
+            const dx = 1 / w;
+
+            if (orthoMode === 'product') {
+                // Draw sin(nx) * sin(mx)
+                orthoCtx.strokeStyle = '#1c1917';
+                orthoCtx.lineWidth = 2.5;
+                orthoCtx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    const t = x / w * 2 * Math.PI;
+                    const val = Math.sin(orthoN * t) * Math.sin(orthoM * t);
+                    points.push(val);
+                    integral += val * dx * 2 * Math.PI;
+                    const y = cy - val * scale;
+                    if (x === 0) orthoCtx.moveTo(x, y);
+                    else orthoCtx.lineTo(x, y);
+                }
+                orthoCtx.stroke();
+
+                // Fill positive/negative areas
+                orthoCtx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    const t = x / w * 2 * Math.PI;
+                    const val = Math.sin(orthoN * t) * Math.sin(orthoM * t);
+                    const y = cy - val * scale;
+                    if (x === 0) orthoCtx.moveTo(x, y);
+                    else orthoCtx.lineTo(x, y);
+                }
+                orthoCtx.lineTo(w, cy);
+                orthoCtx.lineTo(0, cy);
+                orthoCtx.closePath();
+                orthoCtx.fillStyle = 'rgba(251, 191, 36, 0.15)';
+                orthoCtx.fill();
+
+            } else {
+                // Draw integral accumulation
+                orthoCtx.strokeStyle = '#1c1917';
+                orthoCtx.lineWidth = 2.5;
+                orthoCtx.beginPath();
+                let acc = 0;
+                for (let x = 0; x < w; x++) {
+                    const t = x / w * 2 * Math.PI;
+                    const val = Math.sin(orthoN * t) * Math.sin(orthoM * t);
+                    acc += val * dx * 2 * Math.PI;
+                    points.push(acc);
+                    const y = cy - acc * scale * 0.3;
+                    if (x === 0) orthoCtx.moveTo(x, y);
+                    else orthoCtx.lineTo(x, y);
+                }
+                orthoCtx.stroke();
+                integral = acc;
+            }
+
+            // Center line
+            orthoCtx.strokeStyle = '#d6d3d1';
+            orthoCtx.lineWidth = 1;
+            orthoCtx.setLineDash([5, 5]);
+            orthoCtx.beginPath();
+            orthoCtx.moveTo(0, cy);
+            orthoCtx.lineTo(w, cy);
+            orthoCtx.stroke();
+            orthoCtx.setLineDash([]);
+
+            // Show result
+            const resultEl = document.getElementById('integral-result');
+            const isZero = Math.abs(integral) < 0.01;
+            resultEl.innerHTML = `<span style="color:${isZero ? '#059669' : '#dc2626'}">∫₀²π sin(${orthoN}x)·sin(${orthoM}x)dx ≈ ${integral.toFixed(3)}</span>`;
+            if (isZero) {
+                resultEl.innerHTML += ' <span style="color:#059669">✓ 正交！</span>';
+            }
+        }
+
+        // ============ DRAW CANVAS ============
+        const drawCanvas = document.getElementById('draw-canvas');
+        const drawCtx = drawCanvas.getContext('2d');
+        const reconCanvas = document.getElementById('reconstruct-canvas');
+        const reconCtx = reconCanvas.getContext('2d');
+        const spectrumCanvas = document.getElementById('spectrum-canvas');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+
+        let isDrawing = false;
+        let drawPoints = [];
+        let precision = 10;
+
+        function initDrawCanvas() {
+            drawPoints = new Array(drawCanvas.width).fill(null);
+            // Default: square wave
+            loadPreset('square');
+        }
+
+        function setDrawMode(mode) {
+            const presetDiv = document.getElementById('preset-buttons');
+            const drawBtn = document.getElementById('btn-draw');
+            const presetBtn = document.getElementById('btn-preset');
+
+            if (mode === 'draw') {
+                presetDiv.classList.add('hidden');
+                document.getElementById('draw-hint').textContent = '在上方画布中拖动鼠标绘制波形';
+                drawBtn.classList.remove('bg-stone-100', 'text-stone-600');
+                drawBtn.classList.add('bg-stone-900', 'text-white');
+                presetBtn.classList.add('bg-stone-100', 'text-stone-600');
+                presetBtn.classList.remove('bg-stone-900', 'text-white');
+            } else {
+                presetDiv.classList.remove('hidden');
+                document.getElementById('draw-hint').textContent = '选择一个预设波形';
+                presetBtn.classList.remove('bg-stone-100', 'text-stone-600');
+                presetBtn.classList.add('bg-stone-900', 'text-white');
+                drawBtn.classList.add('bg-stone-100', 'text-stone-600');
+                drawBtn.classList.remove('bg-stone-900', 'text-white');
+            }
+        }
+
+        function loadPreset(type) {
+            const w = drawCanvas.width;
+            const h = drawCanvas.height;
+            const cy = h / 2;
+            drawPoints = new Array(w).fill(null);
+
+            for (let x = 0; x < w; x++) {
+                const t = x / w;
+                let y;
+                switch(type) {
+                    case 'square':
+                        y = (t % 1 < 0.5) ? -0.7 : 0.7;
+                        break;
+                    case 'sawtooth':
+                        y = 2 * (t % 1) - 1;
+                        break;
+                    case 'triangle':
+                        const p = t % 1;
+                        y = (p < 0.5) ? (4*p - 1) : (3 - 4*p);
+                        break;
+                    case 'pulse':
+                        y = (t % 1 < 0.1) ? 1 : -0.2;
+                        break;
+                    case 'sine':
+                        y = Math.sin(2 * Math.PI * t);
+                        break;
+                    default:
+                        y = 0;
+                }
+                drawPoints[x] = cy - y * (h * 0.35);
+            }
+            drawDrawCanvas();
+            computeAndDrawFourier();
+        }
+
+        function clearCanvas() {
+            drawPoints = new Array(drawCanvas.width).fill(null);
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            reconCtx.clearRect(0, 0, reconCanvas.width, reconCanvas.height);
+            spectrumCtx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+        }
+
+        function updatePrecision(val) {
+            precision = parseInt(val);
+            document.getElementById('precision-count').textContent = val;
+            computeAndDrawFourier();
+        }
+
+        // Mouse events for drawing
+        drawCanvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = drawCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) * (drawCanvas.width / rect.width));
+            const y = Math.floor((e.clientY - rect.top) * (drawCanvas.height / rect.height));
+            drawPoints[x] = y;
+        });
+
+        drawCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = drawCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) * (drawCanvas.width / rect.width));
+            const y = Math.floor((e.clientY - rect.top) * (drawCanvas.height / rect.height));
+            if (x >= 0 && x < drawCanvas.width) {
+                drawPoints[x] = y;
+                // Interpolate between last drawn point
+                let lastX = x - 1;
+                while (lastX >= 0 && drawPoints[lastX] === null) lastX--;
+                if (lastX >= 0) {
+                    const lastY = drawPoints[lastX];
+                    for (let i = lastX + 1; i < x; i++) {
+                        const t = (i - lastX) / (x - lastX);
+                        drawPoints[i] = lastY + (y - lastY) * t;
+                    }
+                }
+            }
+            drawDrawCanvas();
+        });
+
+        drawCanvas.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                // Fill gaps
+                let lastValid = 0;
+                for (let i = 0; i < drawPoints.length; i++) {
+                    if (drawPoints[i] !== null) {
+                        for (let j = lastValid + 1; j < i; j++) {
+                            const t = (j - lastValid) / (i - lastValid);
+                            drawPoints[j] = drawPoints[lastValid] + (drawPoints[i] - drawPoints[lastValid]) * t;
+                        }
+                        lastValid = i;
+                    }
+                }
+                // Fill end
+                for (let j = lastValid + 1; j < drawPoints.length; j++) {
+                    drawPoints[j] = drawPoints[lastValid];
+                }
+                // Fill beginning
+                for (let j = 0; j < drawPoints.length && drawPoints[j] === null; j++) {
+                    drawPoints[j] = drawPoints[lastValid];
+                }
+                drawDrawCanvas();
+                computeAndDrawFourier();
+            }
+        });
+
+        function drawDrawCanvas() {
+            const w = drawCanvas.width;
+            const h = drawCanvas.height;
+            drawCtx.clearRect(0, 0, w, h);
+
+            // Grid
+            drawCtx.strokeStyle = '#f0ebe5';
+            drawCtx.lineWidth = 1;
+            for (let i = 0; i < w; i += 50) {
+                drawCtx.beginPath();
+                drawCtx.moveTo(i, 0);
+                drawCtx.lineTo(i, h);
+                drawCtx.stroke();
+            }
+
+            // Draw points
+            drawCtx.strokeStyle = '#1c1917';
+            drawCtx.lineWidth = 2.5;
+            drawCtx.beginPath();
+            let started = false;
+            for (let x = 0; x < w; x++) {
+                if (drawPoints[x] !== null) {
+                    if (!started) {
+                        drawCtx.moveTo(x, drawPoints[x]);
+                        started = true;
+                    } else {
+                        drawCtx.lineTo(x, drawPoints[x]);
+                    }
+                }
+            }
+            drawCtx.stroke();
+
+            // Center line
+            drawCtx.strokeStyle = '#d6d3d1';
+            drawCtx.lineWidth = 1;
+            drawCtx.setLineDash([5, 5]);
+            drawCtx.beginPath();
+            drawCtx.moveTo(0, h/2);
+            drawCtx.lineTo(w, h/2);
+            drawCtx.stroke();
+            drawCtx.setLineDash([]);
+        }
+
+        function computeAndDrawFourier() {
+            const N = drawCanvas.width;
+            const h = reconCanvas.height;
+            const cy = h / 2;
+
+            // Get y values normalized to [-1, 1]
+            const yValues = drawPoints.map(y => {
+                if (y === null) return 0;
+                return -(y - drawCanvas.height/2) / (drawCanvas.height * 0.35);
+            });
+
+            // Compute Fourier coefficients using DFT-like approach
+            const coeffs = [];
+            for (let k = 0; k <= precision; k++) {
+                let a = 0, b = 0;
+                for (let n = 0; n < N; n++) {
+                    const t = 2 * Math.PI * n / N;
+                    a += yValues[n] * Math.cos(k * t);
+                    b += yValues[n] * Math.sin(k * t);
+                }
+                a = (2 * a / N);
+                b = (2 * b / N);
+                if (k === 0) a /= 2; // DC component
+                coeffs.push({ a, b, mag: Math.sqrt(a*a + b*b) });
+            }
+
+            // Draw reconstruction
+            reconCtx.clearRect(0, 0, reconCanvas.width, reconCanvas.height);
+
+            // Grid
+            reconCtx.strokeStyle = '#f0ebe5';
+            reconCtx.lineWidth = 1;
+            for (let i = 0; i < reconCanvas.width; i += 50) {
+                reconCtx.beginPath();
+                reconCtx.moveTo(i, 0);
+                reconCtx.lineTo(i, h);
+                reconCtx.stroke();
+            }
+
+            // Original (green, faded)
+            reconCtx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
+            reconCtx.lineWidth = 2;
+            reconCtx.beginPath();
+            for (let x = 0; x < N; x++) {
+                const y = cy - yValues[x] * (h * 0.35);
+                if (x === 0) reconCtx.moveTo(x, y);
+                else reconCtx.lineTo(x, y);
+            }
+            reconCtx.stroke();
+
+            // Reconstruction (red)
+            reconCtx.strokeStyle = '#dc2626';
+            reconCtx.lineWidth = 2.5;
+            reconCtx.beginPath();
+            for (let x = 0; x < N; x++) {
+                const t = 2 * Math.PI * x / N;
+                let y = coeffs[0].a;
+                for (let k = 1; k <= precision; k++) {
+                    y += coeffs[k].a * Math.cos(k * t) + coeffs[k].b * Math.sin(k * t);
+                }
+                const py = cy - y * (h * 0.35);
+                if (x === 0) reconCtx.moveTo(x, py);
+                else reconCtx.lineTo(x, py);
+            }
+            reconCtx.stroke();
+
+            // Center line
+            reconCtx.strokeStyle = '#d6d3d1';
+            reconCtx.lineWidth = 1;
+            reconCtx.setLineDash([5, 5]);
+            reconCtx.beginPath();
+            reconCtx.moveTo(0, cy);
+            reconCtx.lineTo(reconCanvas.width, cy);
+            reconCtx.stroke();
+            reconCtx.setLineDash([]);
+
+            // Draw spectrum
+            spectrumCtx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+            const barW = spectrumCanvas.width / (precision + 1) * 0.7;
+            const gap = spectrumCanvas.width / (precision + 1) * 0.3;
+            const maxMag = Math.max(...coeffs.map(c => c.mag), 0.01);
+
+            for (let k = 0; k <= precision; k++) {
+                const barH = (coeffs[k].mag / maxMag) * (spectrumCanvas.height * 0.8);
+                const x = k * (barW + gap) + gap/2;
+                const y = spectrumCanvas.height - barH - 10;
+
+                spectrumCtx.fillStyle = k === 0 ? '#78716c' : '#f59e0b';
+                spectrumCtx.fillRect(x, y, barW, barH);
+
+                // Label
+                spectrumCtx.fillStyle = '#78716c';
+                spectrumCtx.font = '12px sans-serif';
+                spectrumCtx.textAlign = 'center';
+                spectrumCtx.fillText(k === 0 ? 'DC' : k, x + barW/2, spectrumCanvas.height - 2);
+            }
+
+            // Center line for spectrum
+            spectrumCtx.strokeStyle = '#f0ebe5';
+            spectrumCtx.lineWidth = 1;
+            spectrumCtx.beginPath();
+            spectrumCtx.moveTo(0, spectrumCanvas.height - 10);
+            spectrumCtx.lineTo(spectrumCanvas.width, spectrumCanvas.height - 10);
+            spectrumCtx.stroke();
+        }
+
+        // Initialize
+        drawSynthesis();
+        drawOrtho();
+        initDrawCanvas();
+
+        // Responsive canvas sizing
+        function resizeCanvases() {
+            const containers = document.querySelectorAll('.canvas-container');
+            containers.forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    const rect = canvas.getBoundingClientRect();
+                    // Keep internal resolution but adjust display
+                }
+            });
+        }
+        window.addEventListener('resize', resizeCanvases);
+    </script>
+</body>
+</html>

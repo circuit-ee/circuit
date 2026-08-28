@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>频谱分解可视化实验室</title>
+        <style>
+
+/* ===== Preflight / Reset ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, h1, h2, h3, h4, p, ul, button, input { margin: 0; padding: 0; }
+button { border: none; background: transparent; cursor: pointer; font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; }
+ul { list-style: none; }
+input { font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; }
+
+/* ===== Layout ===== */
+.block { display: block; }
+.flex { display: flex; }
+.grid { display: grid; }
+.flex-wrap { flex-wrap: wrap; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ===== Sizing ===== */
+.w-full { width: 100%; }
+.w-2 { width: 0.5rem; }
+.w-3 { width: 0.75rem; }
+.w-4 { width: 1rem; }
+.w-5 { width: 1.25rem; }
+.w-8 { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.w-12 { width: 3rem; }
+.w-14 { width: 3.5rem; }
+.h-1 { height: 0.25rem; }
+.h-2 { height: 0.5rem; }
+.h-3 { height: 0.75rem; }
+.h-5 { height: 1.25rem; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.h-12 { height: 3rem; }
+.h-14 { height: 3.5rem; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+.max-w-7xl { max-width: 80rem; }
+.max-w-3xl { max-width: 48rem; }
+
+/* ===== Spacing ===== */
+.mx-auto { margin-left: auto; margin-right: auto; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.pb-12 { padding-bottom: 3rem; }
+
+/* ===== Typography ===== */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-5xl { font-size: 3rem; line-height: 1; }
+.font-light { font-weight: 300; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-black { font-weight: 900; }
+.tracking-tight { letter-spacing: -0.025em; }
+.leading-relaxed { line-height: 1.625; }
+
+/* ===== Text Colors ===== */
+.text-white { color: #ffffff; }
+.text-slate-500 { color: #64748b; }
+.text-slate-600 { color: #475569; }
+.text-slate-700 { color: #334155; }
+.text-slate-800 { color: #1e293b; }
+.text-slate-900 { color: #0f172a; }
+.text-blue-600 { color: #2563eb; }
+.text-blue-700 { color: #1d4ed8; }
+.text-purple-600 { color: #9333ea; }
+.text-emerald-600 { color: #059669; }
+.text-emerald-700 { color: #047857; }
+.text-red-500 { color: #ef4444; }
+
+/* ===== Background Colors ===== */
+.bg-white { background-color: #ffffff; }
+.bg-slate-50 { background-color: #f8fafc; }
+.bg-slate-100 { background-color: #f1f5f9; }
+.bg-slate-200 { background-color: #e2e8f0; }
+.bg-slate-900 { background-color: #0f172a; }
+.bg-blue-50 { background-color: #eff6ff; }
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-purple-50 { background-color: #faf5ff; }
+.bg-purple-100 { background-color: #f3e8ff; }
+.bg-purple-500 { background-color: #a855f7; }
+.bg-emerald-50 { background-color: #ecfdf5; }
+.bg-emerald-100 { background-color: #d1fae5; }
+.bg-emerald-500 { background-color: #10b981; }
+.bg-cyan-100 { background-color: #cffafe; }
+.bg-cyan-500 { background-color: #06b6d4; }
+.bg-rose-100 { background-color: #ffe4e6; }
+.bg-rose-500 { background-color: #f43f5e; }
+.bg-red-500 { background-color: #ef4444; }
+
+/* ===== Border ===== */
+.border { border-width: 1px; border-style: solid; border-color: #e2e8f0; }
+.border-slate-100 { border-color: #f1f5f9; }
+.border-blue-500 { border-color: #3b82f6; }
+.border-purple-500 { border-color: #a855f7; }
+.border-emerald-500 { border-color: #10b981; }
+.border-l-4 { border-left-width: 4px; border-left-style: solid; }
+.border-l-emerald-500 { border-left-color: #10b981; }
+
+/* ===== Border Radius ===== */
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-3xl { border-radius: 1.5rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* ===== Shadow ===== */
+.shadow-sm { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+
+/* ===== Transitions ===== */
+.transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.duration-300 { transition-duration: 300ms; }
+
+/* ===== Hover States ===== */
+.hover\:bg-slate-800:hover { background-color: #1e293b; }
+.hover\:bg-rose-600:hover { background-color: #e11d48; }
+.hover\:bg-cyan-600:hover { background-color: #0891b2; }
+
+/* ===== Overflow ===== */
+.overflow-hidden { overflow: hidden; }
+
+/* ===== Position ===== */
+.relative { position: relative; }
+.z-10 { z-index: 10; }
+
+/* ===== Space Utilities ===== */
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.space-y-8 > * + * { margin-top: 2rem; }
+
+/* ===== Cursor ===== */
+.cursor-pointer { cursor: pointer; }
+
+/* ===== Animation ===== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ===== Responsive ===== */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .lg\:col-span-2 { grid-column: span 2 / span 2; }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .xl\:col-span-2 { grid-column: span 2 / span 2; }
+  .xl\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .slider-thumb::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .component-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .component-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        canvas {
+            image-rendering: pixelated;
+        }
+
+        .mono-font {
+            font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco", "Courier New", monospace;
+        }
+
+        .spectrum-line {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .phase-indicator {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .calculation-step {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease-out;
+        }
+
+        .calculation-step.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+    <!-- Header -->
+    <header class="relative z-10 px-8 py-6">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-5xl font-black text-slate-900 tracking-tight mb-2 glow-text">
+                频谱分解实验室
+            </h1>
+            <p class="text-xl text-slate-600 font-light">
+                Spectrum Decomposition Visualization
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-8 pb-12 space-y-8">
+
+        <!-- 核心概念解释 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-2xl">📊</div>
+                    <h3 class="text-2xl font-bold text-slate-900">时域信号</h3>
+                    <p class="text-lg text-slate-600 leading-relaxed">
+                        信号在时域的表现形式。任何周期信号都可分解为不同频率、振幅和相位的正弦波叠加。
+                    </p>
+                </div>
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-2xl">📈</div>
+                    <h3 class="text-2xl font-bold text-slate-900">幅度频谱</h3>
+                    <p class="text-lg text-slate-600 leading-relaxed">
+                        表示各频率分量的<strong>强度</strong>。离散谱线的长度对应|Cₙ|，即该频率分量的振幅大小。
+                    </p>
+                </div>
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl">🔄</div>
+                    <h3 class="text-2xl font-bold text-slate-900">相位频谱</h3>
+                    <p class="text-lg text-slate-600 leading-relaxed">
+                        表示各频率分量的<strong>初始相位</strong>。决定波形在时间轴上的平移位置，影响合成波形的形状。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 交互式合成器 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">信号合成与双频谱分析</h2>
+                    <p class="text-lg text-slate-500 mt-1">调整各分量的振幅和相位，观察幅度谱与相位谱的变化</p>
+                </div>
+                <button onclick="resetSignal()" class="px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors">
+                    重置信号
+                </button>
+            </div>
+
+            <div class="grid xl:grid-cols-3 gap-8">
+                <!-- 控制面板 -->
+                <div class="space-y-6">
+                    <!-- 频率分量1 -->
+                    <div class="component-card bg-white rounded-2xl p-6 border border-slate-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">50Hz</div>
+                                <div>
+                                    <div class="text-lg font-bold text-slate-900">基频分量</div>
+                                    <div class="text-xs text-slate-500">Fundamental</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">振幅 |C₁|</span>
+                                    <span id="amp1-val" class="text-lg font-bold text-blue-600 mono-font">1.0</span>
+                                </div>
+                                <input type="range" id="amp1" min="0" max="2" step="0.1" value="1" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">相位 φ₁</span>
+                                    <span id="phase1-val" class="text-lg font-bold text-blue-600 mono-font">0°</span>
+                                </div>
+                                <input type="range" id="phase1" min="0" max="360" step="15" value="0" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 频率分量2 -->
+                    <div class="component-card bg-white rounded-2xl p-6 border border-slate-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm">100Hz</div>
+                                <div>
+                                    <div class="text-lg font-bold text-slate-900">二次谐波</div>
+                                    <div class="text-xs text-slate-500">2nd Harmonic</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">振幅 |C₂|</span>
+                                    <span id="amp2-val" class="text-lg font-bold text-purple-600 mono-font">0.5</span>
+                                </div>
+                                <input type="range" id="amp2" min="0" max="2" step="0.1" value="0.5" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">相位 φ₂</span>
+                                    <span id="phase2-val" class="text-lg font-bold text-purple-600 mono-font">0°</span>
+                                </div>
+                                <input type="range" id="phase2" min="0" max="360" step="15" value="0" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 频率分量3 -->
+                    <div class="component-card bg-white rounded-2xl p-6 border border-slate-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">150Hz</div>
+                                <div>
+                                    <div class="text-lg font-bold text-slate-900">三次谐波</div>
+                                    <div class="text-xs text-slate-500">3rd Harmonic</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">振幅 |C₃|</span>
+                                    <span id="amp3-val" class="text-lg font-bold text-emerald-600 mono-font">0.3</span>
+                                </div>
+                                <input type="range" id="amp3" min="0" max="2" step="0.1" value="0.3" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">相位 φ₃</span>
+                                    <span id="phase3-val" class="text-lg font-bold text-emerald-600 mono-font">0°</span>
+                                </div>
+                                <input type="range" id="phase3" min="0" max="360" step="15" value="0" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateSignal()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 可视化区域 -->
+                <div class="xl:col-span-2 space-y-6">
+                    <!-- 时域波形 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-slate-900">合成信号（时域）</h3>
+                            <span class="px-3 py-1 bg-slate-100 rounded-full text-sm font-medium text-slate-600">Time Domain</span>
+                        </div>
+                        <canvas id="timeCanvas" width="600" height="180" class="w-full rounded-xl bg-slate-50"></canvas>
+                        <div class="flex justify-between mt-3 text-sm text-slate-500">
+                            <span>0ms</span>
+                            <span class="font-medium">时间 t →</span>
+                            <span>100ms</span>
+                        </div>
+                    </div>
+
+                    <!-- 双频谱图 -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- 幅度频谱 -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-slate-900">幅度频谱</h3>
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">|Cₙ|</span>
+                            </div>
+                            <canvas id="ampSpectrumCanvas" width="280" height="180" class="w-full rounded-xl bg-slate-50"></canvas>
+                            <div class="mt-3 text-sm text-slate-600">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <span>谱线长度 = 振幅值</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 相位频谱 -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-slate-900">相位频谱</h3>
+                                <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">∠Cₙ</span>
+                            </div>
+                            <canvas id="phaseSpectrumCanvas" width="280" height="180" class="w-full rounded-xl bg-slate-50"></canvas>
+                            <div class="mt-3 text-sm text-slate-600">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                    <span>角度 = 初始相位</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 计算公式显示 -->
+                    <div class="formula-box rounded-2xl p-6">
+                        <h4 class="text-lg font-bold text-slate-900 mb-3">当前信号表达式</h4>
+                        <div id="formula-display" class="mono-font text-lg text-slate-800 leading-relaxed">
+                            f(t) = 1.0·sin(2π·50t + 0°) + 0.5·sin(2π·100t + 0°) + 0.3·sin(2π·150t + 0°)
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                            <div class="bg-white rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">50Hz 复系数</div>
+                                <div id="coeff-1" class="mono-font font-bold text-blue-600">|C₁|=1.0, φ₁=0°</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">100Hz 复系数</div>
+                                <div id="coeff-2" class="mono-font font-bold text-purple-600">|C₂|=0.5, φ₂=0°</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">150Hz 复系数</div>
+                                <div id="coeff-3" class="mono-font font-bold text-emerald-600">|C₃|=0.3, φ₃=0°</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 分解动画演示（增强版） -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2">频谱分解与重建动画</h2>
+            <p class="text-lg text-slate-600 mb-6">观察如何从时域信号提取幅度谱和相位谱，并验证重建过程</p>
+
+            <div class="grid lg:grid-cols-4 gap-6">
+                <!-- 原始信号 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        原始信号
+                    </h3>
+                    <canvas id="originalCanvas" width="220" height="140" class="w-full rounded-lg bg-slate-50 mb-4"></canvas>
+                    <p class="text-sm text-slate-600">待分析的复合信号</p>
+                </div>
+
+                <!-- FFT计算过程 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 lg:col-span-2">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+                        DFT计算过程：提取复系数 Cₙ = |Cₙ|·e^(jφₙ)
+                    </h3>
+
+                    <div class="space-y-4">
+                        <!-- 计算步骤1 -->
+                        <div id="calc-step-1" class="calculation-step bg-blue-50 rounded-xl p-4 border-l-4 border-blue-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-slate-900">50Hz 分量检测</div>
+                                    <div class="mono-font text-sm text-slate-600 mt-1">
+                                        C₁ = (2/N)·Σf(t)·e^(-j2π·50t) = <span class="text-blue-600 font-bold">0.8 - j0.0</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-blue-600 mono-font">|C₁| = 0.8</div>
+                                    <div class="text-sm text-slate-500">φ₁ = 0°</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 计算步骤2 -->
+                        <div id="calc-step-2" class="calculation-step bg-purple-50 rounded-xl p-4 border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-slate-900">100Hz 分量检测</div>
+                                    <div class="mono-font text-sm text-slate-600 mt-1">
+                                        C₂ = (2/N)·Σf(t)·e^(-j2π·100t) = <span class="text-purple-600 font-bold">0.0 - j0.5</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-purple-600 mono-font">|C₂| = 0.5</div>
+                                    <div class="text-sm text-slate-500">φ₂ = -90°</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 计算步骤3 -->
+                        <div id="calc-step-3" class="calculation-step bg-emerald-50 rounded-xl p-4 border-l-4 border-emerald-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-slate-900">150Hz 分量检测</div>
+                                    <div class="mono-font text-sm text-slate-600 mt-1">
+                                        C₃ = (2/N)·Σf(t)·e^(-j2π·150t) = <span class="text-emerald-600 font-bold">-0.3 + j0.0</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-emerald-600 mono-font">|C₃| = 0.3</div>
+                                    <div class="text-sm text-slate-500">φ₃ = 180°</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="playDecomposition()" class="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        执行DFT分解动画
+                    </button>
+                </div>
+
+                <!-- 重建信号 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        IDFT重建
+                    </h3>
+                    <canvas id="rebuildCanvas" width="220" height="140" class="w-full rounded-lg bg-slate-50 mb-4"></canvas>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600">重建精度</span>
+                            <span id="rebuild-accuracy" class="font-bold text-emerald-600">0%</span>
+                        </div>
+                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="rebuild-progress" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 双谱图对比 -->
+            <div class="grid md:grid-cols-2 gap-6 mt-6">
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">提取的幅度频谱（离散谱线）</h4>
+                    <canvas id="animAmpCanvas" width="400" height="160" class="w-full rounded-lg bg-slate-50"></canvas>
+                    <div class="mt-3 flex gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-1 bg-blue-500"></div>
+                            <span>|C₁| = 0.8</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-1 bg-purple-500"></div>
+                            <span>|C₂| = 0.5</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-1 bg-emerald-500"></div>
+                            <span>|C₃| = 0.3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">提取的相位频谱</h4>
+                    <canvas id="animPhaseCanvas" width="400" height="160" class="w-full rounded-lg bg-slate-50"></canvas>
+                    <div class="mt-3 flex gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span>φ₁ = 0°</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                            <span>φ₂ = -90°</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span>φ₃ = 180°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 实际应用案例 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">实际信号分析案例</h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- 音频信号 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center text-3xl">🎵</div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900">音频信号分析</h3>
+                            <p class="text-slate-500">Audio Signal Analysis</p>
+                        </div>
+                    </div>
+                    <canvas id="audioCanvas" width="400" height="120" class="w-full rounded-lg bg-slate-50 mb-4"></canvas>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <div class="font-bold text-slate-900">幅度特征</div>
+                            <div class="text-slate-600 mt-1">低频能量高，高频衰减</div>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <div class="font-bold text-slate-900">相位特征</div>
+                            <div class="text-slate-600 mt-1">影响音色和空间定位</div>
+                        </div>
+                    </div>
+                    <button onclick="analyzeAudio()" class="w-full mt-4 py-3 bg-rose-500 text-white rounded-xl font-semibold hover:bg-rose-600 transition-colors">
+                        模拟音频频谱分析
+                    </button>
+                </div>
+
+                <!-- 通信信号 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-100 flex items-center justify-center text-3xl">📡</div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900">通信信号调制</h3>
+                            <p class="text-slate-500">Communication Modulation</p>
+                        </div>
+                    </div>
+                    <canvas id="commCanvas" width="400" height="120" class="w-full rounded-lg bg-slate-50 mb-4"></canvas>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <div class="font-bold text-slate-900">幅度调制</div>
+                            <div class="text-slate-600 mt-1">AM：载波+边带幅度变化</div>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <div class="font-bold text-slate-900">相位调制</div>
+                            <div class="text-slate-600 mt-1">PM：相位携带信息</div>
+                        </div>
+                    </div>
+                    <button onclick="analyzeComm()" class="w-full mt-4 py-3 bg-cyan-500 text-white rounded-xl font-semibold hover:bg-cyan-600 transition-colors">
+                        模拟调制频谱分析
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数学原理 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">数学原理：傅里叶级数与复频谱</h2>
+            <div class="bg-white rounded-2xl p-8 border border-slate-100">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">三角形式</h3>
+                        <div class="formula-box rounded-xl p-4 mb-4">
+                            <div class="text-lg mono-font text-slate-800">
+                                f(t) = a₀ + Σ[aₙcos(nωt) + bₙsin(nωt)]
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-slate-600">
+                            <p><strong>aₙ, bₙ</strong>：各频率余弦/正弦分量的振幅</p>
+                            <p><strong>幅值</strong>：|Cₙ| = √(aₙ² + bₙ²)/2</p>
+                            <p><strong>相位</strong>：φₙ = arctan(-bₙ/aₙ)</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">复指数形式（更常用）</h3>
+                        <div class="formula-box rounded-xl p-4 mb-4 border-l-emerald-500 bg-emerald-50">
+                            <div class="text-lg mono-font text-slate-800">
+                                f(t) = Σ Cₙ·e^(jnωt)
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-slate-600">
+                            <p><strong>Cₙ</strong>：复系数，包含幅度和相位信息</p>
+                            <p><strong>幅度谱</strong>：|Cₙ| 决定谱线长度</p>
+                            <p><strong>相位谱</strong>：∠Cₙ 决定初始角度</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-slate-50 rounded-xl">
+                    <h4 class="font-bold text-slate-900 mb-3">频谱图解读要点</h4>
+                    <div class="grid md:grid-cols-3 gap-4 text-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
+                            <div>
+                                <div class="font-bold text-slate-900">离散性</div>
+                                <div class="text-slate-600">周期信号的频谱是离散的，只在基频整数倍处有值</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 font-bold">2</div>
+                            <div>
+                                <div class="font-bold text-slate-900">幅度谱</div>
+                                <div class="text-slate-600">纵坐标表示该频率分量的能量大小，决定波形"高度"</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">3</div>
+                            <div>
+                                <div class="font-bold text-slate-900">相位谱</div>
+                                <div class="text-slate-600">决定各分量在时间轴上的对齐方式，影响波形形状</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Canvas contexts
+        const timeCtx = document.getElementById('timeCanvas').getContext('2d');
+        const ampSpecCtx = document.getElementById('ampSpectrumCanvas').getContext('2d');
+        const phaseSpecCtx = document.getElementById('phaseSpectrumCanvas').getContext('2d');
+        const originalCtx = document.getElementById('originalCanvas').getContext('2d');
+        const rebuildCtx = document.getElementById('rebuildCanvas').getContext('2d');
+        const animAmpCtx = document.getElementById('animAmpCanvas').getContext('2d');
+        const animPhaseCtx = document.getElementById('animPhaseCanvas').getContext('2d');
+        const audioCtx = document.getElementById('audioCanvas').getContext('2d');
+        const commCtx = document.getElementById('commCanvas').getContext('2d');
+
+        // Animation state
+        let isAnimating = false;
+
+        function init() {
+            updateSignal();
+            drawOriginalSignal();
+            drawEmptyRebuild();
+            drawEmptyAnimSpectrums();
+        }
+
+        function updateSignal() {
+            const amp1 = parseFloat(document.getElementById('amp1').value);
+            const amp2 = parseFloat(document.getElementById('amp2').value);
+            const amp3 = parseFloat(document.getElementById('amp3').value);
+            const phase1 = parseInt(document.getElementById('phase1').value);
+            const phase2 = parseInt(document.getElementById('phase2').value);
+            const phase3 = parseInt(document.getElementById('phase3').value);
+
+            // Update display values
+            document.getElementById('amp1-val').textContent = amp1.toFixed(1);
+            document.getElementById('amp2-val').textContent = amp2.toFixed(1);
+            document.getElementById('amp3-val').textContent = amp3.toFixed(1);
+            document.getElementById('phase1-val').textContent = phase1 + '°';
+            document.getElementById('phase2-val').textContent = phase2 + '°';
+            document.getElementById('phase3-val').textContent = phase3 + '°';
+
+            // Update formula
+            const p1 = phase1 === 0 ? '0°' : phase1 + '°';
+            const p2 = phase2 === 0 ? '0°' : phase2 + '°';
+            const p3 = phase3 === 0 ? '0°' : phase3 + '°';
+            document.getElementById('formula-display').innerHTML = 
+                `f(t) = ${amp1.toFixed(1)}·sin(2π·50t + ${p1}) + ${amp2.toFixed(1)}·sin(2π·100t + ${p2}) + ${amp3.toFixed(1)}·sin(2π·150t + ${p3})`;
+
+            document.getElementById('coeff-1').textContent = `|C₁|=${amp1.toFixed(1)}, φ₁=${p1}`;
+            document.getElementById('coeff-2').textContent = `|C₂|=${amp2.toFixed(1)}, φ₂=${p2}`;
+            document.getElementById('coeff-3').textContent = `|C₃|=${amp3.toFixed(1)}, φ₃=${p3}`;
+
+            drawTimeDomain(amp1, amp2, amp3, phase1, phase2, phase3);
+            drawAmplitudeSpectrum(amp1, amp2, amp3);
+            drawPhaseSpectrum(phase1, phase2, phase3);
+        }
+
+        function drawTimeDomain(a1, a2, a3, p1, p2, p3) {
+            const canvas = document.getElementById('timeCanvas');
+            const ctx = timeCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = (width / 10) * i;
+                const y = (height / 10) * i;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+
+            // Signal
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            for (let x = 0; x < width; x++) {
+                const t = (x / width) * 0.1;
+                const rad1 = p1 * Math.PI / 180;
+                const rad2 = p2 * Math.PI / 180;
+                const rad3 = p3 * Math.PI / 180;
+
+                const y = height/2 + 
+                    a1 * 35 * Math.sin(2 * Math.PI * 50 * t + rad1) +
+                    a2 * 35 * Math.sin(2 * Math.PI * 100 * t + rad2) +
+                    a3 * 35 * Math.sin(2 * Math.PI * 150 * t + rad3);
+
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Center line
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, height/2);
+            ctx.lineTo(width, height/2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawAmplitudeSpectrum(a1, a2, a3) {
+            const canvas = document.getElementById('ampSpectrumCanvas');
+            const ctx = ampSpecCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = (height / 5) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+
+            // Spectrum lines
+            const freqs = [50, 100, 150];
+            const amps = [a1, a2, a3];
+            const colors = ['#3b82f6', '#a855f7', '#10b981'];
+            const xPositions = [width * 0.2, width * 0.5, width * 0.8];
+
+            freqs.forEach((freq, i) => {
+                const x = xPositions[i];
+                const lineHeight = amps[i] * (height * 0.7);
+                const y = height - lineHeight - 20;
+
+                // Draw line
+                ctx.strokeStyle = colors[i];
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(x, height - 20);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+
+                // Top marker
+                ctx.fillStyle = colors[i];
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = '#475569';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(freq + 'Hz', x, height - 5);
+
+                // Amplitude value
+                ctx.fillStyle = colors[i];
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText('|C|=' + amps[i].toFixed(1), x, y - 10);
+            });
+
+            // Y-axis label
+            ctx.save();
+            ctx.translate(15, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('幅度 |Cₙ|', 0, 0);
+            ctx.restore();
+        }
+
+        function drawPhaseSpectrum(p1, p2, p3) {
+            const canvas = document.getElementById('phaseSpectrumCanvas');
+            const ctx = phaseSpecCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Center line at 0 phase
+            const centerY = height / 2;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+
+            // Phase indicators
+            const phases = [p1, p2, p3];
+            const colors = ['#3b82f6', '#a855f7', '#10b981'];
+            const xPositions = [width * 0.2, width * 0.5, width * 0.8];
+            const freqs = [50, 100, 150];
+
+            phases.forEach((phase, i) => {
+                const x = xPositions[i];
+                const radius = 25;
+
+                // Draw circle
+                ctx.strokeStyle = colors[i] + '40';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, centerY, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw phase vector
+                const rad = (phase - 90) * Math.PI / 180;
+                const endX = x + radius * Math.cos(rad);
+                const endY = centerY + radius * Math.sin(rad);
+
+                ctx.strokeStyle = colors[i];
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, centerY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Dot at end
+                ctx.fillStyle = colors[i];
+                ctx.beginPath();
+                ctx.arc(endX, endY, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = '#475569';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(freqs[i] + 'Hz', x, centerY + radius + 20);
+
+                // Phase value
+                ctx.fillStyle = colors[i];
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillText('φ=' + phase + '°', x, centerY - radius - 10);
+            });
+
+            // Legend
+            ctx.fillStyle = '#64748b';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('+180°', 10, 20);
+            ctx.fillText('-180°', 10, height - 10);
+        }
+
+        function drawOriginalSignal() {
+            const canvas = document.getElementById('originalCanvas');
+            const ctx = originalCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            for (let x = 0; x < width; x++) {
+                const t = (x / width) * 0.1;
+                const y = height/2 + 
+                    25 * Math.sin(2 * Math.PI * 50 * t) +
+                    20 * Math.sin(2 * Math.PI * 100 * t - Math.PI/2) +
+                    15 * Math.sin(2 * Math.PI * 150 * t + Math.PI);
+
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawEmptyRebuild() {
+            const canvas = document.getElementById('rebuildCanvas');
+            const ctx = rebuildCtx;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('等待DFT分解...', canvas.width/2, canvas.height/2);
+        }
+
+        function drawEmptyAnimSpectrums() {
+            const ampCanvas = document.getElementById('animAmpCanvas');
+            const phaseCanvas = document.getElementById('animPhaseCanvas');
+
+            animAmpCtx.clearRect(0, 0, ampCanvas.width, ampCanvas.height);
+            animPhaseCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+
+            animAmpCtx.fillStyle = '#94a3b8';
+            animAmpCtx.font = '14px sans-serif';
+            animAmpCtx.textAlign = 'center';
+            animAmpCtx.fillText('点击"执行DFT分解动画"查看幅度谱提取', ampCanvas.width/2, ampCanvas.height/2);
+
+            animPhaseCtx.fillStyle = '#94a3b8';
+            animPhaseCtx.font = '14px sans-serif';
+            animPhaseCtx.textAlign = 'center';
+            animPhaseCtx.fillText('点击"执行DFT分解动画"查看相位谱提取', phaseCanvas.width/2, phaseCanvas.height/2);
+        }
+
+        async function playDecomposition() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // Reset
+            document.querySelectorAll('.calculation-step').forEach(el => el.classList.remove('show'));
+            document.getElementById('rebuild-progress').style.width = '0%';
+            document.getElementById('rebuild-accuracy').textContent = '0%';
+            drawEmptyRebuild();
+            drawEmptyAnimSpectrums();
+
+            // Step 1: 50Hz detection
+            await new Promise(r => setTimeout(r, 500));
+            document.getElementById('calc-step-1').classList.add('show');
+            drawAnimAmplitudeSpectrum(1, 0, 0, [0.8, 0, 0]);
+            drawAnimPhaseSpectrum(1, 0, 0, [0, 0, 0]);
+
+            // Step 2: 100Hz detection
+            await new Promise(r => setTimeout(r, 800));
+            document.getElementById('calc-step-2').classList.add('show');
+            drawAnimAmplitudeSpectrum(2, 0, 0, [0.8, 0.5, 0]);
+            drawAnimPhaseSpectrum(2, 0, 0, [0, -90, 0]);
+
+            // Step 3: 150Hz detection
+            await new Promise(r => setTimeout(r, 800));
+            document.getElementById('calc-step-3').classList.add('show');
+            drawAnimAmplitudeSpectrum(3, 0, 0, [0.8, 0.5, 0.3]);
+            drawAnimPhaseSpectrum(3, 0, 0, [0, -90, 180]);
+
+            // Rebuild
+            await new Promise(r => setTimeout(r, 800));
+            animateRebuild();
+
+            isAnimating = false;
+        }
+
+        function drawAnimAmplitudeSpectrum(step, progress, targetProgress, amplitudes) {
+            const canvas = document.getElementById('animAmpCanvas');
+            const ctx = animAmpCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = 20 + (height - 40) * i / 4;
+                ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+
+            // Y-axis
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, height - 20); ctx.stroke();
+
+            // Frequency labels
+            ctx.fillStyle = '#475569';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            const freqs = ['50Hz', '100Hz', '150Hz'];
+            const xPositions = [100, 200, 300];
+
+            freqs.forEach((freq, i) => {
+                ctx.fillText(freq, xPositions[i], height - 5);
+            });
+
+            // Spectrum lines with animation
+            const colors = ['#3b82f6', '#a855f7', '#10b981'];
+            const labels = ['|C₁|=0.8', '|C₂|=0.5', '|C₃|=0.3'];
+
+            xPositions.forEach((x, i) => {
+                if (amplitudes[i] > 0) {
+                    const maxHeight = (height - 60) * 0.8;
+                    const lineHeight = amplitudes[i] / 0.8 * maxHeight;
+                    const y = height - 40 - lineHeight;
+
+                    // Draw line
+                    ctx.strokeStyle = colors[i];
+                    ctx.lineWidth = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(x, height - 40);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+
+                    // Value label
+                    ctx.fillStyle = colors[i];
+                    ctx.font = 'bold 13px sans-serif';
+                    ctx.fillText(labels[i], x, y - 10);
+
+                    // Calculation indicator
+                    if (i === step - 1) {
+                        ctx.fillStyle = colors[i] + '20';
+                        ctx.fillRect(x - 30, 20, 60, height - 60);
+
+                        ctx.fillStyle = colors[i];
+                        ctx.font = 'bold 11px sans-serif';
+                        ctx.fillText('计算中...', x, 35);
+                    }
+                }
+            });
+
+            // Title
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('幅度频谱 |Cₙ|', 50, 15);
+        }
+
+        function drawAnimPhaseSpectrum(step, progress, targetProgress, phases) {
+            const canvas = document.getElementById('animPhaseCanvas');
+            const ctx = animPhaseCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerY = height / 2;
+
+            // Reference line
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(40, centerY); ctx.lineTo(width, centerY); ctx.stroke();
+
+            const freqs = ['50Hz', '100Hz', '150Hz'];
+            const xPositions = [100, 200, 300];
+            const colors = ['#3b82f6', '#a855f7', '#10b981'];
+
+            // Frequency labels
+            ctx.fillStyle = '#475569';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            freqs.forEach((freq, i) => {
+                ctx.fillText(freq, xPositions[i], height - 5);
+            });
+
+            // Phase circles and vectors
+            xPositions.forEach((x, i) => {
+                if (phases[i] !== undefined && phases[i] !== 0 || i < step) {
+                    const radius = 25;
+
+                    // Circle
+                    ctx.strokeStyle = colors[i] + '40';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, centerY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Phase vector
+                    const rad = (phases[i] - 90) * Math.PI / 180;
+                    const endX = x + radius * Math.cos(rad);
+                    const endY = centerY + radius * Math.sin(rad);
+
+                    ctx.strokeStyle = colors[i];
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x, centerY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+
+                    // Dot
+                    ctx.fillStyle = colors[i];
+                    ctx.beginPath();
+                    ctx.arc(endX, endY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Value
+                    ctx.fillStyle = colors[i];
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillText('φ=' + phases[i] + '°', x, centerY - radius - 10);
+                }
+            });
+
+            // Title
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('相位频谱 ∠Cₙ', 50, 15);
+
+            // Legend
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('+180°', 10, 30);
+            ctx.fillText('-180°', 10, height - 10);
+        }
+
+        function animateRebuild() {
+            const canvas = document.getElementById('rebuildCanvas');
+            const ctx = rebuildCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                document.getElementById('rebuild-progress').style.width = progress + '%';
+                document.getElementById('rebuild-accuracy').textContent = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+
+                    // Draw final signal
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+
+                    for (let x = 0; x < width; x++) {
+                        const t = (x / width) * 0.1;
+                        const y = height/2 + 
+                            25 * Math.sin(2 * Math.PI * 50 * t) +
+                            20 * Math.sin(2 * Math.PI * 100 * t - Math.PI/2) +
+                            15 * Math.sin(2 * Math.PI * 150 * t + Math.PI);
+
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Match indicator
+                    ctx.fillStyle = '#10b981';
+                    ctx.font = 'bold 13px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('✓ 完美重建', width/2, 25);
+                }
+            }, 20);
+        }
+
+        function analyzeAudio() {
+            const canvas = document.getElementById('audioCanvas');
+            const ctx = audioCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Simulate music spectrum with amplitude and phase
+            const frequencies = [60, 120, 250, 500, 1000, 2000, 4000, 8000];
+            const amplitudes = [0.9, 0.7, 0.85, 0.5, 0.6, 0.3, 0.4, 0.2];
+            const phases = [0, 45, -30, 90, 0, -45, 60, -90];
+            const barWidth = width / frequencies.length - 6;
+
+            frequencies.forEach((freq, i) => {
+                const barHeight = amplitudes[i] * (height * 0.7);
+                const x = i * (barWidth + 6) + 3;
+                const y = height - barHeight - 25;
+
+                let color;
+                if (freq < 250) color = '#f43f5e';
+                else if (freq < 4000) color = '#f59e0b';
+                else color = '#10b981';
+
+                const gradient = ctx.createLinearGradient(0, y, 0, height - 25);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, color + '30');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // Phase indicator (small arc)
+                const phaseRad = phases[i] * Math.PI / 180;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x + barWidth/2, height - 12, 8, -Math.PI/2, -Math.PI/2 + phaseRad);
+                ctx.stroke();
+
+                setTimeout(() => {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y - 4, barWidth, 4);
+                }, i * 80);
+            });
+
+            // Legend
+            ctx.fillStyle = '#64748b';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('柱高=幅度 | 圆弧=相位', 10, 15);
+        }
+
+        function analyzeComm() {
+            const canvas = document.getElementById('commCanvas');
+            const ctx = commCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const carrierY = height * 0.3;
+            const sidebandY = height * 0.7;
+
+            // Carrier with phase
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(centerX, height);
+            ctx.lineTo(centerX, carrierY);
+            ctx.stroke();
+
+            // Phase circle for carrier
+            ctx.beginPath();
+            ctx.arc(centerX, carrierY - 15, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX, carrierY - 15);
+            ctx.lineTo(centerX + 8, carrierY - 20);
+            ctx.stroke();
+
+            // Sidebands
+            const offset = width / 6;
+
+            // Upper sideband
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX + offset, height);
+            ctx.lineTo(centerX + offset, sidebandY);
+            ctx.stroke();
+
+            // Lower sideband
+            ctx.beginPath();
+            ctx.moveTo(centerX - offset, height);
+            ctx.lineTo(centerX - offset, sidebandY);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#475569';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('载波 fc', centerX, height - 5);
+            ctx.fillText('上边带', centerX + offset, height - 5);
+            ctx.fillText('下边带', centerX - offset, height - 5);
+
+            // Values
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillText('A=1.0, φ=0°', centerX, carrierY - 30);
+            ctx.fillStyle = '#8b5cf6';
+            ctx.fillText('A=0.3', centerX + offset, sidebandY - 10);
+            ctx.fillText('A=0.3', centerX - offset, sidebandY - 10);
+
+            // AM equation
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('s(t) = Ac·cos(2πfct) + (mAc/2)·cos[2π(fc+fm)t] + (mAc/2)·cos[2π(fc-fm)t]', width/2, 20);
+        }
+
+        function resetSignal() {
+            document.getElementById('amp1').value = 1;
+            document.getElementById('amp2').value = 0.5;
+            document.getElementById('amp3').value = 0.3;
+            document.getElementById('phase1').value = 0;
+            document.getElementById('phase2').value = 0;
+            document.getElementById('phase3').value = 0;
+            updateSignal();
+        }
+
+        init();
+    </script>
+</body>
+</html>
