@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一阶动态电路暂态响应分析实验室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%);
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+        }
+
+        .circuit-canvas {
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+            border-radius: 16px;
+        }
+
+        .response-canvas {
+            background: #fafafa;
+            border-radius: 12px;
+        }
+
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #0d9488;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+            transition: all 0.2s;
+            border: 3px solid white;
+        }
+
+        .slider-thumb::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+        }
+
+        .param-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .param-card:hover {
+            transform: translateX(4px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .param-card.active {
+            border-left-color: #0d9488;
+            background: rgba(13, 148, 136, 0.05);
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border-left: 4px solid #14b8a6;
+        }
+
+        .time-constant-line {
+            stroke-dasharray: 5, 5;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .component-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .component-btn.active {
+            background: #0d9488;
+            color: white;
+            box-shadow: 0 10px 30px rgba(13, 148, 136, 0.3);
+        }
+
+        .analysis-item {
+            transition: all 0.3s ease;
+        }
+
+        .analysis-item:hover {
+            background: rgba(13, 148, 136, 0.05);
+            padding-left: 12px;
+        }
+
+        .value-display {
+            background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
+            border: 2px solid #99f6e4;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+    <!-- Header -->
+    <header class="relative z-10 px-8 py-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="w-12 h-12 rounded-2xl bg-teal-500 flex items-center justify-center text-white text-2xl">⚡</div>
+                <h1 class="text-5xl font-black text-slate-900 tracking-tight">
+                    一阶动态电路暂态响应分析
+                </h1>
+            </div>
+            <p class="text-xl text-slate-600 font-light ml-16">
+                First-Order Circuit Transient Response Analysis Laboratory
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-8 pb-12 space-y-8">
+
+        <!-- 核心概念 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">一阶电路核心概念</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-2xl mb-4">🔋</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">储能元件</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        <strong>电容C</strong>：电压不能突变，存储电场能量 Wc=½CV²<br>
+                        <strong>电感L</strong>：电流不能突变，存储磁场能量 WL=½LI²
+                    </p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl mb-4">⏱️</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">时间常数 τ</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        决定暂态过程快慢的关键参数<br>
+                        <span class="mono-font text-blue-600">τ = RC</span> 或 <span class="mono-font text-blue-600">τ = L/R</span><br>
+                        工程上认为 5τ 后暂态结束
+                    </p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-4">📈</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">三要素法</h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        完全响应 = 稳态分量 + 暂态分量<br>
+                        <span class="mono-font text-emerald-600">f(t) = f(∞) + [f(0⁺) - f(∞)]·e^(-t/τ)</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 主交互区 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+
+                <!-- 左侧：电路选择与参数控制 -->
+                <div class="lg:w-1/3 space-y-6">
+
+                    <!-- 电路类型选择 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">选择电路类型</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setCircuitType('RC')" id="btn-RC" class="component-btn active py-4 px-6 rounded-xl font-bold text-lg border-2 border-teal-500">
+                                <div class="text-2xl mb-1">RC 电路</div>
+                                <div class="text-sm font-normal opacity-80">电阻-电容</div>
+                            </button>
+                            <button onclick="setCircuitType('RL')" id="btn-RL" class="component-btn py-4 px-6 rounded-xl font-bold text-lg border-2 border-slate-200 text-slate-600">
+                                <div class="text-2xl mb-1">RL 电路</div>
+                                <div class="text-sm font-normal opacity-80">电阻-电感</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 响应类型选择 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">响应类型</h3>
+                        <div class="space-y-2">
+                            <button onclick="setResponseType('zero-input')" id="btn-zero-input" class="w-full py-3 px-4 rounded-xl font-semibold text-left border-2 border-slate-200 hover:border-teal-300 transition-colors response-type-btn">
+                                <span class="text-amber-600 font-bold">零输入响应</span>
+                                <span class="text-slate-500 text-sm ml-2">无电源，仅初始储能</span>
+                            </button>
+                            <button onclick="setResponseType('zero-state')" id="btn-zero-state" class="w-full py-3 px-4 rounded-xl font-semibold text-left border-2 border-teal-500 bg-teal-50 response-type-btn active">
+                                <span class="text-teal-600 font-bold">零状态响应</span>
+                                <span class="text-slate-500 text-sm ml-2">有电源，初始储能为零</span>
+                            </button>
+                            <button onclick="setResponseType('complete')" id="btn-complete" class="w-full py-3 px-4 rounded-xl font-semibold text-left border-2 border-slate-200 hover:border-teal-300 transition-colors response-type-btn">
+                                <span class="text-blue-600 font-bold">完全响应</span>
+                                <span class="text-slate-500 text-sm ml-2">电源+初始储能</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 参数控制 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">电路参数调整</h3>
+                        <div class="space-y-5">
+
+                            <!-- 电源电压 -->
+                            <div class="param-card active rounded-xl p-4 bg-slate-50">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-slate-700 flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                        电源电压 Us
+                                    </span>
+                                    <span id="Us-val" class="value-display px-3 py-1 rounded-lg font-bold mono-font text-teal-700">10 V</span>
+                                </div>
+                                <input type="range" id="Us" min="0" max="20" step="1" value="10" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateCircuit()">
+                                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>0V</span>
+                                    <span>20V</span>
+                                </div>
+                            </div>
+
+                            <!-- 电阻 -->
+                            <div class="param-card rounded-xl p-4 bg-slate-50">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-slate-700 flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        电阻 R
+                                    </span>
+                                    <span id="R-val" class="value-display px-3 py-1 rounded-lg font-bold mono-font text-teal-700">1 kΩ</span>
+                                </div>
+                                <input type="range" id="R" min="0.1" max="10" step="0.1" value="1" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateCircuit()">
+                                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>0.1kΩ</span>
+                                    <span>10kΩ</span>
+                                </div>
+                            </div>
+
+                            <!-- 电容/电感 -->
+                            <div class="param-card rounded-xl p-4 bg-slate-50" id="dynamic-param-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-slate-700 flex items-center gap-2" id="dynamic-label">
+                                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                        电容 C
+                                    </span>
+                                    <span id="dynamic-val" class="value-display px-3 py-1 rounded-lg font-bold mono-font text-teal-700">1000 μF</span>
+                                </div>
+                                <input type="range" id="dynamic-param" min="100" max="5000" step="100" value="1000" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateCircuit()">
+                                <div class="flex justify-between text-xs text-slate-400 mt-1" id="dynamic-range">
+                                    <span>100μF</span>
+                                    <span>5000μF</span>
+                                </div>
+                            </div>
+
+                            <!-- 初始值 -->
+                            <div class="param-card rounded-xl p-4 bg-slate-50" id="initial-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-slate-700 flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                        <span id="initial-label">初始电压 Uc(0⁻)</span>
+                                    </span>
+                                    <span id="initial-val" class="value-display px-3 py-1 rounded-lg font-bold mono-font text-teal-700">0 V</span>
+                                </div>
+                                <input type="range" id="initial-value" min="0" max="15" step="1" value="0" 
+                                       class="w-full h-3 bg-slate-200 rounded-full slider-thumb cursor-pointer"
+                                       oninput="updateCircuit()">
+                                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>0</span>
+                                    <span id="initial-max">15V</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：可视化区域 -->
+                <div class="lg:w-2/3 space-y-6">
+
+                    <!-- 电路图 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-bold text-slate-900">串联电路原理图</h3>
+                            <div class="flex gap-2">
+                                <span id="circuit-badge" class="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">RC 串联电路</span>
+                                <span id="response-badge" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">零状态响应</span>
+                            </div>
+                        </div>
+                        <canvas id="circuitCanvas" width="600" height="280" class="w-full circuit-canvas border-2 border-amber-200"></canvas>
+                        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                            <div class="bg-red-50 rounded-lg p-3">
+                                <div class="text-sm text-slate-500">电源 Us</div>
+                                <div id="display-Us" class="text-xl font-bold text-red-600 mono-font">10V</div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-3">
+                                <div class="text-sm text-slate-500">电阻 R</div>
+                                <div id="display-R" class="text-xl font-bold text-blue-600 mono-font">1kΩ</div>
+                            </div>
+                            <div class="bg-amber-50 rounded-lg p-3">
+                                <div class="text-sm text-slate-500" id="display-dynamic-label">电容 C</div>
+                                <div id="display-dynamic" class="text-xl font-bold text-amber-600 mono-font">1000μF</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 响应曲线 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-bold text-slate-900">暂态响应曲线（实时）</h3>
+                            <div class="flex gap-4 text-sm">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-0.5 bg-teal-500"></div>
+                                    <span class="text-slate-600">响应曲线</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-0.5 bg-red-400" style="border-top: 2px dashed;"></div>
+                                    <span class="text-slate-600">稳态值</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-0.5 h-4 bg-amber-400"></div>
+                                    <span class="text-slate-600">时间常数 τ</span>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="responseCanvas" width="700" height="320" class="w-full response-canvas border border-slate-200"></canvas>
+
+                        <!-- 关键参数显示 -->
+                        <div class="mt-4 grid grid-cols-4 gap-4">
+                            <div class="formula-box rounded-xl p-4">
+                                <div class="text-sm text-slate-600 mb-1">时间常数</div>
+                                <div id="tau-value" class="text-2xl font-bold text-teal-700 mono-font">τ = 1.0s</div>
+                            </div>
+                            <div class="formula-box rounded-xl p-4">
+                                <div class="text-sm text-slate-600 mb-1">初始值</div>
+                                <div id="initial-display" class="text-2xl font-bold text-blue-700 mono-font">0 V</div>
+                            </div>
+                            <div class="formula-box rounded-xl p-4">
+                                <div class="text-sm text-slate-600 mb-1">稳态值</div>
+                                <div id="steady-display" class="text-2xl font-bold text-emerald-700 mono-font">10 V</div>
+                            </div>
+                            <div class="formula-box rounded-xl p-4">
+                                <div class="text-sm text-slate-600 mb-1">暂态 duration</div>
+                                <div id="duration-display" class="text-2xl font-bold text-purple-700 mono-font">5.0s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数学表达式 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">数学表达式（三要素法）</h3>
+                        <div class="formula-box rounded-xl p-6">
+                            <div id="math-expression" class="text-xl mono-font text-slate-800 leading-relaxed">
+                                u<sub>C</sub>(t) = 10 + [0 - 10]·e<sup>-t/1.0</sup> = 10(1 - e<sup>-t</sup>) V
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-teal-200 grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">初始值：</span>
+                                    <span id="math-initial" class="font-bold text-blue-600">u<sub>C</sub>(0⁺) = 0 V</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">稳态值：</span>
+                                    <span id="math-steady" class="font-bold text-emerald-600">u<sub>C</sub>(∞) = 10 V</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">时间常数：</span>
+                                    <span id="math-tau" class="font-bold text-purple-600">τ = RC = 1.0 s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 参数影响分析 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">参数影响归纳分析</h2>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- 时间常数分析 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">τ</span>
+                        时间常数 τ 的影响
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-blue-500 bg-blue-50">
+                            <div class="font-bold text-slate-900">物理意义</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                τ 表示暂态过程进行的速度。τ 越大，储能元件充放电越慢，暂态过程越长。
+                            </p>
+                        </div>
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-teal-500 bg-teal-50">
+                            <div class="font-bold text-slate-900">RC 电路</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                <span class="mono-font">τ = RC</span>：增大电容C或电阻R都会延长充电时间。电容越大存储电荷越多，电阻越大充电电流越小。
+                            </p>
+                        </div>
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-amber-500 bg-amber-50">
+                            <div class="font-bold text-slate-900">RL 电路</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                <span class="mono-font">τ = L/R</span>：增大电感L会延长暂态（存储更多磁能），但增大电阻R会缩短暂态（阻碍电流变化的作用减弱）。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 初始值与电源 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">∑</span>
+                        初始值与电源的影响
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-purple-500 bg-purple-50">
+                            <div class="font-bold text-slate-900">零输入响应</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                Us = 0，仅由初始储能产生。响应形式为 <span class="mono-font">f(t) = f(0⁺)·e^(-t/τ)</span>，按指数规律衰减至零。
+                            </p>
+                        </div>
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50">
+                            <div class="font-bold text-slate-900">零状态响应</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                初始储能为零，仅由电源激励产生。响应从0开始按指数规律上升至稳态值 <span class="mono-font">f(t) = f(∞)(1 - e^(-t/τ))</span>。
+                            </p>
+                        </div>
+                        <div class="analysis-item p-3 rounded-lg border-l-4 border-amber-500 bg-amber-50">
+                            <div class="font-bold text-slate-900">完全响应</div>
+                            <p class="text-slate-600 text-sm mt-1">
+                                初始储能+电源共同作用。可分解为<strong>零输入</strong>+<strong>零状态</strong>，或<strong>稳态</strong>+<strong>暂态</strong>。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工程应用提示 -->
+            <div class="mt-6 bg-gradient-to-r from-teal-50 to-blue-50 rounded-2xl p-6 border border-teal-200">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">💡 工程应用要点</h3>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="font-bold text-teal-700 mb-2">延时电路设计</div>
+                        <p class="text-sm text-slate-600">通过调整RC时间常数实现精确延时，如555定时器、积分电路。</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="font-bold text-blue-700 mb-2">滤波器设计</div>
+                        <p class="text-sm text-slate-600">利用RC/RL电路的充放电特性构成低通/高通滤波器，截止频率 fc = 1/(2πτ)。</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="font-bold text-purple-700 mb-2">保护电路</div>
+                        <p class="text-sm text-slate-600">利用电感电流不能突变的特性设计续流电路，防止开关瞬间的过电压。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 对比实验 -->
+        <section class="glass-panel rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">多参数对比实验</h2>
+            <p class="text-lg text-slate-600 mb-6">同时比较不同时间常数下的响应曲线，直观理解τ的影响</p>
+
+            <div class="bg-white rounded-2xl p-6 border border-slate-100">
+                <canvas id="compareCanvas" width="900" height="350" class="w-full response-canvas border border-slate-200"></canvas>
+                <div class="mt-4 flex justify-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-1 bg-blue-500 rounded"></div>
+                        <span class="font-semibold text-slate-700">τ = 0.5s (快)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-1 bg-teal-500 rounded"></div>
+                        <span class="font-semibold text-slate-700">τ = 1.0s (中)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-1 bg-amber-500 rounded"></div>
+                        <span class="font-semibold text-slate-700">τ = 2.0s (慢)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-1 bg-red-400" style="border-top: 2px dashed; height: 0;"></div>
+                        <span class="font-semibold text-slate-700">稳态值</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 全局状态
+        let circuitType = 'RC'; // 'RC' 或 'RL'
+        let responseType = 'zero-state'; // 'zero-input', 'zero-state', 'complete'
+
+        // 参数值
+        let params = {
+            Us: 10,
+            R: 1, // kΩ
+            C: 1000, // μF (RC电路)
+            L: 1, // H (RL电路)
+            Uc0: 0, // V (RC初始电压)
+            IL0: 0 // A (RL初始电流)
+        };
+
+        // Canvas contexts
+        const circuitCtx = document.getElementById('circuitCanvas').getContext('2d');
+        const responseCtx = document.getElementById('responseCanvas').getContext('2d');
+        const compareCtx = document.getElementById('compareCanvas').getContext('2d');
+
+        function init() {
+            updateCircuit();
+            drawComparison();
+        }
+
+        function setCircuitType(type) {
+            circuitType = type;
+
+            // 更新按钮样式
+            document.getElementById('btn-RC').classList.toggle('active', type === 'RC');
+            document.getElementById('btn-RL').classList.toggle('active', type === 'RL');
+            document.getElementById('btn-RC').classList.toggle('border-teal-500', type === 'RC');
+            document.getElementById('btn-RL').classList.toggle('border-teal-500', type === 'RL');
+
+            // 更新动态参数标签
+            const dynamicLabel = document.getElementById('dynamic-label');
+            const dynamicRange = document.getElementById('dynamic-range');
+            const displayDynamicLabel = document.getElementById('display-dynamic-label');
+            const initialLabel = document.getElementById('initial-label');
+            const initialMax = document.getElementById('initial-max');
+            const circuitBadge = document.getElementById('circuit-badge');
+
+            if (type === 'RC') {
+                dynamicLabel.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span>电容 C';
+                dynamicRange.innerHTML = '<span>100μF</span><span>5000μF</span>';
+                displayDynamicLabel.textContent = '电容 C';
+                initialLabel.textContent = '初始电压 Uc(0⁻)';
+                initialMax.textContent = '15V';
+                circuitBadge.textContent = 'RC 串联电路';
+                document.getElementById('dynamic-param').min = 100;
+                document.getElementById('dynamic-param').max = 5000;
+                document.getElementById('dynamic-param').step = 100;
+                document.getElementById('dynamic-param').value = params.C;
+                document.getElementById('initial-value').max = 15;
+                document.getElementById('initial-value').value = params.Uc0;
+            } else {
+                dynamicLabel.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-500"></span>电感 L';
+                dynamicRange.innerHTML = '<span>0.1H</span><span>5H</span>';
+                displayDynamicLabel.textContent = '电感 L';
+                initialLabel.textContent = '初始电流 IL(0⁻)';
+                initialMax.textContent = '2A';
+                circuitBadge.textContent = 'RL 串联电路';
+                document.getElementById('dynamic-param').min = 0.1;
+                document.getElementById('dynamic-param').max = 5;
+                document.getElementById('dynamic-param').step = 0.1;
+                document.getElementById('dynamic-param').value = params.L;
+                document.getElementById('initial-value').max = 2;
+                document.getElementById('initial-value').value = params.IL0;
+            }
+
+            updateCircuit();
+        }
+
+        function setResponseType(type) {
+            responseType = type;
+
+            // 更新按钮样式
+            document.querySelectorAll('.response-type-btn').forEach(btn => {
+                btn.classList.remove('border-teal-500', 'bg-teal-50');
+                btn.classList.add('border-slate-200');
+            });
+            document.getElementById('btn-' + type).classList.add('border-teal-500', 'bg-teal-50');
+            document.getElementById('btn-' + type).classList.remove('border-slate-200');
+
+            // 更新徽章
+            const badgeMap = {
+                'zero-input': '零输入响应',
+                'zero-state': '零状态响应',
+                'complete': '完全响应'
+            };
+            document.getElementById('response-badge').textContent = badgeMap[type];
+
+            // 根据响应类型调整初始值和电源的可用性
+            const UsSlider = document.getElementById('Us');
+            const initialSlider = document.getElementById('initial-value');
+
+            if (type === 'zero-input') {
+                UsSlider.value = 0;
+                params.Us = 0;
+                initialSlider.disabled = false;
+            } else if (type === 'zero-state') {
+                initialSlider.value = 0;
+                if (circuitType === 'RC') params.Uc0 = 0;
+                else params.IL0 = 0;
+                UsSlider.disabled = false;
+            } else {
+                UsSlider.disabled = false;
+                initialSlider.disabled = false;
+            }
+
+            updateCircuit();
+        }
+
+        function updateCircuit() {
+            // 读取参数
+            params.Us = parseFloat(document.getElementById('Us').value);
+            params.R = parseFloat(document.getElementById('R').value);
+
+            if (circuitType === 'RC') {
+                params.C = parseFloat(document.getElementById('dynamic-param').value);
+                params.Uc0 = parseFloat(document.getElementById('initial-value').value);
+                document.getElementById('dynamic-val').textContent = params.C + ' μF';
+                document.getElementById('initial-val').textContent = params.Uc0 + ' V';
+                document.getElementById('display-dynamic').textContent = params.C + 'μF';
+            } else {
+                params.L = parseFloat(document.getElementById('dynamic-param').value);
+                params.IL0 = parseFloat(document.getElementById('initial-value').value);
+                document.getElementById('dynamic-val').textContent = params.L.toFixed(1) + ' H';
+                document.getElementById('initial-val').textContent = params.IL0.toFixed(1) + ' A';
+                document.getElementById('display-dynamic').textContent = params.L.toFixed(1) + 'H';
+            }
+
+            document.getElementById('Us-val').textContent = params.Us + ' V';
+            document.getElementById('R-val').textContent = params.R + ' kΩ';
+            document.getElementById('display-Us').textContent = params.Us + 'V';
+            document.getElementById('display-R').textContent = params.R + 'kΩ';
+
+            // 绘制 - 实时更新
+            drawCircuit();
+            drawResponse();
+            updateMathExpression();
+        }
+
+        function drawCircuit() {
+            const canvas = document.getElementById('circuitCanvas');
+            const ctx = circuitCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 串联电路布局：电源(左) -> 电阻(上) -> 电容/电感(右) -> 回到电源
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const loopW = 360;  // 回路宽度
+            const loopH = 160;  // 回路高度
+            const left = centerX - loopW/2;
+            const right = centerX + loopW/2;
+            const top = centerY - loopH/2;
+            const bottom = centerY + loopH/2;
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // 绘制回路导线（矩形）
+            ctx.beginPath();
+            ctx.moveTo(left, centerY);      // 电源右侧中点
+            ctx.lineTo(left, top);          // 左上
+            ctx.lineTo(right, top);         // 上横线（电阻位置）
+            ctx.lineTo(right, centerY);     // 右侧中点（电容/电感位置）
+            ctx.lineTo(right, bottom);      // 右下
+            ctx.lineTo(left, bottom);       // 下横线
+            ctx.lineTo(left, centerY);      // 回到起点
+            ctx.stroke();
+
+            // 左侧：电压源
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 2;
+            // 画圆圈表示电源
+            ctx.beginPath();
+            ctx.arc(left, centerY, 25, 0, Math.PI * 2);
+            ctx.stroke();
+            // 正负号
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('+', left, centerY - 8);
+            ctx.fillText('−', left, centerY + 18);
+            // 电压标注
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Us', left - 40, centerY + 5);
+            ctx.fillText(params.Us + 'V', left - 40, centerY + 22);
+
+            // 上侧：电阻（锯齿形）
+            const rX = centerX;
+            const rY = top;
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const zigzagW = 60;
+            const zigzagH = 20;
+            ctx.moveTo(rX - zigzagW/2, rY);
+            for (let i = 0; i < 6; i++) {
+                ctx.lineTo(rX - zigzagW/2 + (i+1) * (zigzagW/6), rY + (i % 2 === 0 ? -zigzagH : zigzagH));
+            }
+            ctx.lineTo(rX + zigzagW/2, rY);
+            ctx.stroke();
+
+            // 电阻标注
+            ctx.fillStyle = '#2563eb';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('R = ' + params.R + 'kΩ', rX, rY - 25);
+            // 电流方向箭头
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.moveTo(rX - 40, rY + 15);
+            ctx.lineTo(rX - 30, rY + 15);
+            ctx.lineTo(rX - 35, rY + 10);
+            ctx.moveTo(rX - 30, rY + 15);
+            ctx.lineTo(rX - 35, rY + 20);
+            ctx.stroke();
+            ctx.fillText('i(t)', rX - 50, rY + 20);
+
+            // 右侧：电容或电感
+            const cX = right;
+            const cY = centerY;
+
+            if (circuitType === 'RC') {
+                // 绘制电容（两条平行线）
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 3;
+                // 上极板
+                ctx.beginPath();
+                ctx.moveTo(cX - 15, cY - 10);
+                ctx.lineTo(cX + 15, cY - 10);
+                ctx.stroke();
+                // 下极板
+                ctx.beginPath();
+                ctx.moveTo(cX - 15, cY + 10);
+                ctx.lineTo(cX + 15, cY + 10);
+                ctx.stroke();
+
+                // 电容标注
+                ctx.fillStyle = '#d97706';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('C = ' + params.C + 'μF', cX + 25, cY - 5);
+                // 电压极性标注
+                ctx.fillStyle = '#059669';
+                ctx.fillText('+ uC(t) −', cX + 25, cY + 20);
+
+            } else {
+                // 绘制电感（线圈）
+                ctx.strokeStyle = '#16a34a';
+                ctx.lineWidth = 3;
+                const coilW = 40;
+                const coilH = 30;
+                ctx.beginPath();
+                for (let i = 0; i < 4; i++) {
+                    const x = cX - coilW/2 + i * (coilW/3);
+                    ctx.arc(x + coilW/6, cY, coilW/6, Math.PI, 0);
+                }
+                ctx.stroke();
+
+                // 电感标注
+                ctx.fillStyle = '#16a34a';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('L = ' + params.L.toFixed(1) + 'H', cX + 25, cY - 5);
+                // 电流/电压标注
+                ctx.fillStyle = '#059669';
+                ctx.fillText('iL(t)', cX + 25, cY + 25);
+            }
+
+            // 开关（在底边）
+            const sX = centerX;
+            const sY = bottom;
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(sX - 20, sY);
+            ctx.lineTo(sX - 5, sY);
+            ctx.moveTo(sX + 5, sY);
+            ctx.lineTo(sX + 20, sY);
+            // 开关刀片（斜线表示闭合）
+            ctx.moveTo(sX - 5, sY);
+            ctx.lineTo(sX + 5, sY - 3);
+            ctx.stroke();
+
+            // 开关标注
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('t=0 闭合', sX, sY + 20);
+
+            // 标题
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(circuitType === 'RC' ? 'RC 串联电路' : 'RL 串联电路', centerX, 30);
+        }
+
+        function drawResponse() {
+            const canvas = document.getElementById('responseCanvas');
+            const ctx = responseCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 计算参数
+            let tau, initial, steady;
+
+            if (circuitType === 'RC') {
+                tau = params.R * params.C / 1000; // 秒 (R in kΩ, C in μF)
+                initial = params.Uc0;
+                if (responseType === 'zero-input') {
+                    steady = 0;
+                } else {
+                    steady = params.Us;
+                }
+            } else {
+                tau = params.L / (params.R * 1000) * 1000; // 修正单位
+                initial = params.IL0;
+                if (responseType === 'zero-input') {
+                    steady = 0;
+                } else {
+                    steady = params.Us / params.R; // mA
+                }
+            }
+
+            // 更新显示
+            document.getElementById('tau-value').textContent = 'τ = ' + tau.toFixed(2) + 's';
+            document.getElementById('initial-display').textContent = initial.toFixed(1) + (circuitType === 'RC' ? ' V' : ' mA');
+            document.getElementById('steady-display').textContent = steady.toFixed(1) + (circuitType === 'RC' ? ' V' : ' mA');
+            document.getElementById('duration-display').textContent = (5 * tau).toFixed(1) + 's';
+
+            // 绘制坐标轴
+            const padding = 60;
+            const graphW = w - 2 * padding;
+            const graphH = h - 2 * padding;
+            const originX = padding;
+            const originY = h - padding;
+
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(padding, originY);
+            ctx.lineTo(w - padding, originY);
+            ctx.stroke();
+
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, originY);
+            ctx.stroke();
+
+            // 刻度和标签
+            ctx.fillStyle = '#64748b';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+
+            // X轴刻度 (0 to 5τ)
+            const maxTime = Math.max(5 * tau, 1);
+            for (let i = 0; i <= 5; i++) {
+                const x = originX + (i / 5) * graphW;
+                ctx.beginPath();
+                ctx.moveTo(x, originY);
+                ctx.lineTo(x, originY + 5);
+                ctx.stroke();
+                ctx.fillText((i * maxTime / 5).toFixed(1) + 's', x, originY + 25);
+            }
+
+            // Y轴刻度
+            ctx.textAlign = 'right';
+            const maxVal = Math.max(Math.abs(initial), Math.abs(steady)) * 1.2;
+            const minVal = Math.min(initial, steady) * 0.8;
+            const range = maxVal - minVal || 1;
+
+            for (let i = 0; i <= 5; i++) {
+                const val = minVal + (range * i / 5);
+                const y = originY - (i / 5) * graphH;
+                ctx.beginPath();
+                ctx.moveTo(originX - 5, y);
+                ctx.lineTo(originX, y);
+                ctx.stroke();
+                ctx.fillText(val.toFixed(1), originX - 10, y + 5);
+            }
+
+            // 轴标签
+            ctx.save();
+            ctx.translate(20, h/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(circuitType === 'RC' ? 'uC (V)' : 'iL (mA)', 0, 0);
+            ctx.restore();
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('时间 t (s)', w/2, h - 15);
+
+            // 绘制响应曲线
+            ctx.strokeStyle = '#0d9488';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+
+            for (let x = 0; x <= graphW; x++) {
+                const t = (x / graphW) * maxTime;
+                const val = steady + (initial - steady) * Math.exp(-t / tau);
+                const y = originY - ((val - minVal) / range) * graphH;
+
+                if (x === 0) ctx.moveTo(originX + x, y);
+                else ctx.lineTo(originX + x, y);
+            }
+            ctx.stroke();
+
+            // 绘制稳态线
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            const steadyY = originY - ((steady - minVal) / range) * graphH;
+            ctx.beginPath();
+            ctx.moveTo(originX, steadyY);
+            ctx.lineTo(originX + graphW, steadyY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 绘制时间常数标记
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            const tauX = originX + (tau / maxTime) * graphW;
+            if (tauX <= originX + graphW) {
+                ctx.beginPath();
+                ctx.moveTo(tauX, originY);
+                ctx.lineTo(tauX, padding);
+                ctx.stroke();
+
+                // τ标记点
+                const tauVal = steady + (initial - steady) * Math.exp(-1);
+                const tauY = originY - ((tauVal - minVal) / range) * graphH;
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(tauX, tauY, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 标注
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('τ', tauX + 10, tauY);
+
+                // 63.2%标记
+                ctx.fillStyle = '#0d9488';
+                ctx.font = '12px sans-serif';
+                const percent = responseType === 'zero-state' ? '63.2%' : '36.8%';
+                ctx.fillText(percent, tauX + 10, tauY + 20);
+            }
+        }
+
+        function updateMathExpression() {
+            let tau, initial, steady;
+
+            if (circuitType === 'RC') {
+                tau = params.R * params.C / 1000;
+                initial = params.Uc0;
+                steady = responseType === 'zero-input' ? 0 : params.Us;
+            } else {
+                tau = params.L / (params.R * 1000) * 1000;
+                initial = params.IL0;
+                steady = responseType === 'zero-input' ? 0 : params.Us / params.R;
+            }
+
+            const varName = circuitType === 'RC' ? 'u<sub>C</sub>' : 'i<sub>L</sub>';
+            const unit = circuitType === 'RC' ? 'V' : 'mA';
+
+            // 构建表达式
+            let expr = '';
+            if (Math.abs(initial - steady) < 0.01) {
+                expr = `${varName}(t) = ${steady.toFixed(1)} ${unit} (稳态)`;
+            } else {
+                const diff = initial - steady;
+                const sign = diff > 0 ? '+' : '-';
+                const absDiff = Math.abs(diff).toFixed(1);
+                expr = `${varName}(t) = ${steady.toFixed(1)} ${sign} ${absDiff}·e<sup>-t/${tau.toFixed(1)}</sup> ${unit}`;
+            }
+
+            document.getElementById('math-expression').innerHTML = expr;
+            document.getElementById('math-initial').innerHTML = `${varName}(0⁺) = ${initial.toFixed(1)} ${unit}`;
+            document.getElementById('math-steady').innerHTML = `${varName}(∞) = ${steady.toFixed(1)} ${unit}`;
+
+            if (circuitType === 'RC') {
+                document.getElementById('math-tau').innerHTML = `τ = RC = ${params.R}kΩ × ${params.C}μF = ${tau.toFixed(2)}s`;
+            } else {
+                document.getElementById('math-tau').innerHTML = `τ = L/R = ${params.L.toFixed(1)}H / ${params.R}kΩ = ${tau.toFixed(2)}s`;
+            }
+        }
+
+        function drawComparison() {
+            const canvas = document.getElementById('compareCanvas');
+            const ctx = compareCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const padding = 60;
+            const graphW = w - 2 * padding;
+            const graphH = h - 2 * padding;
+            const originX = padding;
+            const originY = h - padding;
+
+            // 坐标轴
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, originY);
+            ctx.lineTo(w - padding, originY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, originY);
+            ctx.stroke();
+
+            // 标签
+            ctx.fillStyle = '#64748b';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const x = originX + (i / 5) * graphW;
+                ctx.fillText(i + 's', x, originY + 25);
+            }
+
+            ctx.save();
+            ctx.translate(20, h/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(circuitType === 'RC' ? 'uC (V)' : 'iL (mA)', 0, 0);
+            ctx.restore();
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('时间 t (s)', w/2, h - 15);
+
+            // 绘制三条不同τ的曲线
+            const taus = [0.5, 1.0, 2.0];
+            const colors = ['#3b82f6', '#0d9488', '#d97706'];
+            const steady = 10;
+
+            taus.forEach((tau, idx) => {
+                ctx.strokeStyle = colors[idx];
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                for (let x = 0; x <= graphW; x++) {
+                    const t = (x / graphW) * 5;
+                    const val = steady * (1 - Math.exp(-t / tau));
+                    const y = originY - (val / 15) * graphH;
+
+                    if (x === 0) ctx.moveTo(originX + x, y);
+                    else ctx.lineTo(originX + x, y);
+                }
+                ctx.stroke();
+
+                // τ标记线
+                ctx.strokeStyle = colors[idx];
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                const tauX = originX + (tau / 5) * graphW;
+                ctx.beginPath();
+                ctx.moveTo(tauX, originY);
+                ctx.lineTo(tauX, padding);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            // 稳态线
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            const steadyY = originY - (steady / 15) * graphH;
+            ctx.beginPath();
+            ctx.moveTo(originX, steadyY);
+            ctx.lineTo(originX + graphW, steadyY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

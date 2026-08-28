@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一阶常系数微分方程求解动画演示</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+    min-height: 100vh;
+}
+
+.equation-font {
+    font-family: 'Noto Serif SC', serif;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+}
+
+@keyframes bounce-in {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes highlight-pulse {
+    0%, 100% { background-color: rgba(59, 130, 246, 0.1); }
+    50% { background-color: rgba(59, 130, 246, 0.3); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+.animate-slide-left { animation: slideInLeft 0.6s ease-out forwards; }
+.animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; }
+.animate-highlight { animation: highlight-pulse 2s ease-in-out infinite; }
+
+.step-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid transparent;
+}
+
+.step-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.step-card.active {
+    border-left-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.formula-box {
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.formula-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+}
+
+.graph-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 20px;
+}
+
+/* 固定画布大小 */
+.chart-wrapper {
+    width: 100%;
+    height: 320px;
+    position: relative;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.type-constant { background: #fef3c7; color: #92400e; }
+.type-cosine { background: #dbeafe; color: #1e40af; }
+
+.progress-bar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.accordion-content.open {
+    max-height: 3000px;
+    opacity: 1;
+}
+
+.accordion-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.accordion-header:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+}
+
+.accordion-icon.rotated {
+    transform: rotate(180deg);
+}
+
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.step-indicator.completed {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.step-indicator.current {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    animation: pulse-glow 2s infinite;
+}
+
+.step-line {
+    width: 2px;
+    height: 40px;
+    background: #e2e8f0;
+    margin-left: 19px;
+    transition: all 0.3s ease;
+}
+
+.step-line.completed {
+    background: linear-gradient(180deg, #10b981, #3b82f6);
+}
+
+.derive-highlight {
+    background: linear-gradient(120deg, rgba(59,130,246,0.2) 0%, rgba(139,92,246,0.2) 100%);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr !important; }
+    .formula-box { padding: 12px; }
+    .chart-wrapper { height: 260px; }
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
+</head>
+<body class="text-slate-700">
+
+<header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                ∫
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">微分方程求解动画演示</h1>
+                <p class="text-sm text-slate-500">一阶常系数线性微分方程 · 特征方程与特征根</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">步骤 <span id="currentStepNum">0</span> / 10</span>
+            <div class="progress-bar w-32">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- 方程选择区 -->
+    <section class="mb-8 animate-fade-in-up" style="animation-delay: 0.1s">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm">1</span>
+                选择方程类型
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button onclick="selectType('constant')" id="btn-constant" class="formula-box text-left hover:border-blue-400 transition-all cursor-pointer group">
+                    <span class="type-badge type-constant">常数型</span>
+                    <div class="equation-font text-xl mt-2 text-slate-800">
+                        a dy/dt + by = C
+                    </div>
+                    <p class="text-sm text-slate-500 mt-2">右侧为非零常数，特解也为常数</p>
+                    <div class="mt-3 flex items-center gap-2 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-sm font-medium">点击选择</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                </button>
+                <button onclick="selectType('cosine')" id="btn-cosine" class="formula-box text-left hover:border-purple-400 transition-all cursor-pointer group">
+                    <span class="type-badge type-cosine">余弦型</span>
+                    <div class="equation-font text-xl mt-2 text-slate-800">
+                        a dy/dt + by = C cos(ωt + θ)
+                    </div>
+                    <p class="text-sm text-slate-500 mt-2">右侧为余弦函数，特解含正弦和余弦</p>
+                    <div class="mt-3 flex items-center gap-2 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-sm font-medium">点击选择</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 参数设置区 -->
+    <section id="paramSection" class="mb-8 hidden animate-fade-in-up">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm">2</span>
+                设置参数
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">系数 a</label>
+                    <input type="range" id="paramA" min="0.5" max="5" step="0.5" value="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500" oninput="updateParam('a', this.value)">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0.5</span>
+                        <span id="valA" class="font-bold text-blue-600 text-base">1.0</span>
+                        <span>5.0</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">系数 b</label>
+                    <input type="range" id="paramB" min="0.5" max="5" step="0.5" value="2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500" oninput="updateParam('b', this.value)">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0.5</span>
+                        <span id="valB" class="font-bold text-blue-600 text-base">2.0</span>
+                        <span>5.0</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">常数/振幅 C</label>
+                    <input type="range" id="paramC" min="0.5" max="5" step="0.5" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500" oninput="updateParam('c', this.value)">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0.5</span>
+                        <span id="valC" class="font-bold text-blue-600 text-base">3.0</span>
+                        <span>5.0</span>
+                    </div>
+                </div>
+                <div id="omegaControl" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">角频率 ω</label>
+                    <input type="range" id="paramOmega" min="0.5" max="5" step="0.5" value="2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500" oninput="updateParam('omega', this.value)">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0.5</span>
+                        <span id="valOmega" class="font-bold text-purple-600 text-base">2.0</span>
+                        <span>5.0</span>
+                    </div>
+                </div>
+                <div id="thetaControl" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">初相角 θ (度)</label>
+                    <input type="range" id="paramTheta" min="0" max="360" step="15" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500" oninput="updateParam('theta', this.value)">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0°</span>
+                        <span id="valTheta" class="font-bold text-purple-600 text-base">0°</span>
+                        <span>360°</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 bg-slate-50 rounded-xl">
+                <p class="text-center equation-font text-lg text-slate-700">
+                    当前方程: <span id="currentEquation" class="font-bold text-blue-600">1.0·dy/dt + 2.0·y = 3.0</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 主内容区 -->
+    <div class="main-grid grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 左侧：求解步骤 -->
+        <div class="space-y-4" id="stepsContainer">
+        </div>
+
+        <!-- 右侧：图形演示 -->
+        <div class="lg:sticky lg:top-24 space-y-6 h-fit">
+            <div class="graph-container">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                    解的图像
+                </h3>
+                <!-- 固定大小的画布容器 -->
+                <div class="chart-wrapper">
+                    <canvas id="solutionChart"></canvas>
+                </div>
+                <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-1 bg-blue-500 rounded"></span>
+                        <span>齐次解 y_h</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-1 bg-red-500 rounded"></span>
+                        <span>特解 y_p</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-1 bg-green-500 rounded" style="border-top: 2px dashed green; height: 0;"></span>
+                        <span>通解 y = y_h + y_p</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">解的结构原理</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                        <div>
+                            <p class="font-semibold text-slate-800">齐次方程</p>
+                            <p class="text-sm text-slate-600">a·dy/dt + b·y = 0 描述系统固有特性</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                        <div>
+                            <p class="font-semibold text-slate-800">非齐次方程</p>
+                            <p class="text-sm text-slate-600">a·dy/dt + b·y = f(t) 描述受迫响应</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                        <div>
+                            <p class="font-semibold text-slate-800">叠加原理</p>
+                            <p class="text-sm text-slate-600">通解 = 齐次通解 + 非齐次特解</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 控制按钮 -->
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4 z-50">
+        <button onclick="prevStep()" id="btnPrev" class="px-6 py-3 bg-white text-slate-700 rounded-full shadow-lg border border-slate-200 font-medium hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            ← 上一步
+        </button>
+        <button onclick="nextStep()" id="btnNext" class="btn-primary px-8 py-3 text-white rounded-full shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            下一步 →
+        </button>
+        <button onclick="resetAll()" class="px-6 py-3 bg-slate-700 text-white rounded-full shadow-lg font-medium hover:bg-slate-800 transition-all">
+            重置
+        </button>
+    </div>
+</main>
+
+<script>
+// ==================== 全局状态 ====================
+let currentType = null;
+let currentStep = 0;
+let params = { a: 1, b: 2, c: 3, omega: 2, theta: 0 };
+let chart = null;
+
+// ==================== 步骤数据 ====================
+const stepsData = {
+    constant: [
+        {
+            title: "写出标准形式",
+            content: `
+                <p class="text-lg mb-3">一阶常系数线性微分方程的标准形式：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4">
+                    a·dy/dt + b·y = C
+                </div>
+                <p class="text-slate-600">其中 <span class="derive-highlight">a, b > 0</span> 为常数系数，<span class="derive-highlight">C</span> 为非齐次项（常数）。</p>
+                <div class="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p class="text-sm text-amber-800"><strong>物理意义：</strong> 这可以描述带有恒定输入的一阶系统，如RC电路中恒定电压源充电。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "化为标准一阶形式",
+            content: `
+                <p class="text-lg mb-3">将方程两边除以 <span class="derive-highlight">a</span>，化为标准一阶线性形式：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4">
+                    dy/dt + (b/a)·y = C/a
+                </div>
+                <p class="mb-3">令 <span class="derive-highlight">k = b/a</span>，<span class="derive-highlight">D = C/a</span>，则方程变为：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-blue-50 border-blue-300">
+                    dy/dt + k·y = D
+                </div>
+                <p class="text-slate-600">这样更便于使用特征方程法求解。</p>
+            `,
+            showGraph: false
+        },
+        {
+            title: "建立特征方程",
+            content: `
+                <p class="text-lg mb-3">对于齐次方程 <span class="derive-highlight">dy/dt + k·y = 0</span>，我们假设解的形式为：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-purple-50 border-purple-300">
+                    y = e^(λt)
+                </div>
+                <p class="mb-3">其中 <span class="derive-highlight">λ</span> 为待定常数（特征根）。</p>
+                <p class="mb-3">求导后代入：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    dy/dt = λ·e^(λt)
+                </div>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    λ·e^(λt) + k·e^(λt) = 0
+                </div>
+                <p class="mb-3">由于 e^(λt) ≠ 0，两边约去：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-400">
+                    <strong>特征方程：λ + k = 0</strong>
+                </div>
+                <div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <p class="text-sm text-indigo-800"><strong>核心思想：</strong> 将微分方程转化为代数方程，把求导运算转化为乘法运算。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "求解特征根",
+            content: `
+                <p class="text-lg mb-3">解特征方程 <span class="derive-highlight">λ + k = 0</span>：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-400">
+                    <strong>特征根：λ = -k = -b/a</strong>
+                </div>
+                <p class="mb-3">由于 a, b > 0，所以 <span class="derive-highlight">λ < 0</span>，特征根为负实数。</p>
+                <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-800"><strong>物理意义：</strong> 负特征根意味着系统的自由响应会随时间衰减，系统稳定。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "写出齐次通解",
+            content: `
+                <p class="text-lg mb-3">根据特征根 <span class="derive-highlight">λ = -k</span>，齐次方程的通解为：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-blue-50 border-blue-400">
+                    <strong>y_h = C₁ · e^(λt) = C₁ · e^(-kt)</strong>
+                </div>
+                <p class="mb-3">代回原始参数：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-blue-50 border-blue-300">
+                    <strong>y_h = C₁ · e^(-(b/a)·t)</strong>
+                </div>
+                <p class="text-slate-600">这就是<strong>齐次通解</strong>，C₁ 为任意常数。当 t→∞ 时，y_h→0，称为<strong>瞬态解</strong>。</p>
+            `,
+            showGraph: true,
+            graphType: 'homogeneous'
+        },
+        {
+            title: "猜测特解形式",
+            content: `
+                <p class="text-lg mb-3">由于右侧是<strong>常数 C</strong>，根据待定系数法，猜测特解也是常数：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-purple-50 border-purple-300">
+                    y_p = B （待定常数）
+                </div>
+                <p class="mb-3"><strong>原理：</strong>常数的导数为0，代入后方程左侧只剩下 b·y_p/a，应与右侧的常数 C/a 匹配。</p>
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-800"><strong>待定系数法规则：</strong> 当 f(t) 为常数时，设特解 y_p 为同次常数。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "代入确定特解",
+            content: `
+                <p class="text-lg mb-3">将 y_p = B 代入原方程 a·dy/dt + b·y = C：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    a·0 + b·B = C
+                </div>
+                <p class="mb-3">解得：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-green-50 border-green-300">
+                    <strong>B = C/b</strong>
+                </div>
+                <p class="mb-3">因此<strong>特解</strong>为：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-green-50 border-green-300">
+                    <strong>y_p = C/b</strong>
+                </div>
+                <p class="text-slate-600">特解代表系统的<strong>稳态响应</strong>，不随时间衰减。</p>
+            `,
+            showGraph: true,
+            graphType: 'particular'
+        },
+        {
+            title: "写出通解",
+            content: `
+                <p class="text-lg mb-3">根据线性微分方程的<strong>叠加原理</strong>：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3 bg-amber-50 border-amber-300">
+                    <strong>通解 = 齐次通解 + 特解</strong>
+                </div>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-blue-50 to-green-50 border-blue-300">
+                    <strong>y = C₁·e^(-(b/a)·t) + C/b</strong>
+                </div>
+                <p class="mb-3">其中 C₁ 为任意常数，由初始条件确定。</p>
+                <div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <p class="text-sm text-indigo-800"><strong>解的结构：</strong> 瞬态项 C₁·e^(-(b/a)·t) 随时间衰减，稳态项 C/b 保持不变。</p>
+                </div>
+            `,
+            showGraph: true,
+            graphType: 'general'
+        },
+        {
+            title: "确定常数 C₁（特解）",
+            content: `
+                <p class="text-lg mb-3">给定初始条件 <strong>y(0) = y₀</strong>，代入通解：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    y₀ = C₁·e⁰ + C/b = C₁ + C/b
+                </div>
+                <p class="mb-3">解得：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-orange-50 border-orange-300">
+                    <strong>C₁ = y₀ - C/b</strong>
+                </div>
+                <p class="mb-3">因此<strong>满足初始条件的特解</strong>为：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-gradient-to-r from-orange-50 to-red-50 border-orange-300">
+                    <strong>y = (y₀ - C/b)·e^(-(b/a)·t) + C/b</strong>
+                </div>
+                <p class="text-slate-600">这就是唯一的特解，不再含任意常数。</p>
+            `,
+            showGraph: true,
+            graphType: 'specific'
+        },
+        {
+            title: "结果分析",
+            content: `
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <h4 class="font-bold text-blue-800 mb-2">📊 解的渐近行为</h4>
+                        <p class="text-slate-700">当 t → ∞ 时，e^(-(b/a)·t) → 0，因此：</p>
+                        <div class="formula-box text-center text-lg equation-font mt-2">
+                            lim y(t) = C/b
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2">系统最终趋于稳态值 C/b，与初始条件无关。</p>
+                    </div>
+                    <div class="p-4 bg-green-50 rounded-xl border border-green-200">
+                        <h4 class="font-bold text-green-800 mb-2">⏱️ 时间常数</h4>
+                        <p class="text-slate-700">定义时间常数 τ = a/b，表示系统响应快慢：</p>
+                        <div class="formula-box text-center text-lg equation-font mt-2">
+                            当 t = τ 时，瞬态项衰减至初始值的 36.8%
+                        </div>
+                    </div>
+                    <div class="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                        <h4 class="font-bold text-purple-800 mb-2">🔧 应用实例</h4>
+                        <p class="text-slate-700">RC电路充电：R·dQ/dt + Q/C = E，稳态电荷 Q = CE</p>
+                    </div>
+                </div>
+            `,
+            showGraph: true,
+            graphType: 'analysis'
+        }
+    ],
+    cosine: [
+        {
+            title: "写出标准形式",
+            content: `
+                <p class="text-lg mb-3">一阶常系数线性微分方程的标准形式：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4">
+                    a·dy/dt + b·y = C cos(ωt + θ)
+                </div>
+                <p class="text-slate-600">其中 <span class="derive-highlight">a, b > 0</span> 为系数，<span class="derive-highlight">C</span> 为振幅，<span class="derive-highlight">ω</span> 为角频率，<span class="derive-highlight">θ</span> 为初相角。</p>
+                <div class="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p class="text-sm text-amber-800"><strong>物理意义：</strong> 描述受简谐激励的一阶系统，如交流电路、机械振动等。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "化为标准一阶形式",
+            content: `
+                <p class="text-lg mb-3">将方程两边除以 <span class="derive-highlight">a</span>：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4">
+                    dy/dt + (b/a)·y = (C/a)·cos(ωt + θ)
+                </div>
+                <p class="mb-3">令 <span class="derive-highlight">k = b/a</span>，<span class="derive-highlight">D = C/a</span>，则：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-blue-50 border-blue-300">
+                    dy/dt + k·y = D·cos(ωt + θ)
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "建立特征方程",
+            content: `
+                <p class="text-lg mb-3">对于齐次方程 <span class="derive-highlight">dy/dt + k·y = 0</span>，假设解为：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-purple-50 border-purple-300">
+                    y = e^(λt)
+                </div>
+                <p class="mb-3">求导后代入齐次方程：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    λ·e^(λt) + k·e^(λt) = 0
+                </div>
+                <p class="mb-3">约去 e^(λt) ≠ 0：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-400">
+                    <strong>特征方程：λ + k = 0</strong>
+                </div>
+                <div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <p class="text-sm text-indigo-800"><strong>核心思想：</strong> 将微分运算转化为代数乘法，把微分方程变为代数方程。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "求解特征根",
+            content: `
+                <p class="text-lg mb-3">解特征方程 <span class="derive-highlight">λ + k = 0</span>：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-400">
+                    <strong>特征根：λ = -k = -b/a</strong>
+                </div>
+                <p class="mb-3">由于 a, b > 0，特征根 <span class="derive-highlight">λ = -b/a < 0</span>，为负实数。</p>
+                <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-800"><strong>稳定性：</strong> 负特征根保证齐次解随时间指数衰减，系统稳定。</p>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "写出齐次通解",
+            content: `
+                <p class="text-lg mb-3">根据特征根 <span class="derive-highlight">λ = -k</span>，齐次方程的通解为：</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-blue-50 border-blue-400">
+                    <strong>y_h = C₁ · e^(λt) = C₁ · e^(-kt)</strong>
+                </div>
+                <p class="mb-3">代回原始参数：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-blue-50 border-blue-300">
+                    <strong>y_h = C₁ · e^(-(b/a)·t)</strong>
+                </div>
+                <p class="text-slate-600">齐次解代表系统的自由响应（瞬态），随时间指数衰减。</p>
+            `,
+            showGraph: true,
+            graphType: 'homogeneous'
+        },
+        {
+            title: "猜测特解形式",
+            content: `
+                <p class="text-lg mb-3">由于右侧是 <strong>D·cos(ωt + θ)</strong>，根据待定系数法：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3 bg-purple-50 border-purple-300">
+                    <strong>设 y_p = M cos(ωt + θ) + N sin(ωt + θ)</strong>
+                </div>
+                <p class="mb-3"><strong>关键原理：</strong> 虽然右侧只有 cos，但由于求导会产生 sin，所以特解必须同时包含 cos 和 sin 两项！</p>
+                <div class="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p class="text-sm text-red-800"><strong>⚠️ 常见错误：</strong> 只设 y_p = M cos(ωt + θ) 会导致无法匹配 sin 项！</p>
+                </div>
+                <p class="mt-3 text-slate-600">其中 M, N 为待定系数，需要通过代入原方程确定。</p>
+            `,
+            showGraph: false
+        },
+        {
+            title: "代入求导",
+            content: `
+                <p class="text-lg mb-3">计算 y_p 的导数：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    y_p' = -Mω sin(ωt + θ) + Nω cos(ωt + θ)
+                </div>
+                <p class="mb-3">代入原方程 dy/dt + k·y = D·cos(ωt + θ)：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    [-Mω sin(ωt+θ) + Nω cos(ωt+θ)] + k[M cos(ωt+θ) + N sin(ωt+θ)] = D cos(ωt+θ)
+                </div>
+                <p class="mb-3">整理同类项：</p>
+                <div class="formula-box text-center text-lg equation-font mb-3">
+                    (kM + Nω)cos(ωt+θ) + (kN - Mω)sin(ωt+θ) = D·cos(ωt+θ) + 0·sin(ωt+θ)
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "比较系数",
+            content: `
+                <p class="text-lg mb-3">比较 cos(ωt+θ) 和 sin(ωt+θ) 的系数：</p>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="formula-box text-center bg-blue-50 border-blue-300">
+                        <p class="text-sm text-slate-500 mb-1">cos 项系数</p>
+                        <p class="equation-font text-lg font-bold">kM + Nω = D</p>
+                    </div>
+                    <div class="formula-box text-center bg-purple-50 border-purple-300">
+                        <p class="text-sm text-slate-500 mb-1">sin 项系数</p>
+                        <p class="equation-font text-lg font-bold">kN - Mω = 0</p>
+                    </div>
+                </div>
+                <p class="mb-3">解这个线性方程组：</p>
+                <p class="mb-2">由第二式：N = Mω/k</p>
+                <p class="mb-2">代入第一式：kM + (Mω/k)·ω = D</p>
+                <p class="mb-2">M(k² + ω²)/k = D</p>
+                <div class="formula-box text-center text-xl equation-font mb-3 bg-green-50 border-green-300">
+                    <strong>M = Dk/(k² + ω²)</strong>
+                </div>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-green-50 border-green-300">
+                    <strong>N = Dω/(k² + ω²)</strong>
+                </div>
+            `,
+            showGraph: false
+        },
+        {
+            title: "写出特解与通解",
+            content: `
+                <p class="text-lg mb-3">将 M, N 代回特解形式：</p>
+                <div class="formula-box text-center text-lg equation-font mb-4 bg-green-50 border-green-300">
+                    <strong>y_p = [Dk/(k²+ω²)]cos(ωt+θ) + [Dω/(k²+ω²)]sin(ωt+θ)</strong>
+                </div>
+                <p class="mb-3">可化为单一三角函数形式（幅相形式）：</p>
+                <div class="formula-box text-center text-xl equation-font mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+                    <strong>y_p = [D/√(k²+ω²)] · cos(ωt + θ - φ)</strong>
+                </div>
+                <p class="mb-2">其中相位角 <span class="derive-highlight">φ = arctan(ω/k)</span></p>
+                <p class="mb-4">振幅衰减因子：1/√(k²+ω²)</p>
+                <div class="formula-box text-center text-2xl equation-font mb-4 bg-gradient-to-r from-blue-50 to-green-50 border-blue-300">
+                    <strong>通解：y = C₁·e^(-kt) + y_p</strong>
+                </div>
+            `,
+            showGraph: true,
+            graphType: 'general'
+        },
+        {
+            title: "结果分析",
+            content: `
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <h4 class="font-bold text-blue-800 mb-2">📊 频率响应</h4>
+                        <p class="text-slate-700">稳态振幅与频率 ω 的关系：</p>
+                        <div class="formula-box text-center text-lg equation-font mt-2">
+                            |y_p| = D/√(k² + ω²) = (C/a)/√((b/a)² + ω²)
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2">ω 越大，振幅越小（低通滤波特性）</p>
+                    </div>
+                    <div class="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                        <h4 class="font-bold text-purple-800 mb-2">⏱️ 相位滞后</h4>
+                        <p class="text-slate-700">输出相对于输入的相位差：</p>
+                        <div class="formula-box text-center text-lg equation-font mt-2">
+                            φ = arctan(ω/k) = arctan(aω/b)
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2">ω 越大，相位滞后越接近 90°</p>
+                    </div>
+                    <div class="p-4 bg-green-50 rounded-xl border border-green-200">
+                        <h4 class="font-bold text-green-800 mb-2">🔧 应用实例</h4>
+                        <p class="text-slate-700">RC电路交流响应：输出电压相位滞后，振幅衰减</p>
+                    </div>
+                </div>
+            `,
+            showGraph: true,
+            graphType: 'analysis'
+        }
+    ]
+};
+
+// ==================== 核心函数 ====================
+
+function selectType(type) {
+    currentType = type;
+    currentStep = 0;
+
+    document.getElementById('btn-constant').classList.remove('border-blue-500', 'ring-2', 'ring-blue-300');
+    document.getElementById('btn-cosine').classList.remove('border-purple-500', 'ring-2', 'ring-purple-300');
+
+    if (type === 'constant') {
+        document.getElementById('btn-constant').classList.add('border-blue-500', 'ring-2', 'ring-blue-300');
+        document.getElementById('omegaControl').classList.add('hidden');
+        document.getElementById('thetaControl').classList.add('hidden');
+    } else {
+        document.getElementById('btn-cosine').classList.add('border-purple-500', 'ring-2', 'ring-purple-300');
+        document.getElementById('omegaControl').classList.remove('hidden');
+        document.getElementById('thetaControl').classList.remove('hidden');
+    }
+
+    document.getElementById('paramSection').classList.remove('hidden');
+    updateEquationDisplay();
+    document.getElementById('btnNext').disabled = false;
+    document.getElementById('paramSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateParam(name, value) {
+    params[name] = parseFloat(value);
+    let displayVal = parseFloat(value);
+    if (name === 'theta') displayVal = value + '°';
+    else displayVal = displayVal.toFixed(1);
+
+    const displayId = 'val' + name.charAt(0).toUpperCase() + name.slice(1);
+    const el = document.getElementById(displayId);
+    if (el) el.textContent = displayVal;
+
+    updateEquationDisplay();
+    if (chart && currentStep > 0) {
+        updateChart();
+    }
+}
+
+function updateEquationDisplay() {
+    const a = params.a.toFixed(1);
+    const b = params.b.toFixed(1);
+    const c = params.c.toFixed(1);
+    const omega = params.omega.toFixed(1);
+    const theta = params.theta;
+
+    let eq;
+    if (currentType === 'constant') {
+        eq = `${a}·dy/dt + ${b}·y = ${c}`;
+    } else {
+        if (theta == 0) {
+            eq = `${a}·dy/dt + ${b}·y = ${c} cos(${omega}t)`;
+        } else {
+            eq = `${a}·dy/dt + ${b}·y = ${c} cos(${omega}t + ${theta}°)`;
+        }
+    }
+    document.getElementById('currentEquation').textContent = eq;
+}
+
+function renderSteps() {
+    const container = document.getElementById('stepsContainer');
+    const steps = stepsData[currentType];
+
+    let html = '';
+    steps.forEach((step, index) => {
+        const isActive = index === currentStep;
+        const isCompleted = index < currentStep;
+
+        html += `
+            <div class="step-card bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden ${isActive ? 'active' : ''}" 
+                 id="step-${index}" style="opacity: ${index <= currentStep ? 1 : 0.5}">
+                <div class="accordion-header p-5 flex items-start gap-4" onclick="toggleStep(${index})">
+                    <div class="step-indicator ${isCompleted ? 'completed' : ''} ${isActive ? 'current' : ''}">
+                        ${isCompleted ? '✓' : index + 1}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-slate-800">${step.title}</h3>
+                        <p class="text-sm text-slate-500 mt-1">${isActive ? '当前步骤' : (isCompleted ? '已完成' : '未开始')}</p>
+                    </div>
+                    <svg class="accordion-icon w-6 h-6 text-slate-400 ${isActive ? 'rotated' : ''}" id="icon-${index}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+                <div class="accordion-content ${isActive ? 'open' : ''}" id="content-${index}">
+                    <div class="px-5 pb-5 pl-16">
+                        ${step.content}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (index < steps.length - 1) {
+            html += `<div class="step-line ${isCompleted ? 'completed' : ''}" id="line-${index}"></div>`;
+        }
+    });
+
+    container.innerHTML = html;
+
+    if (currentStep >= 0) {
+        setTimeout(() => {
+            const el = document.getElementById(`step-${currentStep}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    updateProgress();
+
+    if (steps[currentStep] && steps[currentStep].showGraph) {
+        updateChart();
+    }
+}
+
+function toggleStep(index) {
+    const content = document.getElementById(`content-${index}`);
+    const icon = document.getElementById(`icon-${index}`);
+
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        icon.classList.remove('rotated');
+    } else {
+        document.querySelectorAll('.accordion-content').forEach((el, i) => {
+            if (i !== index) {
+                el.classList.remove('open');
+                document.getElementById(`icon-${i}`)?.classList.remove('rotated');
+            }
+        });
+        content.classList.add('open');
+        icon.classList.add('rotated');
+    }
+}
+
+function nextStep() {
+    const steps = stepsData[currentType];
+    if (currentStep < steps.length - 1) {
+        currentStep++;
+        renderSteps();
+        document.getElementById('btnPrev').disabled = false;
+
+        if (currentStep === steps.length - 1) {
+            document.getElementById('btnNext').disabled = true;
+        }
+    }
+}
+
+function prevStep() {
+    if (currentStep > 0) {
+        currentStep--;
+        renderSteps();
+        document.getElementById('btnNext').disabled = false;
+
+        if (currentStep === 0) {
+            document.getElementById('btnPrev').disabled = true;
+        }
+    }
+}
+
+function updateProgress() {
+    const steps = stepsData[currentType];
+    const progress = ((currentStep + 1) / steps.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('currentStepNum').textContent = currentStep + 1;
+}
+
+function resetAll() {
+    currentType = null;
+    currentStep = 0;
+    params = { a: 1, b: 2, c: 3, omega: 2, theta: 0 };
+
+    document.getElementById('paramSection').classList.add('hidden');
+    document.getElementById('btn-constant').classList.remove('border-blue-500', 'ring-2', 'ring-blue-300');
+    document.getElementById('btn-cosine').classList.remove('border-purple-500', 'ring-2', 'ring-purple-300');
+    document.getElementById('btnNext').disabled = true;
+    document.getElementById('btnPrev').disabled = true;
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('currentStepNum').textContent = '0';
+    document.getElementById('stepsContainer').innerHTML = '';
+
+    document.getElementById('paramA').value = 1;
+    document.getElementById('paramB').value = 2;
+    document.getElementById('paramC').value = 3;
+    document.getElementById('paramOmega').value = 2;
+    document.getElementById('paramTheta').value = 0;
+    document.getElementById('valA').textContent = '1.0';
+    document.getElementById('valB').textContent = '2.0';
+    document.getElementById('valC').textContent = '3.0';
+    document.getElementById('valOmega').textContent = '2.0';
+    document.getElementById('valTheta').textContent = '0°';
+
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ==================== 图表函数 ====================
+
+function updateChart() {
+    const ctx = document.getElementById('solutionChart').getContext('2d');
+    const step = stepsData[currentType][currentStep];
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    const xValues = [];
+    const yHomogeneous = [];
+    const yParticular = [];
+    const yGeneral = [];
+    const ySpecific = [];
+
+    const a = params.a;
+    const b = params.b;
+    const C = params.c;
+    const omega = params.omega;
+    const thetaRad = params.theta * Math.PI / 180;
+    const k = b / a;
+    const D = C / a;
+    const C1 = 2;
+
+    // 计算所有值，同时追踪y轴范围
+    let yMin = Infinity, yMax = -Infinity;
+
+    for (let t = 0; t <= 10; t += 0.05) {
+        xValues.push(t.toFixed(2));
+
+        const yh = C1 * Math.exp(-k * t);
+        yHomogeneous.push(yh);
+        yMin = Math.min(yMin, yh);
+        yMax = Math.max(yMax, yh);
+
+        let yp, yg, ys;
+
+        if (currentType === 'constant') {
+            yp = C / b;
+            yg = yh + yp;
+            const C0 = -C / b;
+            ys = C0 * Math.exp(-k * t) + C / b;
+        } else {
+            const denom = k * k + omega * omega;
+            const M = D * k / denom;
+            const N = D * omega / denom;
+            yp = M * Math.cos(omega * t + thetaRad) + N * Math.sin(omega * t + thetaRad);
+            yg = C1 * Math.exp(-k * t) + yp;
+            ys = yp;
+        }
+
+        yParticular.push(yp);
+        yGeneral.push(yg);
+        ySpecific.push(ys);
+
+        yMin = Math.min(yMin, yp, yg, ys);
+        yMax = Math.max(yMax, yp, yg, ys);
+    }
+
+    // 添加边距使波形不贴边
+    const yRange = yMax - yMin;
+    const yPadding = yRange * 0.15;
+    const suggestedMin = yMin - yPadding;
+    const suggestedMax = yMax + yPadding;
+
+    let datasets = [];
+
+    switch (step.graphType) {
+        case 'homogeneous':
+            datasets = [{
+                label: '齐次解 y_h = C₁·e^(-(b/a)t)',
+                data: yHomogeneous,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }];
+            break;
+        case 'particular':
+            datasets = [{
+                label: '特解 y_p',
+                data: yParticular,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }];
+            break;
+        case 'general':
+            datasets = [
+                {
+                    label: '齐次解 y_h',
+                    data: yHomogeneous,
+                    borderColor: '#3b82f6',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    tension: 0.4
+                },
+                {
+                    label: '特解 y_p',
+                    data: yParticular,
+                    borderColor: '#ef4444',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    tension: 0.4
+                },
+                {
+                    label: '通解 y = y_h + y_p',
+                    data: yGeneral,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    tension: 0.4
+                }
+            ];
+            break;
+        case 'specific':
+            datasets = [
+                {
+                    label: '通解族',
+                    data: yGeneral,
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    pointRadius: 0,
+                    tension: 0.4
+                },
+                {
+                    label: '满足初始条件的特解',
+                    data: ySpecific,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    tension: 0.4
+                }
+            ];
+            break;
+        case 'analysis':
+            datasets = [
+                {
+                    label: '瞬态项 y_h',
+                    data: yHomogeneous,
+                    borderColor: '#3b82f6',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    tension: 0.4
+                },
+                {
+                    label: '稳态项 y_p',
+                    data: yParticular,
+                    borderColor: '#ef4444',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    tension: 0.4
+                },
+                {
+                    label: '完整解 y',
+                    data: yGeneral,
+                    borderColor: '#10b981',
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    tension: 0.4
+                }
+            ];
+            break;
+    }
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: xValues,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 't',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    min: 0,
+                    max: 10
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'y',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    min: suggestedMin,
+                    max: suggestedMax
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.animate-fade-in-up').forEach((el, i) => {
+        el.style.animationDelay = (0.1 + i * 0.1) + 's';
+    });
+});
+</script>
+
+</body>
+</html>

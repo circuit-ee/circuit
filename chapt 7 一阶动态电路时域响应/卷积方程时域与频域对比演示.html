@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卷积定理交互演示 - 信号处理可视化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        .canvas-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-radius: 16px;
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            border: 3px solid white;
+            transition: transform 0.1s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .math-formula {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+        
+        .signal-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+        }
+        
+        .signal-btn.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        @keyframes slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .animate-slide {
+            animation: slide 0.5s ease-in-out infinite;
+        }
+        
+        .highlight-area {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="min-h-screen p-4 md:p-8 text-slate-800">
+
+    <!-- 标题区 -->
+    <header class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-5xl md:text-6xl font-bold text-slate-900 mb-4 tracking-tight">卷积定理交互演示</h1>
+        <p class="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            直观理解 <span class="math-formula text-blue-600 font-bold">(f * g)(t) = ∫f(τ)g(t-τ)dτ</span> 
+            与频域关系 <span class="math-formula text-purple-600 font-bold">F(ω)·G(ω)</span>
+        </p>
+    </header>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        <!-- 左侧控制面板 -->
+        <div class="xl:col-span-3 space-y-6">
+            
+            <!-- 信号f选择 -->
+            <div class="canvas-card p-6">
+                <h3 class="text-2xl font-bold mb-4 flex items-center gap-2 text-blue-900">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">f</span>
+                    输入信号 f(t)
+                </h3>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="setSignal('f', 'square')" id="btn-f-square" class="signal-btn active px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        方波
+                    </button>
+                    <button onclick="setSignal('f', 'sine')" id="btn-f-sine" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        正弦波
+                    </button>
+                    <button onclick="setSignal('f', 'gaussian')" id="btn-f-gaussian" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        高斯脉冲
+                    </button>
+                    <button onclick="setSignal('f', 'exponential')" id="btn-f-exponential" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        指数衰减
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm font-semibold text-slate-700 mb-1">
+                            <span>宽度/周期</span>
+                            <span id="val-f-width" class="text-blue-600 font-mono">2.0</span>
+                        </label>
+                        <input type="range" id="slider-f-width" min="0.5" max="4" step="0.1" value="2" oninput="updateParams()">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm font-semibold text-slate-700 mb-1">
+                            <span>幅度</span>
+                            <span id="val-f-amp" class="text-blue-600 font-mono">1.0</span>
+                        </label>
+                        <input type="range" id="slider-f-amp" min="0.5" max="2" step="0.1" value="1" oninput="updateParams()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 信号g选择 -->
+            <div class="canvas-card p-6">
+                <h3 class="text-2xl font-bold mb-4 flex items-center gap-2 text-purple-900">
+                    <span class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">g</span>
+                    系统响应 g(t)
+                </h3>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="setSignal('g', 'square')" id="btn-g-square" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        方波
+                    </button>
+                    <button onclick="setSignal('g', 'sine')" id="btn-g-sine" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        正弦波
+                    </button>
+                    <button onclick="setSignal('g', 'gaussian')" id="btn-g-gaussian" class="signal-btn active px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        高斯脉冲
+                    </button>
+                    <button onclick="setSignal('g', 'exponential')" id="btn-g-exponential" class="signal-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">
+                        指数衰减
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm font-semibold text-slate-700 mb-1">
+                            <span>宽度/周期</span>
+                            <span id="val-g-width" class="text-purple-600 font-mono">1.0</span>
+                        </label>
+                        <input type="range" id="slider-g-width" min="0.2" max="3" step="0.1" value="1" oninput="updateParams()">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm font-semibold text-slate-700 mb-1">
+                            <span>幅度</span>
+                            <span id="val-g-amp" class="text-purple-600 font-mono">1.0</span>
+                        </label>
+                        <input type="range" id="slider-g-amp" min="0.5" max="2" step="0.1" value="1" oninput="updateParams()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 动画控制 -->
+            <div class="canvas-card p-6 bg-gradient-to-br from-blue-50 to-white">
+                <h3 class="text-xl font-bold mb-4 text-slate-800">卷积动画控制</h3>
+                <div class="space-y-3">
+                    <button onclick="toggleAnimation()" id="btn-animate" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                        <svg id="icon-play" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span id="text-play">演示卷积过程</span>
+                    </button>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="stepAnimation(-0.5)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg transition-colors text-sm">
+                            ← 后退
+                        </button>
+                        <button onclick="stepAnimation(0.5)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg transition-colors text-sm">
+                            前进 →
+                        </button>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <label class="flex justify-between text-sm font-semibold text-slate-700 mb-1">
+                            <span>滑动位置 t</span>
+                            <span id="val-t" class="text-green-600 font-mono text-lg">0.0</span>
+                        </label>
+                        <input type="range" id="slider-t" min="-6" max="6" step="0.1" value="0" oninput="manualSlide(this.value)">
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+                    <div class="text-xs text-slate-500 mb-1">当前卷积值</div>
+                    <div id="conv-value" class="text-2xl font-mono font-bold text-slate-800">0.000</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间可视化区 -->
+        <div class="xl:col-span-6 space-y-6">
+            
+            <!-- 时域卷积演示 -->
+            <div class="canvas-card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-slate-800">时域卷积过程演示</h3>
+                    <div class="flex gap-4 text-sm">
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 bg-blue-500 rounded"></span>f(τ)</span>
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 bg-purple-500 rounded"></span>g(t-τ)</span>
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 bg-green-500 rounded"></span>重叠区域</span>
+                    </div>
+                </div>
+                
+                <div class="relative bg-slate-50 rounded-xl border border-slate-200 overflow-hidden" style="height: 400px;">
+                    <canvas id="convCanvas" width="800" height="400" class="w-full h-full block"></canvas>
+                    
+                    <!-- 公式悬浮窗 -->
+                    <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-lg shadow-lg border border-slate-200 max-w-xs">
+                        <div class="math-formula text-center text-lg text-slate-800 mb-2">
+                            (f * g)(t) = ∫f(τ)g(t-τ)dτ
+                        </div>
+                        <div class="text-xs text-slate-600 space-y-1">
+                            <div>1. 翻转：g(τ) → g(-τ)</div>
+                            <div>2. 平移：g(-τ) → g(t-τ)</div>
+                            <div>3. 相乘：f(τ)·g(t-τ)</div>
+                            <div>4. 积分：计算重叠面积</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-2 px-4 text-sm text-slate-500 font-mono">
+                    <span>-6</span>
+                    <span>-3</span>
+                    <span>0</span>
+                    <span>3</span>
+                    <span>6</span>
+                </div>
+            </div>
+
+            <!-- 卷积结果 -->
+            <div class="canvas-card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-slate-800">卷积结果 (f * g)(t)</h3>
+                    <span class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">随时间变化的输出</span>
+                </div>
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4" style="height: 200px;">
+                    <canvas id="resultCanvas" width="800" height="200" class="w-full h-full block"></canvas>
+                </div>
+                <div class="flex justify-between mt-2 px-4 text-sm text-slate-500 font-mono">
+                    <span>-6</span>
+                    <span>-3</span>
+                    <span>0</span>
+                    <span>3</span>
+                    <span>6</span>
+                </div>
+            </div>
+
+            <!-- 应用说明 -->
+            <div class="canvas-card p-6 bg-gradient-to-r from-blue-50 via-white to-purple-50">
+                <h3 class="text-xl font-bold mb-3 text-slate-800">卷积的物理意义</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <div class="font-bold text-blue-900 mb-2">信号处理</div>
+                        <p class="text-slate-700">系统输出 = 输入信号 ⊗ 系统冲激响应。任意输入可分解为冲激信号的叠加，输出是各冲激响应的加权叠加。</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-purple-200">
+                        <div class="font-bold text-purple-900 mb-2">平滑滤波</div>
+                        <p class="text-slate-700">用高斯函数卷积可实现信号平滑（去噪）。方波卷积相当于移动平均，抑制高频噪声。</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-green-200">
+                        <div class="font-bold text-green-900 mb-2">边缘检测</div>
+                        <p class="text-slate-700">特定的g(t)（如差分算子）与信号卷积可提取边缘，是图像处理的卷积神经网络基础。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧频域分析 -->
+        <div class="xl:col-span-3 space-y-6">
+            
+            <div class="canvas-card p-6">
+                <h3 class="text-2xl font-bold mb-4 text-slate-800 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm">FFT</span>
+                    频域分析
+                </h3>
+                <p class="text-sm text-slate-600 mb-4">
+                    验证卷积定理：<span class="math-formula text-orange-600 font-semibold">ℱ{f*g} = ℱ{f}·ℱ{g}</span>
+                </p>
+                
+                <!-- |F(ω)| -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-blue-700">|F(ω)|</span>
+                        <span class="text-xs text-slate-500">输入频谱</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200" style="height: 100px;">
+                        <canvas id="fftFCanvas" width="300" height="100" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- |G(ω)| -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-purple-700">|G(ω)|</span>
+                        <span class="text-xs text-slate-500">系统频谱</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200" style="height: 100px;">
+                        <canvas id="fftGCanvas" width="300" height="100" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- 乘积 |F(ω)G(ω)| -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-orange-700">|F(ω)·G(ω)|</span>
+                        <span class="text-xs text-slate-500">频域相乘</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200" style="height: 100px;">
+                        <canvas id="fftProdCanvas" width="300" height="100" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- 卷积结果的FFT -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-green-700">|ℱ{f*g}|</span>
+                        <span class="text-xs text-slate-500">结果频谱</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200 highlight-area" style="height: 100px;">
+                        <canvas id="fftConvCanvas" width="300" height="100" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <div class="text-xs text-orange-800 font-semibold mb-1">卷积定理验证</div>
+                    <div class="text-xs text-orange-700">
+                        观察：下方两图（频域相乘 vs 卷积结果FFT）形状几乎完全相同，只是幅度可能有常数倍差异，验证了时域卷积等价于频域相乘。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数学公式 -->
+            <div class="canvas-card p-6 bg-gradient-to-br from-slate-50 to-white">
+                <h3 class="text-xl font-bold mb-4 text-slate-800">关键公式</h3>
+                <div class="space-y-4 text-sm">
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="text-slate-500 mb-1">连续时间卷积</div>
+                        <div class="math-formula text-center text-lg text-slate-800">
+                            (f*g)(t) = ∫<sub>-∞</sub><sup>∞</sup> f(τ)g(t-τ)dτ
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="text-slate-500 mb-1">卷积定理</div>
+                        <div class="math-formula text-center text-lg text-slate-800">
+                            ℱ{f*g} = F(ω)G(ω)
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="text-slate-500 mb-1">交换律</div>
+                        <div class="math-formula text-center text-lg text-slate-800">
+                            f*g = g*f
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let state = {
+            f: { type: 'square', width: 2, amp: 1 },
+            g: { type: 'gaussian', width: 1, amp: 1 },
+            t: 0,  // 当前卷积滑动位置
+            isAnimating: false,
+            animationId: null,
+            convResult: []  // 缓存卷积结果
+        };
+
+        // 信号生成函数
+        function generateSignal(type, t, width, amp) {
+            switch(type) {
+                case 'square':
+                    // 方波：-width/2 到 width/2 之间为 amp
+                    return (Math.abs(t) <= width/2) ? amp : 0;
+                
+                case 'sine':
+                    // 正弦波：sin(2πt/width)
+                    return amp * Math.sin(2 * Math.PI * t / width);
+                
+                case 'gaussian':
+                    // 高斯脉冲：exp(-t^2/(2*sigma^2))
+                    const sigma = width / 4;
+                    return amp * Math.exp(-(t*t)/(2*sigma*sigma));
+                
+                case 'exponential':
+                    // 指数衰减：exp(-t/width) for t>0
+                    return (t >= 0) ? amp * Math.exp(-t/width) : 0;
+                
+                default:
+                    return 0;
+            }
+        }
+
+        // 计算卷积（离散近似）
+        function calculateConvolution() {
+            const result = [];
+            const dt = 0.05;
+            const range = 6;
+            
+            for (let t = -range; t <= range; t += dt) {
+                let sum = 0;
+                for (let tau = -range; tau <= range; tau += dt) {
+                    const f_val = generateSignal(state.f.type, tau, state.f.width, state.f.amp);
+                    const g_val = generateSignal(state.g.type, t - tau, state.g.width, state.g.amp);
+                    sum += f_val * g_val * dt;
+                }
+                result.push({ t, val: sum });
+            }
+            
+            state.convResult = result;
+            return result;
+        }
+
+        // 简化的FFT计算（使用DFT近似展示频谱形状）
+        function calculateFFT(signalData) {
+            const N = 128;
+            const fft = [];
+            const freqs = [];
+            
+            for (let k = 0; k < N/2; k++) {
+                let real = 0;
+                let imag = 0;
+                const omega = 2 * Math.PI * k / N;
+                
+                for (let n = 0; n < N; n++) {
+                    const t = (n - N/2) * 12 / N;  // 将索引映射到时间-6到6
+                    const x = signalData.find(d => Math.abs(d.t - t) < 0.1)?.val || 0;
+                    const angle = -omega * n;
+                    real += x * Math.cos(angle);
+                    imag += x * Math.sin(angle);
+                }
+                
+                const mag = Math.sqrt(real*real + imag*imag) * 2 / N;
+                fft.push(mag);
+                freqs.push(k);
+            }
+            
+            return { freqs, fft };
+        }
+
+        // 绘制函数
+        function drawSignal(ctx, canvas, signal, color, fillColor, label, isFlipped = false, offset = 0) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2;
+            const scaleX = width / 12;  // -6到6映射到整个宽度
+            const scaleY = height / 4;  // 幅度范围
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.fillStyle = fillColor;
+            
+            ctx.beginPath();
+            let first = true;
+            
+            for (let x = 0; x <= width; x++) {
+                const t = (x / scaleX) - 6;  // 将像素坐标映射到-6到6
+                const plotT = isFlipped ? (offset - t) : t;  // 如果翻转，g(t-τ)中的t是偏移量
+                const val = generateSignal(signal.type, plotT, signal.width, signal.amp);
+                
+                const y = centerY - val * scaleY;
+                
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // 填充下方区域
+            ctx.lineTo(width, centerY);
+            ctx.lineTo(0, centerY);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 标签
+            ctx.fillStyle = color;
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText(label, 10, isFlipped ? 30 : height - 10);
+        }
+
+        // 绘制重叠区域（乘积）
+        function drawOverlap(ctx, canvas, t_center) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2;
+            const scaleX = width / 12;
+            const scaleY = height / 4;
+            
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.3)';  // 绿色半透明
+            ctx.strokeStyle = 'rgb(34, 197, 94)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            let first = true;
+            let area = 0;
+            
+            for (let x = 0; x <= width; x+=2) {
+                const tau = (x / scaleX) - 6;
+                const f_val = generateSignal(state.f.type, tau, state.f.width, state.f.amp);
+                const g_val = generateSignal(state.g.type, t_center - tau, state.g.width, state.g.amp);
+                const product = f_val * g_val;
+                
+                const y = centerY - product * scaleY;
+                
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                
+                // 数值积分计算面积
+                area += Math.abs(product) * 0.05;
+            }
+            
+            ctx.stroke();
+            ctx.lineTo(width, centerY);
+            ctx.lineTo(0, centerY);
+            ctx.closePath();
+            ctx.fill();
+            
+            return area;
+        }
+
+        // 主绘制函数
+        function draw() {
+            // 1. 绘制卷积过程canvas
+            const convCanvas = document.getElementById('convCanvas');
+            const convCtx = convCanvas.getContext('2d');
+            
+            convCtx.fillStyle = '#f8fafc';
+            convCtx.fillRect(0, 0, convCanvas.width, convCanvas.height);
+            
+            // 网格
+            convCtx.strokeStyle = '#e2e8f0';
+            convCtx.lineWidth = 1;
+            for (let i = 0; i <= 12; i++) {
+                const x = i * convCanvas.width / 12;
+                convCtx.beginPath();
+                convCtx.moveTo(x, 0);
+                convCtx.lineTo(x, convCanvas.height);
+                convCtx.stroke();
+            }
+            convCtx.beginPath();
+            convCtx.moveTo(0, convCanvas.height/2);
+            convCtx.lineTo(convCanvas.width, convCanvas.height/2);
+            convCtx.strokeStyle = '#94a3b8';
+            convCtx.lineWidth = 2;
+            convCtx.stroke();
+            
+            // 绘制 f(τ) - 蓝色
+            drawSignal(convCtx, convCanvas, state.f, '#3b82f6', 'rgba(59, 130, 246, 0.1)', 'f(τ)');
+            
+            // 绘制 g(t-τ) - 紫色（翻转并平移）
+            drawSignal(convCtx, convCanvas, state.g, '#a855f7', 'rgba(168, 85, 247, 0.1)', `g(${state.g.type === 'sine' ? 't-τ' : 't-τ'})`, true, state.t);
+            
+            // 绘制重叠区域（乘积）- 绿色
+            const area = drawOverlap(convCtx, convCanvas, state.t);
+            document.getElementById('conv-value').textContent = area.toFixed(3);
+            
+            // 标记当前t位置
+            const tX = (state.t + 6) / 12 * convCanvas.width;
+            convCtx.strokeStyle = '#ef4444';
+            convCtx.lineWidth = 2;
+            convCtx.setLineDash([5, 5]);
+            convCtx.beginPath();
+            convCtx.moveTo(tX, 0);
+            convCtx.lineTo(tX, convCanvas.height);
+            convCtx.stroke();
+            convCtx.setLineDash([]);
+            
+            // 2. 绘制卷积结果canvas
+            const resCanvas = document.getElementById('resultCanvas');
+            const resCtx = resCanvas.getContext('2d');
+            
+            resCtx.fillStyle = '#f8fafc';
+            resCtx.fillRect(0, 0, resCanvas.width, resCanvas.height);
+            
+            // 网格
+            resCtx.strokeStyle = '#e2e8f0';
+            resCtx.lineWidth = 1;
+            for (let i = 0; i <= 12; i++) {
+                const x = i * resCanvas.width / 12;
+                resCtx.beginPath();
+                resCtx.moveTo(x, 0);
+                resCtx.lineTo(x, resCanvas.height);
+                resCtx.stroke();
+            }
+            resCtx.beginPath();
+            resCtx.moveTo(0, resCanvas.height/2);
+            resCtx.lineTo(resCanvas.width, resCanvas.height/2);
+            resCtx.strokeStyle = '#94a3b8';
+            resCtx.lineWidth = 2;
+            resCtx.stroke();
+            
+            // 计算并绘制卷积结果
+            if (state.convResult.length === 0) calculateConvolution();
+            
+            resCtx.strokeStyle = '#10b981';
+            resCtx.lineWidth = 3;
+            resCtx.beginPath();
+            
+            state.convResult.forEach((point, i) => {
+                const x = ((point.t + 6) / 12) * resCanvas.width;
+                const y = resCanvas.height/2 - point.val * (resCanvas.height / 4);
+                if (i === 0) resCtx.moveTo(x, y);
+                else resCtx.lineTo(x, y);
+            });
+            resCtx.stroke();
+            
+            // 标记当前t位置在结果图中的对应点
+            const currentPoint = state.convResult.find(p => Math.abs(p.t - state.t) < 0.1);
+            if (currentPoint) {
+                const curX = ((currentPoint.t + 6) / 12) * resCanvas.width;
+                const curY = resCanvas.height/2 - currentPoint.val * (resCanvas.height / 4);
+                
+                resCtx.fillStyle = '#ef4444';
+                resCtx.beginPath();
+                resCtx.arc(curX, curY, 6, 0, 2 * Math.PI);
+                resCtx.fill();
+                
+                // 连接线
+                resCtx.strokeStyle = '#ef4444';
+                resCtx.lineWidth = 2;
+                resCtx.setLineDash([2, 2]);
+                resCtx.beginPath();
+                resCtx.moveTo(curX, curY);
+                resCtx.lineTo(curX, resCanvas.height/2);
+                resCtx.stroke();
+                resCtx.setLineDash([]);
+            }
+            
+            // 3. 绘制频域分析
+            drawFrequencyDomain();
+        }
+
+        // 绘制频域（简化展示）
+        function drawFrequencyDomain() {
+            // 为f和g生成采样数据并计算FFT
+            const sampleDataF = [];
+            const sampleDataG = [];
+            for (let t = -6; t <= 6; t += 0.1) {
+                sampleDataF.push({ t, val: generateSignal(state.f.type, t, state.f.width, state.f.amp) });
+                sampleDataG.push({ t, val: generateSignal(state.g.type, t, state.g.width, state.g.amp) });
+            }
+            
+            const fftF = calculateFFT(sampleDataF);
+            const fftG = calculateFFT(sampleDataG);
+            
+            // 计算乘积
+            const fftProd = fftF.fft.map((val, i) => val * fftG.fft[i]);
+            
+            // 计算卷积结果的FFT
+            if (state.convResult.length === 0) calculateConvolution();
+            const fftConv = calculateFFT(state.convResult);
+            
+            // 绘制四个频谱图
+            drawSpectrum('fftFCanvas', fftF.freqs, fftF.fft, '#3b82f6', '|F(ω)|');
+            drawSpectrum('fftGCanvas', fftG.freqs, fftG.fft, '#a855f7', '|G(ω)|');
+            drawSpectrum('fftProdCanvas', fftF.freqs, fftProd, '#f97316', '|F(ω)G(ω)|');
+            drawSpectrum('fftConvCanvas', fftConv.freqs, fftConv.fft, '#10b981', '|ℱ{f*g}|');
+        }
+
+        function drawSpectrum(canvasId, freqs, data, color, label) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 网格
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(width, height);
+            ctx.stroke();
+            
+            // 归一化并绘制
+            const maxVal = Math.max(...data, 0.001);
+            const barWidth = width / data.length;
+            
+            ctx.fillStyle = color;
+            data.forEach((val, i) => {
+                const barHeight = (val / maxVal) * height * 0.9;
+                ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+            });
+            
+            // 标签
+            ctx.fillStyle = color;
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(label, 10, 20);
+        }
+
+        // 交互控制
+        function setSignal(target, type) {
+            state[target].type = type;
+            
+            // 更新按钮样式
+            document.querySelectorAll(`[id^="btn-${target}-"]`).forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-${target}-${type}`).classList.add('active');
+            
+            state.convResult = [];  // 重置缓存
+            draw();
+        }
+
+        function updateParams() {
+            state.f.width = parseFloat(document.getElementById('slider-f-width').value);
+            state.f.amp = parseFloat(document.getElementById('slider-f-amp').value);
+            state.g.width = parseFloat(document.getElementById('slider-g-width').value);
+            state.g.amp = parseFloat(document.getElementById('slider-g-amp').value);
+            
+            document.getElementById('val-f-width').textContent = state.f.width.toFixed(1);
+            document.getElementById('val-f-amp').textContent = state.f.amp.toFixed(1);
+            document.getElementById('val-g-width').textContent = state.g.width.toFixed(1);
+            document.getElementById('val-g-amp').textContent = state.g.amp.toFixed(1);
+            
+            state.convResult = [];
+            draw();
+        }
+
+        function manualSlide(val) {
+            state.t = parseFloat(val);
+            document.getElementById('val-t').textContent = state.t.toFixed(1);
+            if (!state.isAnimating) draw();
+        }
+
+        function stepAnimation(delta) {
+            state.t += delta;
+            if (state.t > 6) state.t = -6;
+            if (state.t < -6) state.t = 6;
+            document.getElementById('slider-t').value = state.t;
+            document.getElementById('val-t').textContent = state.t.toFixed(1);
+            draw();
+        }
+
+        function toggleAnimation() {
+            state.isAnimating = !state.isAnimating;
+            
+            const btn = document.getElementById('btn-animate');
+            const icon = document.getElementById('icon-play');
+            const text = document.getElementById('text-play');
+            
+            if (state.isAnimating) {
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+                text.textContent = '暂停演示';
+                icon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>';
+                animate();
+            } else {
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+                text.textContent = '继续演示';
+                icon.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>';
+                cancelAnimationFrame(state.animationId);
+            }
+        }
+
+        function animate() {
+            if (!state.isAnimating) return;
+            
+            state.t += 0.05;
+            if (state.t > 6) state.t = -6;
+            
+            document.getElementById('slider-t').value = state.t;
+            document.getElementById('val-t').textContent = state.t.toFixed(1);
+            
+            draw();
+            state.animationId = requestAnimationFrame(animate);
+        }
+
+        // 初始化
+        window.onload = function() {
+            updateParams();
+            draw();
+        };
+
+        // 响应式处理
+        window.addEventListener('resize', draw);
+    </script>
+</body>
+</html>
