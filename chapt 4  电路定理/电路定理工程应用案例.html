@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>邱关源第4章 · 电路定理 · 自动化工程案例</title>
+<style>
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#f8fafc;color:#1e293b;font-size:22px;line-height:1.85;}
+    header{background:linear-gradient(135deg,#1d4ed8,#0ea5e9);color:#fff;padding:36px 24px;text-align:center;}
+    header h1{font-size:40px;margin:0;}
+    header p{font-size:20px;opacity:.92;margin-top:10px;}
+    .tabs{display:flex;justify-content:center;gap:12px;background:#dbeafe;padding:16px;flex-wrap:wrap;}
+    .tabs button{font-size:19px;padding:14px 20px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#1e40af;}
+    .tabs button.active{background:#1e40af;color:#fff;}
+    .pane{max-width:1180px;margin:30px auto;background:#fff;border-radius:18px;padding:44px;box-shadow:0 12px 48px rgba(0,0,0,.08);display:none;}
+    .pane.active{display:block;}
+    h2{font-size:32px;color:#1e40af;margin-top:0;}
+    h3{font-size:25px;color:#475569;margin-top:22px;}
+    .eq{background:#eff6ff;padding:22px;border-radius:14px;font-size:25px;text-align:center;border-left:6px solid #2563eb;margin:22px 0;font-family:monospace;}
+    .ctrl{display:flex;gap:26px;flex-wrap:wrap;margin:24px 0;align-items:center;}
+    .ctrl label{font-size:20px;min-width:200px;}
+    .ctrl span{font-weight:bold;color:#b45309;}
+    input[type=range]{width:220px;height:10px;}
+    canvas{display:block;margin:24px auto;background:#fff;border:2px solid #bfdbfe;border-radius:14px;}
+    .box{padding:20px;border-radius:12px;font-size:20px;margin:18px 0;}
+    .b{background:#eff6ff;border-left:6px solid #2563eb;}
+    .g{background:#ecfdf5;border-left:6px solid #059669;}
+    .o{background:#fff7ed;border-left:6px solid #ea580c;}
+    .r{background:#fef2f2;border-left:6px solid #dc2626;}
+    .y{background:#fefce8;border-left:6px solid #ca8a04;}
+    table{width:100%;border-collapse:collapse;font-size:18px;margin:18px 0;}
+    th,td{border:1px solid #cbd5e1;padding:12px;text-align:center;}
+    th{background:#f1f5f9;}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>第4章 电路定理 · 工业现场案例</h1>
+    <p>戴维南 · 最大功率 · 叠加 · 互易（只用到电阻和独立源）</p>
+</header>
+
+<div class="tabs">
+    <button class="tabBtn active" onclick="show('tab1',this)">⚡ 24V背板压降</button>
+    <button class="tabBtn" onclick="show('tab2',this)">🔌 PoE供电匹配</button>
+    <button class="tabBtn" onclick="show('tab3',this)">📡 工频干扰</button>
+    <button class="tabBtn" onclick="show('tab4',this)">🔗 端子排互易</button>
+</div>
+
+<!-- ========== 1. 戴维南 ========== -->
+<div id="tab1" class="pane active">
+    <div class="b box">
+        <h3 style="margin-top:0;">⚡ 工程背景：PLC控制柜背板电源</h3>
+        PLC的24V开关电源输出接到背板铜排，再通过铜排给各个IO模块供电。<br>
+        铜排有电阻，模块多了之后，末端模块电压会低于24V。<br>
+        <b>问题</b>：离电源最远的模块，实际端电压是多少？<br>
+        把电源和铜排一起看成<strong>戴维南等效电源</strong>。
+    </div>
+
+    <h3>戴维南等效</h3>
+    <div class="eq">U_oc = 24 V &nbsp;&nbsp;&nbsp; R_th = R_铜排</div>
+
+    <div class="ctrl">
+        <label>模块数量 n = <span id="nMod">4</span></label>
+        <input type="range" min="1" max="8" value="4" step="1" oninput="upd1(this.value)">
+    </div>
+
+    <canvas id="c1" width="800" height="360"></canvas>
+    <div id="r1" class="g box"></div>
+
+    <div class="y box">
+        💡 铜排电阻约 0.05 Ω（长距离+接触），电源内阻约 0.02 Ω。<br>
+        戴维南告诉你：<b>越远的模块电压越低</b>，所以现场规范要求末端≥21.6V。
+    </div>
+</div>
+
+<!-- ========== 2. 最大功率 ========== -->
+<div id="tab2" class="pane">
+    <div class="b box">
+        <h3 style="margin-top:0;">🔌 工程背景：工业PoE远程IO</h3>
+        交换机通过100米网线给远程IO模块供电（IEEE 802.3af）。<br>
+        网线直流电阻约 25 Ω（来回），交换机输出 48 V。<br>
+        IO模块内部有DC-DC，等效为一个电阻负载。<br>
+        <b>问题</b>：负载多大时，模块能拿到最大功率？
+    </div>
+
+    <h3>最大功率传输定理</h3>
+    <div class="eq">P_max = V_s² / (4 R_s) &nbsp;&nbsp; 当 R_L = R_s</div>
+
+    <div class="ctrl">
+        <label>IO模块等效 R_L = <span id="rld">25</span> Ω</label>
+        <input type="range" min="5" max="100" value="25" step="5" oninput="upd2(this.value)">
+    </div>
+
+    <canvas id="c2" width="800" height="360"></canvas>
+    <div id="r2" class="o box"></div>
+
+    <div class="y box">
+        💡 匹配时 R_L=25Ω，功率最大但效率只有50%。<br>
+        实际标准限流 350 mA，所以模块实际最多用 ~12.9 W。<br>
+        这就是为什么长距离要用 PoE++ 或本地供电。
+    </div>
+</div>
+
+<!-- ========== 3. 叠加 ========== -->
+<div id="tab3" class="pane">
+    <div class="b box">
+        <h3 style="margin-top:0;">📡 工程背景：AI通道受工频干扰</h3>
+        4–20 mA变送器信号经过动力柜旁走线，感应出50Hz工频电压。<br>
+        信号线上既有直流分量（有用信号），又有交流干扰。<br>
+        <b>叠加定理</b>：先算直流源单独作用，再算交流源单独作用，最后相加。
+    </div>
+
+    <h3>叠加定理</h3>
+    <div class="eq">u(t) = U_DC + U_AC·sin(2π·50·t)</div>
+
+    <div class="ctrl">
+        <label>干扰幅值 U_AC = <span id="uac">2</span> V</label>
+        <input type="range" min="0" max="5" value="2" step="0.5" oninput="upd3(this.value)">
+    </div>
+
+    <canvas id="c3" width="800" height="340"></canvas>
+    <div id="r3" class="r box"></div>
+
+    <div class="y box">
+        💡 直流分量决定测量值，交流分量引起读数抖动。<br>
+        叠加定理让工程师可以分开设计：<b>滤波只针对交流部分</b>，不影响直流增益。
+    </div>
+</div>
+
+<!-- ========== 4. 互易 ========== -->
+<div id="tab4" class="pane">
+    <div class="b box">
+        <h3 style="margin-top:0;">🔗 工程背景：接线端子排互易测试</h3>
+        控制柜里4个端子排成一排，端子之间有接触电阻。<br>
+        如果在端子1加电压，在端子4测电流；<br>
+        反过来在端子4加电压，在端子1测电流。<br>
+        纯电阻网络满足<strong>互易定理</strong>：比值完全相同。
+    </div>
+
+    <h3>互易定理</h3>
+    <div class="eq">U₁ / I₄ = U₄ / I₁ = R_mutual</div>
+
+    <div class="ctrl">
+        <label>端子间电阻 = <span id="rt">0.1</span> Ω</label>
+        <input type="range" min="0.05" max="0.5" value="0.1" step="0.05" oninput="upd4(this.value)">
+        <label>测试模式：
+            <select id="mode" onchange="draw4()">
+                <option value="1to4">1→4</option>
+                <option value="4to1">4→1</option>
+            </select>
+        </label>
+    </div>
+
+    <canvas id="c4" width="800" height="340"></canvas>
+    <div id="r4" class="g box"></div>
+
+    <div class="y box">
+        💡 互易性是现场排查接线错误的利器：<br>
+        交换源和表的位置，读数比例不变，说明系统线性；变了，说明有二极管/腐蚀/接触不良。
+    </div>
+</div>
+
+<script>
+function show(id,btn){
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    drawAll();
+}
+function getCtx(id){
+    let c=document.getElementById(id);
+    let ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.font='17px Microsoft YaHei';
+    return ctx;
+}
+
+/* Tab1 戴维南 */
+let n=4;
+function upd1(v){n=+v;document.getElementById('nMod').innerText=v;draw1();}
+function draw1(){
+    let ctx=getCtx('c1');
+    ctx.strokeStyle='#2563eb';ctx.lineWidth=3;
+    // 电源
+    ctx.fillText('24V',30,80);ctx.beginPath();ctx.moveTo(60,100);ctx.lineTo(140,100);ctx.stroke();
+    // 电源内阻
+    ctx.strokeRect(140,90,50,20);ctx.fillText('0.02Ω',145,85);
+    // 铜排
+    ctx.beginPath();ctx.moveTo(190,100);ctx.lineTo(350,100);ctx.stroke();
+    ctx.fillText('铜排 0.05Ω',200,90);
+    // 模块
+    let x=350;
+    for(let i=0;i<n;i++){
+        ctx.strokeRect(x,90,40,20);
+        ctx.fillText('R',x+12,105);
+        x+=60;
+    }
+    ctx.fillText('...',x-20,105);
+    // 戴维南框
+    ctx.setLineDash([6]);ctx.strokeRect(450,50,280,100);ctx.setLineDash([]);
+    ctx.fillText('等效：Uoc=24V',460,80);
+    ctx.fillText('Rth='+(0.02+0.05).toFixed(2)+'Ω',460,105);
+    let Rtot=0.07 + 5*n;
+    let I=24/Rtot, Uend=24-I*0.07;
+    document.getElementById('r1').innerHTML=
+        `总电流 I = 24/(${Rtot.toFixed(1)}) = ${I.toFixed(2)} A<br>`+
+        `末端模块电压 = ${Uend.toFixed(2)} V `+(Uend>=21.6?'✅ 合格':'❌ 偏低');
+}
+
+/* Tab2 PoE */
+let rl=25;
+function upd2(v){rl=+v;document.getElementById('rld').innerText=v;draw2();}
+function draw2(){
+    let ctx=getCtx('c2');
+    ctx.strokeStyle='#ea580c';ctx.lineWidth=3;
+    ctx.fillText('交换机 48V',30,80);ctx.beginPath();ctx.moveTo(60,100);ctx.lineTo(140,100);ctx.stroke();
+    ctx.strokeRect(140,90,50,20);ctx.fillText('Rs=25Ω',142,85);
+    ctx.beginPath();ctx.moveTo(190,100);ctx.lineTo(280,100);ctx.stroke();
+    ctx.fillText('网线',200,90);
+    ctx.strokeRect(280,90,50,20);ctx.fillText('RL='+rl+'Ω',285,85);
+    ctx.fillText('IO模块',330,80);
+    let Vs=48,Rs=25,I=Vs/(Rs+rl),P=I*I*rl,Pmax=48 * 48/(4 * 25);
+    document.getElementById('r2').innerHTML=
+        `电流 I = ${I.toFixed(2)} A<br>`+
+        `模块功率 P = ${P.toFixed(1)} W<br>`+
+        `最大可能功率 = ${Pmax.toFixed(1)} W（RL=25Ω时）<br>`+
+        `效率 = ${((rl/(Rs+rl))*100).toFixed(1)}%`;
+}
+
+/* Tab3 叠加 */
+let uac=2;
+function upd3(v){uac=+v;document.getElementById('uac').innerText=v;draw3();}
+function draw3(){
+    let ctx=getCtx('c3');
+    ctx.beginPath();ctx.moveTo(60,160);ctx.lineTo(160,160);ctx.stroke();
+    ctx.fillText('24V',30,155);ctx.fillText('±'+uac+'V',30,180);
+    ctx.strokeRect(160,150,40,20);ctx.fillText('R',165,185);
+    ctx.fillText('ADC',240,155);
+    // 波形
+    ctx.strokeStyle='#ea580c';ctx.beginPath();
+    for(let x=60;x<700;x++){
+        let t=(x-60)/60;
+        let y=200 + uac*Math.sin(2*Math.PI*t*2)*4 - 24/2;
+        x==60?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.fillStyle='#dc2626';ctx.fillText('叠加后信号',60,220);
+    document.getElementById('r3').innerHTML=
+        `直流基准 = 24 V<br>`+
+        `交流扰动 ±${uac} V<br>`+
+        `A/D看到的峰值 = ${(24+uac).toFixed(1)} ~ ${(24-uac).toFixed(1)} V`;
+}
+
+/* Tab4 互易 */
+let rt=0.1, mode='1to4';
+function upd4(v){rt=+v;document.getElementById('rt').innerText=v;draw4();}
+function draw4(){
+    let ctx=getCtx('c4');
+    let sel=document.getElementById('mode');
+    mode=sel.value;
+    // 画4个端子
+    for(let i=0;i<4;i++){
+        ctx.fillRect(150+i*120,120,30,30);
+        ctx.fillText('T'+(i+1),150+i*120,115);
+    }
+    ctx.strokeStyle='#333';
+    ctx.beginPath();ctx.moveTo(165,135);ctx.lineTo(270,135);ctx.stroke();
+    ctx.fillText(rt+'Ω',205,125);
+    ctx.beginPath();ctx.moveTo(285,135);ctx.lineTo(390,135);ctx.stroke();
+    ctx.fillText(rt+'Ω',325,125);
+    ctx.beginPath();ctx.moveTo(405,135);ctx.lineTo(510,135);ctx.stroke();
+    ctx.fillText(rt+'Ω',445,125);
+    if(mode=='1to4'){
+        ctx.fillStyle='#16a34a';ctx.fillText('1V',110,133);
+        ctx.fillText('I',520,133);
+        ctx.fillText('U₁=1V → I₄',110,170);
+    }else{
+        ctx.fillStyle='#dc2626';ctx.fillText('1V',470,133);
+        ctx.fillText('I',180,133);
+        ctx.fillText('U₄=1V → I₁',470,170);
+    }
+    let Rtot=3*rt;
+    let ratio=1/Rtot;
+    document.getElementById('r4').innerHTML=
+        `网络总电阻 = 3×${rt} = ${Rtot.toFixed(2)} Ω<br>`+
+        `电流 = 1/${Rtot.toFixed(2)} = ${ratio.toFixed(3)} A<br>`+
+        `互易比 U/I = ${Rtot.toFixed(2)} Ω（无论哪个方向都一样）`;
+}
+
+function drawAll(){draw1();draw2();draw3();draw4();}
+document.addEventListener('DOMContentLoaded',drawAll);
+</script>
+</body>
+</html>

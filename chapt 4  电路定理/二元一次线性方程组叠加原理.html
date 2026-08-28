@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线性方程组解的叠加原理</title>
+    <style>
+        body {
+            font-family: '微软雅黑', '宋体', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.8;
+            font-weight: bold;
+        }
+        
+        .container {
+            background-color: #f8f9fa;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 2px solid #333;
+        }
+        
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #cc0000;
+            border-bottom: 4px solid #cc0000;
+            padding-bottom: 15px;
+            margin-top: 40px;
+            font-size: 2.2rem;
+            font-weight: 900;
+        }
+        
+        .equation {
+            font-size: 26px;
+            margin: 25px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            border: 3px solid #0066cc;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        .highlight {
+            background-color: #ffff00;
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 2px solid #ff0000;
+            font-weight: 900;
+            font-size: 28px;
+        }
+        
+        .zero {
+            color: #ff0000;
+            font-weight: 900;
+            font-size: 28px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .solution {
+            color: #006600;
+            font-weight: 900;
+            background: #c8e6c9;
+            padding: 5px 15px;
+            border-radius: 6px;
+            border: 3px solid #006600;
+            font-size: 24px;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        button {
+            padding: 18px 36px;
+            margin: 0 15px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #0066cc, #0099ff);
+            color: white;
+            transition: all 0.3s ease;
+            font-weight: 900;
+            box-shadow: 0 5px 15px rgba(0, 102, 204, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 102, 204, 0.6);
+        }
+        
+        button:disabled {
+            background: linear-gradient(45deg, #757575, #9e9e9e);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .step {
+            margin: 35px 0;
+            padding: 30px;
+            border-left: 8px solid #0066cc;
+            background: #ffffff;
+            border-radius: 0 16px 16px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step.active {
+            animation: pulse 1.5s infinite;
+            border-left: 8px solid #009900;
+            background: #e8f5e9;
+        }
+        
+        @keyframes pulse {
+            0% { 
+                box-shadow: 0 0 0 0 rgba(0, 153, 0, 0.4);
+                transform: translateX(0);
+            }
+            70% { 
+                box-shadow: 0 0 0 12px rgba(0, 153, 0, 0);
+                transform: translateX(8px);
+            }
+            100% { 
+                box-shadow: 0 0 0 0 rgba(0, 153, 0, 0);
+                transform: translateX(0);
+            }
+        }
+        
+        .explanation {
+            background: #fff3e0;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            border: 3px solid #ff9800;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .explanation p, .explanation li {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.8;
+        }
+        
+        .matrix {
+            display: inline-block;
+            position: relative;
+            padding: 0 20px;
+        }
+        
+        .matrix:before, .matrix:after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: #0066cc;
+        }
+        
+        .matrix:before {
+            left: 0;
+            border-radius: 5px 0 0 5px;
+        }
+        
+        .matrix:after {
+            right: 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .system {
+            flex: 1;
+            margin: 15px;
+            padding: 25px;
+            background: #e3f2fd;
+            border-radius: 16px;
+            min-width: 300px;
+            border: 3px solid #0066cc;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .system:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border: 3px solid #ff0000;
+        }
+        
+        .arrow {
+            font-size: 40px;
+            color: #0066cc;
+            margin: 0 25px;
+            font-weight: 900;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { 
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% { 
+                transform: scale(1);
+                opacity: 0.8;
+            }
+        }
+        
+        p, li {
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>线性方程组解的叠加原理</h1>
+        
+        <div class="explanation">
+            <p><strong>叠加原理：</strong>对于线性方程组 Ax = b，如果 b = b₁ + b₂ + ... + bₙ，那么方程组的解 x = x₁ + x₂ + ... + xₙ，其中 Axᵢ = bᵢ。</p>
+        </div>
+        
+        <div class="controls">
+            <button onclick="showStep(0)">原始方程组</button>
+            <button onclick="showStep(1)">分解 b₁</button>
+            <button onclick="showStep(2)">分解 b₂</button>
+            <button onclick="showStep(3)">叠加验证</button>
+            <button onclick="showStep(-1)">完整动画</button>
+        </div>
+        
+        <div id="step0" class="step">
+            <h2>步骤 0: 原始线性方程组</h2>
+            <div class="equation">
+                <span class="matrix">
+                    2x + y = 5<br>
+                    x - 3y = -8
+                </span>
+                &nbsp;&nbsp;或&nbsp;&nbsp;
+                <span class="matrix">
+                    2  1<br>
+                    1 -3
+                </span>
+                <span class="matrix">
+                    x<br>
+                    y
+                </span>
+                =
+                <span class="matrix">
+                    <span class="highlight">5</span><br>
+                    <span class="highlight">-8</span>
+                </span>
+            </div>
+            <p>解: <span class="solution">x = 1, y = 3</span></p>
+        </div>
+        
+        <div id="step1" class="step">
+            <h2>步骤 1: 将 b 分解为 b₁ + b₂</h2>
+            <div class="row">
+                <div class="system">
+                    <h3>方程组 1: Ax = b₁</h3>
+                    <div class="equation">
+                        2x + y = <span class="highlight">5</span><br>
+                        x - 3y = <span class="zero">0</span>
+                    </div>
+                    <p>解: <span class="solution">x₁ = 15/7, y₁ = 5/7</span></p>
+                </div>
+                <div class="arrow">+</div>
+                <div class="system">
+                    <h3>方程组 2: Ax = b₂</h3>
+                    <div class="equation">
+                        2x + y = <span class="zero">0</span><br>
+                        x - 3y = <span class="highlight">-8</span>
+                    </div>
+                    <p>解: <span class="solution">x₂ = -8/7, y₂ = 16/7</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="step2" class="step">
+            <h2>步骤 2: 验证叠加原理</h2>
+            <div class="explanation">
+                <p>根据叠加原理，原方程组的解应该等于两个分解后方程组解的和：</p>
+                <p>x = x₁ + x₂ = 15/7 + (-8/7) = 7/7 = <span class="solution">1</span></p>
+                <p>y = y₁ + y₂ = 5/7 + 16/7 = 21/7 = <span class="solution">3</span></p>
+            </div>
+            <div class="equation">
+                验证:<br>
+                x₁ + x₂ = 15/7 + (-8/7) = <span class="solution">1</span><br>
+                y₁ + y₂ = 5/7 + 16/7 = <span class="solution">3</span>
+            </div>
+        </div>
+        
+        <div id="step3" class="step">
+            <h2>步骤 3: 一般情况下的叠加原理</h2>
+            <div class="explanation">
+                <p>对于任意线性方程组 Ax = b，其中 b = b₁ + b₂ + ... + bₙ：</p>
+                <ol>
+                    <li>分别求解 Axᵢ = bᵢ，得到解 xᵢ</li>
+                    <li>原方程组的解为 x = x₁ + x₂ + ... + xₙ</li>
+                    <li>这个性质只对<strong>线性</strong>方程组成立</li>
+                </ol>
+            </div>
+            <div class="equation">
+                <strong>数学表达：</strong><br>
+                如果 Ax = b，且 b = Σbᵢ，那么 x = Σxᵢ，其中 Axᵢ = bᵢ
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentStep = -1;
+        let animationInterval;
+        
+        function showStep(step) {
+            // 清除所有active类
+            document.querySelectorAll('.step').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 清除动画间隔
+            if (animationInterval) {
+                clearInterval(animationInterval);
+            }
+            
+            if (step === -1) {
+                // 自动播放完整动画
+                currentStep = 0;
+                animateSteps();
+            } else {
+                // 显示特定步骤
+                const stepId = `step${step}`;
+                const element = document.getElementById(stepId);
+                if (element) {
+                    element.classList.add('active');
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+        
+        function animateSteps() {
+            const steps = document.querySelectorAll('.step');
+            
+            animationInterval = setInterval(() => {
+                // 移除之前的active类
+                steps.forEach(el => el.classList.remove('active'));
+                
+                // 添加当前步骤的active类
+                if (currentStep < steps.length) {
+                    steps[currentStep].classList.add('active');
+                    steps[currentStep].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    currentStep++;
+                } else {
+                    // 动画结束
+                    clearInterval(animationInterval);
+                    currentStep = 0;
+                }
+            }, 3000);
+        }
+        
+        // 页面加载时显示第一步
+        window.onload = () => {
+            showStep(0);
+        };
+    </script>
+</body>
+</html>
